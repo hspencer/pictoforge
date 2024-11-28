@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SpineEdit</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="manifest" href="site.webmanifest" />
+  </head>
+  <body>
+    <h1>Welcome to SpineEdit</h1>
+    <div id="container">
+      <div id="svg-viewer"></div>
+      <div id="tools">
+        <div id="toolbar">
+          <button id="load-svg">Load SVG</button>
+          <button id="save-svg">Save SVG</button>
+          <button id="node-select">Select</button>
+          <label for="stroke-width-slider">Stroke Width:</label>
+          <input
+            type="range"
+            id="stroke-width-slider"
+            min="0.25"
+            max="12"
+            step="0.25"
+            value="4"
+          />
+        </div>
+        <div id="elements"></div>
+      </div>
+    </div>
+  </body>
+</html>
