@@ -52,10 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
     URL.revokeObjectURL(url);
   });
 
+  /*
   document.getElementById('stroke-width-slider').addEventListener('input', (e) => {
     const newWidth = parseFloat(e.target.value);
     editor.draw.find('path').forEach(path => {
       path.stroke({ width: newWidth });
     });
   });
+  */
 });
