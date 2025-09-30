@@ -1,22 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Moon, Sun, Globe } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSVGParser } from './hooks/useSVGParser';
+import { I18nProvider, useI18n } from './hooks/useI18n.jsx';
 import TextInput from './components/TextInput';
 import SVGHierarchy from './components/SVGHierarchy';
 import SVGViewer from './components/SVGViewer';
 import StylePanel from './components/StylePanel';
-
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
+import LanguageSelector from './components/LanguageSelector';
 import './App.css';
 
 // Importar el SVG de ejemplo
 import pictogramSVG from './assets/pictogram.svg?url';
 
-function App() {
+// Componente principal de la aplicación con internacionalización
+function AppContent() {
+  const { t } = useI18n();
   const [darkMode, setDarkMode] = useState(false);
-  const [currentText, setCurrentText] = useState('make the bed');
+  const [currentText, setCurrentText] = useState(t('textInputPlaceholder'));
   const [expandedElements, setExpandedElements] = useState(new Set(['pictogram', 'bed', 'person']));
   const [showCodeView, setShowCodeView] = useState(false);
   
@@ -202,10 +205,10 @@ function App() {
       <header className="flex items-center justify-between p-4 border-b bg-muted/20">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold tracking-tight">
-            PICTO • FORGE
+            {t('appTitle')}
           </h1>
           <div className="text-sm text-muted-foreground">
-            Editor SVG Semántico
+            {t('appSubtitle')}
           </div>
         </div>
         
@@ -214,17 +217,11 @@ function App() {
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
-            title="Cambiar tema"
+            title={t('changeTheme')}
           >
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            title="Idioma"
-          >
-            <Globe size={16} />
-          </Button>
+          <LanguageSelector />
         </div>
       </header>
 
@@ -233,7 +230,7 @@ function App() {
         currentText={currentText}
         onTextChange={handleTextChange}
         onFileLoad={handleFileLoad}
-        placeholder="Describe lo que quieres crear o carga un archivo SVG..."
+        placeholder={t('textInputPlaceholder')}
       />
 
       {/* Demostración de carga de archivos */}
@@ -288,23 +285,32 @@ function App() {
 
       {/* Footer con información */}
       <footer className="p-2 border-t bg-muted/20 text-xs text-muted-foreground">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-4">
             <span>
-              {svgData ? `${Object.keys(svgData.styles || {}).length} estilos` : 'Sin SVG'}
+              {svgData ? `${Object.keys(svgData.styles || {}).length} ${t('stylesCount')}` : t('noSVGLoaded')}
             </span>
             {selectedElement && (
               <span>
-                Seleccionado: {selectedElement.id} ({selectedElement.tagName})
+                {t('selectedElement')}: {selectedElement.id} ({selectedElement.tagName})
               </span>
             )}
           </div>
           <div>
-            PictoForge v1.0 - Editor SVG Semántico
+            {t('version')}
           </div>
         </div>
       </footer>
     </div>
+  );
+}
+
+// Wrapper principal con proveedor de internacionalización
+function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   );
 }
 

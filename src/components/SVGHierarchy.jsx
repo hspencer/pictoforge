@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight, ChevronDown, Circle, Square, Triangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/useI18n.jsx';
 
 /**
  * Componente para mostrar la jerarquía de elementos SVG
@@ -12,10 +13,12 @@ export const SVGHierarchy = ({
   expandedElements = new Set(),
   onToggleExpand 
 }) => {
+  const { t } = useI18n();
+  
   if (!svgData) {
     return (
       <div className="p-4 text-muted-foreground">
-        <p>No hay SVG cargado</p>
+        <p>{t('noSVGLoaded')}</p>
       </div>
     );
   }
@@ -120,7 +123,7 @@ export const SVGHierarchy = ({
   return (
     <div className="h-full overflow-auto">
       <div className="p-4 border-b">
-        <h3 className="font-semibold text-sm">SVG ELEMENTS</h3>
+        <h3 className="font-semibold text-sm">{t('svgElements')}</h3>
       </div>
       <div className="p-2">
         {renderElement(svgData.root)}

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/useI18n.jsx';
 
 /**
  * Componente para la entrada de texto y carga de archivos
@@ -9,8 +10,9 @@ export const TextInput = ({
   onTextChange, 
   onFileLoad, 
   currentText = '',
-  placeholder = "Ingresa una descripción o carga un archivo SVG..." 
+  placeholder 
 }) => {
+  const { t } = useI18n();
   const [text, setText] = useState(currentText);
   const fileInputRef = useRef(null);
 
@@ -129,7 +131,7 @@ export const TextInput = ({
                 variant="ghost"
                 size="sm"
                 onClick={openFileSelector}
-                title="Cargar archivo SVG"
+                title={t('loadSVGFile')}
                 className="h-8 w-8 p-0"
               >
                 <Upload size={16} />
@@ -140,7 +142,7 @@ export const TextInput = ({
                   variant="ghost"
                   size="sm"
                   onClick={exportText}
-                  title="Exportar texto"
+                  title={t('exportText')}
                   className="h-8 w-8 p-0"
                 >
                   <Download size={16} />
@@ -176,12 +178,11 @@ export const TextInput = ({
         {/* Información adicional */}
         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
-            <span>Soporta archivos .svg</span>
-            <span>Drag & drop habilitado</span>
+            <span>{t('dragDropText')}</span>
           </div>
           <div className="flex items-center gap-2">
             {text.length > 0 && (
-              <span>{text.length} caracteres</span>
+              <span>{text.length} {t('charactersCount')}</span>
             )}
           </div>
         </div>
