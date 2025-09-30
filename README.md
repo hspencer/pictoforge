@@ -1,206 +1,221 @@
-# PictoForge
+# PictoForge - Editor SVG Semántico
 
-A modern, web-based SVG editor built with vanilla JavaScript and Sass. PictoForge provides a complete CRUD interface for editing SVG files directly in the browser, featuring a clean separation between structure and styles for accessible and maintainable vector graphics.
+Un editor/visor de SVG avanzado con etiquetado semántico, diseñado para trabajar con modelos de lenguaje generativo.
 
-## Features
 
-- **Browser-based**: Runs entirely in the browser with no server dependencies
-- **Full CRUD**: Complete create, read, update, and delete operations for SVG elements
-- **Style Management**: Visual style library with drag-and-drop assignment
-- **Bidirectional Sync**: Real-time synchronization between tree view and visual canvas
-- **Accessibility First**: Maintains clean SVG structure with proper metadata
-- **Theme Support**: Light and dark mode interface
-- **File Flexibility**: Import from file, URL, or drag-and-drop
+## Características Principales
 
-## Tech Stack
+### Interfaz de Tres Paneles
+- **Panel Superior**: Entrada de texto con carga de archivos SVG por drag & drop
+- **Panel Izquierdo**: Jerarquía de elementos SVG con iconos apropiados y panel de estilos CSS
+- **Panel Central**: Visor SVG interactivo con herramientas de edición y vista de código alternativa
 
-- **JavaScript** (Vanilla ES6+)
-- **Sass** (SCSS syntax)  
-- **Vite** (Build tool and dev server)
-- **Web APIs** (DOMParser, File API, Drag & Drop)
+### Selección Bidireccional ("Round Trip Interface")
+- Seleccionar elementos en la jerarquía los resalta en el visor
+- Hacer clic en elementos del SVG los selecciona en la jerarquía
+- Auto-expansión de la ruta hacia elementos seleccionados
 
-## 📁 Project Structure
+### Herramientas de Edición
+- **Flecha negra**: Herramienta de selección
+- **Flecha blanca**: Herramienta de movimiento de vista (pan)
+- **Pluma**: Herramienta de edición (preparada para futuras funcionalidades)
+- Zoom in/out, reseteo de vista, descarga de SVG
+
+### Sistema de Estilos
+- Visualización de clases CSS definidas en el SVG
+- Aplicación/remoción dinámica de estilos a elementos
+- Vista previa de propiedades CSS (fill, stroke, stroke-linejoin, etc.)
+
+### Herramientas Avanzadas
+- Guardar, deshacer/rehacer (preparado)
+- Copiar, duplicar y eliminar elementos (preparado)
+- Vista de código SVG editable con numeración de líneas
+- Estadísticas en tiempo real (número de elementos y estilos)
+
+### Características Adicionales
+- Tema claro/oscuro
+- Interfaz responsive y profesional
+- Animaciones suaves y micro-interacciones
+- Manejo de errores y validación de archivos SVG
+
+## 🚀 Instalación y Uso
+
+### Prerrequisitos
+- Node.js 18+ 
+- npm o pnpm
+
+### Instalación
+```bash
+# Clonar el repositorio
+git clone <repository-url>
+cd pictoforge
+
+# Instalar dependencias
+npm install
+# o
+pnpm install
+```
+
+### Desarrollo
+```bash
+# Iniciar servidor de desarrollo
+npm run dev
+# o
+pnpm run dev
+
+# La aplicación estará disponible en http://localhost:5173
+```
+
+### Construcción para Producción
+```bash
+# Construir para producción
+npm run build
+# o
+pnpm run build
+
+# Los archivos se generarán en la carpeta 'dist/'
+```
+
+## 🏗️ Arquitectura del Proyecto
 
 ```
 pictoforge/
-├── public/
-│   ├── index.html
-│   └── favicon.ico
+├── public/                 # Archivos estáticos
 ├── src/
-│   ├── core/
-│   │   ├── SVGParser.js          # 📋 TODO: SVG parsing and analysis
-│   │   ├── SVGLinter.js          # 🔍 TODO: SVG validation and auto-correction
-│   │   ├── VirtualDOM.js         # 🔄 TODO: DOM synchronization system
-│   │   └── EventBus.js           # 📡 TODO: Inter-module communication
-│   ├── ui/
-│   │   ├── FileManager.js        # 📁 TODO: Import/export operations
-│   │   ├── ElementTree.js        # 🌳 TODO: Left panel DOM tree interface
-│   │   ├── StylePanel.js         # 🎨 TODO: Style library and editor
-│   │   ├── VisualEditor.js       # 🖼️ TODO: Canvas and editing tools
-│   │   ├── ThemeManager.js       # 🌓 TODO: Light/dark mode handling
-│   │   └── Toolbar.js            # 🛠️ TODO: Editor toolbar controls
-│   ├── utils/
-│   │   ├── svgUtils.js           # ⚙️ TODO: SVG manipulation utilities
-│   │   ├── dragDrop.js           # 🖱️ TODO: Drag and drop functionality
-│   │   └── validators.js         # ✅ TODO: Input validation helpers
-│   ├── styles/
-│   │   ├── main.scss             # 🎨 TODO: Main stylesheet entry point
-│   │   ├── components/
-│   │   │   ├── _header.scss      # 📋 TODO: Top panel styles
-│   │   │   ├── _sidebar.scss     # 📋 TODO: Left panel styles
-│   │   │   ├── _canvas.scss      # 📋 TODO: Visual editor styles
-│   │   │   └── _modal.scss       # 📋 TODO: Modal dialog styles
-│   │   ├── base/
-│   │   │   ├── _reset.scss       # 📋 TODO: CSS reset/normalize
-│   │   │   ├── _typography.scss  # 📋 TODO: Font and text styles
-│   │   │   └── _variables.scss   # 📋 TODO: Sass variables and mixins
-│   │   └── themes/
-│   │       ├── _light.scss       # 📋 TODO: Light theme variables
-│   │       └── _dark.scss        # 📋 TODO: Dark theme variables
-│   └── app.js                    # 🚀 TODO: Application entry point
-├── tests/                        
-│   ├── core/                     # 🧪 TODO: Core module tests
-│   ├── ui/                       # 🧪 TODO: UI component tests
-│   └── utils/                    # 🧪 TODO: Utility function tests
-├── docs/
-│   ├── ARCHITECTURE.md           # 📖 TODO: Technical architecture guide
-│   ├── API.md                    # 📖 TODO: API documentation
-│   └── CONTRIBUTING.md           # 📖 TODO: Contribution guidelines
-├── .gitignore                    # ✅ TODO: Git ignore patterns
-├── package.json                  # 📦 TODO: Project dependencies and scripts
-├── vite.config.js                # ⚙️ TODO: Vite configuration
-└── README.md                     # 📖 This file
+│   ├── assets/            # Recursos (SVGs de ejemplo)
+│   ├── components/        # Componentes React
+│   │   ├── ui/           # Componentes de UI (shadcn/ui)
+│   │   ├── AdvancedTools.jsx
+│   │   ├── CodeView.jsx
+│   │   ├── FileLoadDemo.jsx
+│   │   ├── StylePanel.jsx
+│   │   ├── SVGHierarchy.jsx
+│   │   ├── SVGViewer.jsx
+│   │   └── TextInput.jsx
+│   ├── hooks/            # Hooks personalizados
+│   │   └── useSVGParser.js
+│   ├── lib/              # Utilidades
+│   ├── App.jsx           # Componente principal
+│   ├── App.css           # Estilos personalizados
+│   ├── index.css         # Estilos globales
+│   └── main.jsx          # Punto de entrada
+├── components.json        # Configuración shadcn/ui
+├── package.json
+├── vite.config.js
+└── README.md
 ```
 
-## Development Status
+## 🧩 Componentes Principales
 
-This project is currently in early development. All core features are marked as TODO and will be implemented incrementally.
+### `useSVGParser` (Hook)
+Hook personalizado que maneja:
+- Parseo de contenido SVG
+- Extracción de jerarquía de elementos
+- Extracción de estilos CSS
+- Búsqueda y navegación de elementos
 
-### Phase 1: Core Infrastructure
-- [ ] **Project Setup**
-  - [ ] Initialize Vite project with Sass support
-  - [ ] Set up development and build scripts
-  - [ ] Configure linting and formatting tools
-- [ ] **Event System**
-  - [ ] Implement EventBus for module communication
-  - [ ] Define event contracts between modules
-- [ ] **SVG Processing**
-  - [ ] Create SVGParser for document analysis
-  - [ ] Implement SVGLinter with validation rules
-  - [ ] Build VirtualDOM synchronization system
+### `SVGHierarchy`
+Componente que muestra:
+- Estructura jerárquica de elementos SVG
+- Iconos apropiados para cada tipo de elemento
+- Estado de expansión/colapso
+- Selección visual de elementos
 
-### Phase 2: User Interface
-- [ ] **Layout Structure**
-  - [ ] Create responsive three-panel layout
-  - [ ] Implement theme switching functionality
-  - [ ] Add keyboard navigation support
-- [ ] **File Operations**
-  - [ ] Build file import system (file picker, URL, drag-drop)
-  - [ ] Implement SVG export with metadata
-  - [ ] Add clipboard paste functionality
-- [ ] **Element Management**
-  - [ ] Create collapsible DOM tree view
-  - [ ] Implement element selection and highlighting
-  - [ ] Add drag-and-drop reordering
+### `SVGViewer`
+Componente principal de visualización:
+- Renderizado del SVG
+- Herramientas de navegación (zoom, pan)
+- Selección interactiva de elementos
+- Resaltado visual de elementos seleccionados
 
-### Phase 3: Visual Editor
-- [ ] **Canvas Implementation**
-  - [ ] SVG viewport with zoom and pan
-  - [ ] Element selection and transformation
-  - [ ] Visual feedback for hover and selection states
-- [ ] **Editing Tools**
-  - [ ] Selection tool with multi-select support
-  - [ ] Node editing for path manipulation
-  - [ ] Undo/redo system with history management
-- [ ] **Style Management**
-  - [ ] Visual style library interface
-  - [ ] Drag-and-drop style assignment
-  - [ ] Style editor modal with color pickers
+### `StylePanel`
+Panel de gestión de estilos:
+- Lista de clases CSS disponibles
+- Aplicación/remoción de estilos
+- Vista previa de propiedades CSS
 
-### Phase 4: Advanced Features
-- [ ] **Accessibility**
-  - [ ] Screen reader support
-  - [ ] Keyboard-only navigation
-  - [ ] High contrast mode
-- [ ] **Performance**
-  - [ ] Virtual scrolling for large SVGs
-  - [ ] Debounced validation
-  - [ ] Optimized rendering pipeline
-- [ ] **Extensions**
-  - [ ] Plugin system architecture
-  - [ ] Export format options (PNG, PDF)
-  - [ ] SVG optimization tools
+### `CodeView`
+Editor de código SVG:
+- Sintaxis highlighting (básico)
+- Numeración de líneas
+- Edición en tiempo real
+- Validación de SVG
 
-## 🚀 Quick Start
+## 🎨 Tecnologías Utilizadas
 
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
+- **React 18** - Framework principal
+- **Vite** - Bundler y servidor de desarrollo
+- **Tailwind CSS** - Framework de estilos
+- **shadcn/ui** - Componentes de interfaz
+- **Lucide Icons** - Iconografía
+- **JavaScript** - Lenguaje principal
 
-### Installation
+## Uso Básico
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/pictoforge.git
-cd pictoforge
+1. **Cargar un SVG**: 
+   - Usa el botón de carga en el panel superior
+   - Arrastra y suelta un archivo SVG
+   - Usa los ejemplos incluidos
 
-# Install dependencies
-npm install
+2. **Navegar la jerarquía**:
+   - Expande/colapsa grupos en el panel izquierdo
+   - Haz clic en elementos para seleccionarlos
 
-# Start development server
-npm run dev
-```
+3. **Editar estilos**:
+   - Selecciona un elemento
+   - Usa el panel de estilos para aplicar/remover clases CSS
 
-### Available Scripts
+4. **Ver código**:
+   - Usa el botón "Ver código SVG" en la barra de herramientas
+   - Edita el código directamente
 
-```bash
-npm run dev      # 🚧 TODO: Start development server
-npm run build    # 🚧 TODO: Build for production
-npm run preview  # 🚧 TODO: Preview production build
-npm run test     # 🚧 TODO: Run test suite
-npm run lint     # 🚧 TODO: Lint code
-```
+## Funcionalidades Futuras (TODO)
 
-## Contributing
+### Sistema de "Guardado con Puntuación"
+- Implementar sistema de versionado para fine-tuning de modelos
+- Guardar estados intermedios con puntuaciones
+- Historial de cambios con métricas
+- compabilidad con [VCSCI](https://github.com/mediafranca/VCSCI) 
 
-This project is in early development and contributions are welcome! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+### Herramientas de Edición Avanzadas
+- Implementar funcionalidad completa de la herramienta "pluma"
+- Edición de formas y paths
+- Transformaciones (rotar, escalar, mover)
 
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Integración con Modelos de Lenguaje
+- API para conectar con modelos generativos
+- Generación automática de SVG desde texto
+- Sugerencias inteligentes de mejoras
 
-## Documentation
+### Funcionalidades Adicionales
+- Deshacer/rehacer completo
+- Duplicación y eliminación de elementos
+- Exportación en múltiples formatos
+- Plantillas y bibliotecas de elementos
 
-- [Architecture Guide](docs/ARCHITECTURE.md) - Technical architecture and design decisions
-- [API Documentation](docs/API.md) - Module APIs and interfaces
-- [Contributing Guide](docs/CONTRIBUTING.md) - How to contribute to the project
+## 🐛 Problemas Conocidos
 
-## Goals
+- La funcionalidad de deshacer/rehacer está preparada pero no completamente implementada
+- La herramienta de edición "pluma" necesita desarrollo adicional
+- La duplicación y eliminación de elementos requiere implementación completa
 
-- **Accessibility**: Create SVGs that work for everyone
-- **Performance**: Fast, responsive editing experience
-- **Maintainability**: Clean, modular codebase
-- **Standards Compliance**: Valid, semantic SVG output
-- **User Experience**: Intuitive interface for all skill levels
+## 🤝 Contribución
 
-## Roadmap
+Este proyecto está diseñado para ser extensible. Las áreas principales para contribución incluyen:
 
-- **v0.1.0**: Basic SVG import/export with structure view
-- **v0.2.0**: Visual editor with selection and basic editing
-- **v0.3.0**: Style management and drag-and-drop assignment
-- **v1.0.0**: Full feature set with accessibility compliance
+1. **Herramientas de edición**: Implementar funcionalidades de edición visual
+2. **Integración IA**: Conectar con modelos de lenguaje
+3. **Exportación**: Añadir más formatos de exportación
+4. **Performance**: Optimizar para SVGs grandes y complejos
 
-## License
+## 📄 Licencia
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[Especificar licencia aquí]
 
-## Acknowledgments
+## 🙏 Agradecimientos
 
-- [SVG-Edit](https://github.com/SVG-Edit/svgedit) - Inspiration for web-based SVG editing
-- [simple-icons/svglint](https://github.com/simple-icons/svglint) - SVG validation reference
-- [Method Draw](https://editor.method.ac/) - UI/UX inspiration
+Desarrollado con las mejores prácticas de React y diseño moderno de interfaces de usuario.
 
-**Note**: This project is currently in development. Features marked as TODO are planned but not yet implemented. Check the [project board](https://github.com/yourusername/pictoforge/projects) for current development status.
+---
+
+**Nota**: Este proyecto fue desarrollado como una demostración de capacidades de desarrollo web moderno y está preparado para integración con sistemas de inteligencia artificial.
