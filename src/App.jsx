@@ -6,7 +6,7 @@ import TextInput from './components/TextInput';
 import SVGHierarchy from './components/SVGHierarchy';
 import SVGViewer from './components/SVGViewer';
 import StylePanel from './components/StylePanel';
-import AdvancedTools from './components/AdvancedTools';
+
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
 import './App.css';
@@ -243,21 +243,12 @@ function App() {
         </div>
       )}
 
-      {/* Herramientas avanzadas */}
-      <AdvancedTools
-        svgData={svgData}
-        selectedElement={selectedElement}
-        onSave={handleSave}
-        onDuplicate={handleDuplicate}
-        onDelete={handleDelete}
-        onToggleCodeView={handleToggleCodeView}
-        showCodeView={showCodeView}
-      />
+
 
       {/* Layout principal de tres paneles */}
       <div className="flex-1 flex overflow-hidden">
         {/* Panel izquierdo - Jerarquía de elementos */}
-        <div className="w-80 border-r bg-muted/10 flex flex-col">
+        <div className="w-1/2 border-r bg-muted/10 flex flex-col">
           <SVGHierarchy
             svgData={svgData}
             selectedElement={selectedElement}
@@ -277,7 +268,7 @@ function App() {
         </div>
 
         {/* Panel central - Visor SVG o Vista de Código */}
-        <div className="flex-1 flex flex-col">
+        <div className="w-1/2 flex flex-col">
           {showCodeView ? (
             <CodeView
               svgContent={svgContent}

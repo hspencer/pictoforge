@@ -7,7 +7,10 @@ import {
   ZoomOut, 
   RotateCcw, 
   Download,
-  Maximize2 
+  Maximize2,
+  Undo,
+  Redo,
+  Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -22,7 +25,7 @@ export const SVGViewer = ({
 }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
-  const [tool, setTool] = useState('select'); // select, move, edit
+  const [tool, setTool] = useState('select'); // select, node, pen
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -196,29 +199,46 @@ export const SVGViewer = ({
             variant={tool === 'select' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setTool('select')}
-            title="Seleccionar (Flecha negra)"
+            title="Seleccionar y mover entidades (Flecha negra)"
           >
             <MousePointer size={16} />
           </Button>
           <Button
-            variant={tool === 'move' ? 'default' : 'ghost'}
+            variant={tool === 'node' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setTool('move')}
-            title="Mover vista (Flecha blanca)"
+            onClick={() => setTool('node')}
+            title="Mover nodos (Flecha blanca)"
           >
             <Move size={16} />
           </Button>
           <Button
-            variant={tool === 'edit' ? 'default' : 'ghost'}
+            variant={tool === 'pen' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setTool('edit')}
-            title="Editar (Pluma)"
+            onClick={() => setTool('pen')}
+            title="Herramienta pluma - Editar nodos"
           >
             <Edit3 size={16} />
           </Button>
         </div>
 
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}} // TODO: implementar undo
+            title="Deshacer"
+          >
+            <Undo size={16} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}} // TODO: implementar redo
+            title="Rehacer"
+          >
+            <Redo size={16} />
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
           <Button
             variant="ghost"
             size="sm"
@@ -254,6 +274,15 @@ export const SVGViewer = ({
           >
             <Download size={16} />
           </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}} // TODO: implementar guardar
+            title="Guardar proyecto"
+          >
+            <Save size={16} />
+          </Button>
         </div>
       </div>
 
@@ -262,22 +291,35 @@ export const SVGViewer = ({
         ref={containerRef}
         className="flex-1 overflow-hidden relative bg-gradient-to-br from-muted/10 to-muted/30"
         onMouseDown={handleMouseDown}
-        style={{ cursor: tool === 'move' || isDragging ? 'move' : 'default' }}
+        style={{ 
+          cursor: tool === 'node' || isDragging ? 'move' : 
+                  tool === 'pen' ? 'crosshair' : 
+                  'default' 
+        }}
       >
-        <div 
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: 'center'
-          }}
-        >
+        {svgContent ? (
           <div 
-            ref={svgRef}
-            className="svg-container"
-            dangerouslySetInnerHTML={{ __html: svgContent }}
-            onClick={handleElementClick}
-          />
-        </div>
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: 'center'
+            }}
+          >
+            <div 
+              ref={svgRef}
+              className="svg-container"
+              onClick={handleElementClick}
+              dangerouslySetInnerHTML={{ __html: svgContent }}
+            />
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-muted-foreground text-center">
+              <div className="text-lg mb-2">No hay SVG cargado</div>
+              <div className="text-sm">Carga un archivo SVG para comenzar</div>
+            </div>
+          </div>
+        )}
 
         {/* Información de coordenadas */}
         {svgData && (

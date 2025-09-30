@@ -2,8 +2,9 @@
 
 Un editor/visor de SVG avanzado con etiquetado semántico, diseñado para trabajar con modelos de lenguaje generativo.
 
+![PictoForge](./docs/screenshot.png)
 
-## Características Principales
+## 🎯 Características Principales
 
 ### Interfaz de Tres Paneles
 - **Panel Superior**: Entrada de texto con carga de archivos SVG por drag & drop
@@ -150,7 +151,7 @@ Editor de código SVG:
 - **Lucide Icons** - Iconografía
 - **JavaScript** - Lenguaje principal
 
-## Uso Básico
+## 📝 Uso Básico
 
 1. **Cargar un SVG**: 
    - Usa el botón de carga en el panel superior
@@ -169,13 +170,12 @@ Editor de código SVG:
    - Usa el botón "Ver código SVG" en la barra de herramientas
    - Edita el código directamente
 
-## Funcionalidades Futuras (TODO)
+## 🔮 Funcionalidades Futuras (TODO)
 
 ### Sistema de "Guardado con Puntuación"
 - Implementar sistema de versionado para fine-tuning de modelos
 - Guardar estados intermedios con puntuaciones
 - Historial de cambios con métricas
-- compabilidad con [VCSCI](https://github.com/mediafranca/VCSCI) 
 
 ### Herramientas de Edición Avanzadas
 - Implementar funcionalidad completa de la herramienta "pluma"
