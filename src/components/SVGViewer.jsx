@@ -37,16 +37,53 @@ export const SVGViewer = ({
   const handleElementClick = (event) => {
     event.stopPropagation();
     
-    if (tool !== 'select') return;
-
     const target = event.target;
     const elementId = target.id || target.getAttribute('id');
     
-    if (elementId && svgData) {
+    if (tool === 'select' && elementId && svgData) {
       const element = findElementInData(elementId, svgData.root);
       if (element) {
         onElementSelect(element);
       }
+    } else if (tool === 'node') {
+      handleNodeManipulation(event);
+    } else if (tool === 'pen') {
+      handlePenTool(event);
+    }
+  };
+
+  /**
+   * Maneja la manipulación de nodos individuales
+   */
+  const handleNodeManipulation = (event) => {
+    const target = event.target;
+    
+    // Solo funciona en elementos path
+    if (target.tagName === 'path') {
+      const rect = target.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      console.log(`Manipulando nodo en: ${x}, ${y}`);
+      // TODO: Implementar lógica de manipulación de nodos
+      // - Detectar nodo más cercano
+      // - Permitir arrastrar nodos
+      // - Actualizar path data
+    }
+  };
+
+  /**
+   * Maneja la herramienta pluma para edición de nodos
+   */
+  const handlePenTool = (event) => {
+    const target = event.target;
+    
+    if (target.tagName === 'path') {
+      console.log('Herramienta pluma activada en path:', target.id);
+      // TODO: Implementar herramienta pluma
+      // - Agregar/eliminar nodos
+      // - Cambiar tipo de nodo (smooth, corner, bezier)
+      // - Mostrar handles de control
     }
   };
 
@@ -67,18 +104,30 @@ export const SVGViewer = ({
   /**
    * Resalta el elemento seleccionado
    */
-  const highlightElement = (element) => {
+  const highlightElement = (elementId) => {
     // Remover highlight anterior
     const prevHighlighted = svgRef.current?.querySelector('.highlighted');
     if (prevHighlighted) {
       prevHighlighted.classList.remove('highlighted');
     }
 
-    // Agregar highlight al nuevo elemento
-    if (element) {
-      element.classList.add('highlighted');
+    // Agregar highlight al nuevo elemento por ID
+    if (elementId && svgRef.current) {
+      const element = svgRef.current.querySelector(`#${elementId}`);
+      if (element) {
+        element.classList.add('highlighted');
+      }
     }
   };
+
+  /**
+   * Efecto para resaltar elemento cuando cambia la selección
+   */
+  useEffect(() => {
+    if (selectedElement?.id) {
+      highlightElement(selectedElement.id);
+    }
+  }, [selectedElement]);
 
   /**
    * Maneja el zoom del SVG
@@ -127,16 +176,28 @@ export const SVGViewer = ({
   };
 
   /**
-   * Descarga el SVG actual
+   * Genera un nombre único con timestamp
+   */
+  const generateUniqueFilename = (prefix = 'pictogram', extension = 'svg') => {
+    const now = new Date();
+    const timestamp = now.toISOString()
+      .replace(/[:.]/g, '-')
+      .replace('T', '_')
+      .slice(0, -5); // Remover milisegundos y Z
+    return `${prefix}_${timestamp}.${extension}`;
+  };
+
+  /**
+   * Descarga el SVG actual con nombre único
    */
   const downloadSVG = () => {
     if (!svgContent) return;
-
+    
     const blob = new Blob([svgContent], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'pictogram.svg';
+    a.download = generateUniqueFilename('pictoforge');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
