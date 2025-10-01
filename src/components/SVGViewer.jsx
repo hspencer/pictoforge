@@ -12,6 +12,8 @@ import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon } from './Cus
 import BoundingBox from './BoundingBox';
 import NodeEditor from './NodeEditor';
 import useHistory from '../hooks/useHistory';
+import usePerformance from '../hooks/usePerformance';
+import PerformanceMetrics from './PerformanceMetrics';
 import { 
   getElementBBox, 
   moveElement, 
@@ -50,6 +52,21 @@ export const SVGViewer = ({
     canUndo,
     canRedo
   } = useHistory(svgContent);
+
+  // Sistema de rendimiento
+  const {
+    complexity,
+    optimizeSVG,
+    debounce,
+    throttle,
+    metrics
+  } = usePerformance(svgContent, {
+    enableVirtualization: true,
+    maxElements: 1000,
+    debounceMs: 100
+  });
+
+  const [showMetrics, setShowMetrics] = useState(false);
 
   /**
    * Maneja la selección de elementos en el SVG
@@ -361,6 +378,16 @@ export const SVGViewer = ({
           >
             <ShareIcon size={16} />
           </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMetrics(!showMetrics)}
+            title="Mostrar métricas de rendimiento"
+            className={showMetrics ? 'bg-blue-100' : ''}
+          >
+            📊
+          </Button>
         </div>
       </div>
 
@@ -487,20 +514,19 @@ export const SVGViewer = ({
                 />
               </svg>
             </div>
+            
+            {/* Métricas de rendimiento */}
+            <PerformanceMetrics 
+              metrics={metrics}
+              visible={showMetrics}
+            />
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-muted-foreground text-center">
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
               <div className="text-lg mb-2">No hay SVG cargado</div>
               <div className="text-sm">Carga un archivo SVG para comenzar</div>
             </div>
-          </div>
-        )}
-
-        {/* Información de coordenadas */}
-        {svgData && (
-          <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm border rounded px-2 py-1 text-xs text-muted-foreground">
-            {svgData.width} × {svgData.height}
           </div>
         )}
       </div>
