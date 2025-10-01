@@ -272,11 +272,8 @@ export const SVGViewer = ({
     }
 
     // Agregar highlight al nuevo elemento
-    if (selectedElement) {
-      const element = svgRef.current.querySelector(`#${selectedElement.id}`);
-      if (element) {
-        highlightElement(element);
-      }
+    if (selectedElement?.id) {
+      highlightElement(selectedElement.id);
     }
   }, [selectedElement]);
 
@@ -410,15 +407,15 @@ export const SVGViewer = ({
               transformOrigin: 'center'
             }}
           >
-            <div 
+            <div
               ref={svgRef}
               className="svg-container"
               onClick={handleElementClick}
             >
               <div dangerouslySetInnerHTML={{ __html: svgContent }} />
-              
+
               {/* Overlay SVG para herramientas de manipulación */}
-              <svg 
+              <svg
                 className="absolute inset-0 w-full h-full pointer-events-none"
                 style={{ zIndex: 10 }}
               >
@@ -464,18 +461,14 @@ export const SVGViewer = ({
                     
                     moveElement(selectedSVGElement, deltaX, deltaY);
                   }}
-                  onRotate={(angle) => {
+                  onRotate={(angle, centerX, centerY) => {
                     if (!selectedSVGElement) return;
-                    
-                    // Guardar estado antes del cambio
-                    saveToHistory(svgRef.current?.innerHTML);
-                    
-                    const bbox = getElementBBox(selectedSVGElement);
-                    if (!bbox) return;
-                    
-                    const centerX = bbox.x + bbox.width / 2;
-                    const centerY = bbox.y + bbox.height / 2;
-                    
+
+                    // Guardar estado antes del cambio (solo la primera vez)
+                    if (!isDragging) {
+                      saveToHistory(svgRef.current?.innerHTML);
+                    }
+
                     rotateElement(selectedSVGElement, angle, centerX, centerY);
                   }}
                 />

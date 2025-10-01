@@ -28,14 +28,41 @@ export const getElementBBox = (element) => {
 };
 
 /**
+ * Parsea el atributo transform de un elemento SVG y devuelve un objeto con las transformaciones
+ */
+export const parseTransform = (transformString) => {
+  if (!transformString) return {};
+
+  const transforms = {};
+  const regex = /(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^)]+)\)/g;
+  let match;
+
+  while ((match = regex.exec(transformString)) !== null) {
+    const type = match[1];
+    const values = match[2].split(/[\s,]+/).map(parseFloat);
+    transforms[type] = values;
+  }
+
+  return transforms;
+};
+
+/**
+ * Convierte un objeto de transformaciones a string
+ */
+export const serializeTransform = (transforms) => {
+  return Object.entries(transforms)
+    .filter(([_, values]) => values && values.length > 0)
+    .map(([type, values]) => `${type}(${values.join(',')})`)
+    .join(' ');
+};
+
+/**
  * Aplica una transformación a un elemento SVG
  */
 export const applyTransform = (element, transform) => {
   if (!element) return;
-  
-  const currentTransform = element.getAttribute('transform') || '';
-  const newTransform = `${currentTransform} ${transform}`.trim();
-  element.setAttribute('transform', newTransform);
+
+  element.setAttribute('transform', transform);
 };
 
 /**
@@ -43,9 +70,19 @@ export const applyTransform = (element, transform) => {
  */
 export const moveElement = (element, deltaX, deltaY) => {
   if (!element) return;
-  
-  const transform = `translate(${deltaX}, ${deltaY})`;
-  applyTransform(element, transform);
+
+  const currentTransform = element.getAttribute('transform') || '';
+  const transforms = parseTransform(currentTransform);
+
+  // Actualizar o agregar translate
+  if (transforms.translate) {
+    transforms.translate[0] += deltaX;
+    transforms.translate[1] += deltaY;
+  } else {
+    transforms.translate = [deltaX, deltaY];
+  }
+
+  applyTransform(element, serializeTransform(transforms));
 };
 
 /**
@@ -53,9 +90,19 @@ export const moveElement = (element, deltaX, deltaY) => {
  */
 export const scaleElement = (element, scaleX, scaleY, originX = 0, originY = 0) => {
   if (!element) return;
-  
-  const transform = `translate(${originX}, ${originY}) scale(${scaleX}, ${scaleY}) translate(${-originX}, ${-originY})`;
-  applyTransform(element, transform);
+
+  const currentTransform = element.getAttribute('transform') || '';
+  const transforms = parseTransform(currentTransform);
+
+  // Actualizar o agregar scale
+  if (transforms.scale) {
+    transforms.scale[0] *= scaleX;
+    transforms.scale[1] *= scaleY;
+  } else {
+    transforms.scale = [scaleX, scaleY];
+  }
+
+  applyTransform(element, serializeTransform(transforms));
 };
 
 /**
@@ -63,9 +110,25 @@ export const scaleElement = (element, scaleX, scaleY, originX = 0, originY = 0) 
  */
 export const rotateElement = (element, angle, originX = 0, originY = 0) => {
   if (!element) return;
-  
-  const transform = `rotate(${angle}, ${originX}, ${originY})`;
-  applyTransform(element, transform);
+
+  const currentTransform = element.getAttribute('transform') || '';
+  const transforms = parseTransform(currentTransform);
+
+  // Actualizar o agregar rotate
+  if (transforms.rotate) {
+    transforms.rotate[0] += angle;
+    // Mantener el origen de rotación
+    if (transforms.rotate.length === 3) {
+      transforms.rotate[1] = originX;
+      transforms.rotate[2] = originY;
+    } else {
+      transforms.rotate = [transforms.rotate[0], originX, originY];
+    }
+  } else {
+    transforms.rotate = [angle, originX, originY];
+  }
+
+  applyTransform(element, serializeTransform(transforms));
 };
 
 /**

@@ -19,6 +19,23 @@ const translations = {
     styles: 'STYLES',
     selectedElement: 'Selected Element',
     selectElementToApplyStyles: 'Select an element to apply styles',
+    noStylesDefined: 'No styles defined',
+    createNewStyle: 'Create new style',
+    clickToApplyDoubleClickToEdit: 'Click to apply/remove, double click to edit',
+
+    // Style Editor Modal
+    editStyle: 'Edit Style',
+    editStyleDescription: 'Modify the CSS style properties',
+    styleName: 'Style name',
+    styleNamePlaceholder: 'style-name',
+    cssProperties: 'CSS Properties',
+    propertyPlaceholder: 'property',
+    valuePlaceholder: 'value',
+    addProperty: 'Add property',
+    deleteProperty: 'Delete property',
+    deleteStyle: 'Delete style',
+    cancel: 'Cancel',
+    saveChanges: 'Save changes',
     
     // Element types
     svg: 'svg',
@@ -98,6 +115,23 @@ const translations = {
     styles: 'ESTILOS',
     selectedElement: 'Elemento Seleccionado',
     selectElementToApplyStyles: 'Selecciona un elemento para aplicar estilos',
+    noStylesDefined: 'No hay estilos definidos',
+    createNewStyle: 'Crear nuevo estilo',
+    clickToApplyDoubleClickToEdit: 'Click para aplicar/remover, doble click para editar',
+
+    // Style Editor Modal
+    editStyle: 'Editar Estilo',
+    editStyleDescription: 'Modifica las propiedades del estilo CSS',
+    styleName: 'Nombre del estilo',
+    styleNamePlaceholder: 'nombre-estilo',
+    cssProperties: 'Propiedades CSS',
+    propertyPlaceholder: 'propiedad',
+    valuePlaceholder: 'valor',
+    addProperty: 'Agregar propiedad',
+    deleteProperty: 'Eliminar propiedad',
+    deleteStyle: 'Eliminar estilo',
+    cancel: 'Cancelar',
+    saveChanges: 'Guardar cambios',
     
     // Element types
     svg: 'svg',
@@ -177,6 +211,23 @@ const translations = {
     styles: 'NGĀ KĀHUA',
     selectedElement: 'Huānga Kōwhiria',
     selectElementToApplyStyles: 'Kōwhiria he huānga hei whakamahi kāhua',
+    noStylesDefined: 'Kāore ngā kāhua',
+    createNewStyle: 'Waihanga kāhua hou',
+    clickToApplyDoubleClickToEdit: 'Pāwhiri hei whakamahi/tango, pāwhiri-rua hei whakatika',
+
+    // Style Editor Modal
+    editStyle: 'Whakatika Kāhua',
+    editStyleDescription: 'Whakarerekē ngā āhuatanga CSS kāhua',
+    styleName: 'Ingoa kāhua',
+    styleNamePlaceholder: 'ingoa-kāhua',
+    cssProperties: 'Ngā Āhuatanga CSS',
+    propertyPlaceholder: 'āhuatanga',
+    valuePlaceholder: 'uara',
+    addProperty: 'Tāpiri āhuatanga',
+    deleteProperty: 'Mukua āhuatanga',
+    deleteStyle: 'Mukua kāhua',
+    cancel: 'Whakakore',
+    saveChanges: 'Tiaki huringa',
     
     // Element types
     svg: 'svg',

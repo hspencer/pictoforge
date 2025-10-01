@@ -43,6 +43,7 @@
 
 :root {
   --radius: 0.625rem;
+  --col-select: #00b9ff;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -173,44 +174,42 @@
 /* Elementos SVG interactivos */
 .svg-container svg * {
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.svg-container svg *:hover {
-  filter: brightness(1.1);
-  stroke-width: 2;
 }
 
 /* Elemento seleccionado/resaltado */
 .svg-container svg .highlighted {
-  filter: drop-shadow(0 0 8px rgba(0, 185, 255, 0.8)) drop-shadow(0 0 16px rgba(0, 185, 255, 0.4));
-  animation: pulse-selection 2s infinite;
+  filter: drop-shadow(0 0 1px var(--col-select)) drop-shadow(0 0 3px var(--col-select));
+  animation: glow-fade-in 0.3s ease-in forwards;
 }
 
-@keyframes pulse-selection {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(0, 185, 255, 0.8)) drop-shadow(0 0 16px rgba(0, 185, 255, 0.4));
+@keyframes glow-fade-in {
+  0% {
+    filter: drop-shadow(0 0 0px var(--col-select)) drop-shadow(0 0 0px var(--col-select));
+    opacity: 0.5;
   }
-  50% {
-    filter: drop-shadow(0 0 12px rgba(0, 185, 255, 1)) drop-shadow(0 0 24px rgba(0, 185, 255, 0.6));
+  100% {
+    filter: drop-shadow(0 0 1px var(--col-select)) drop-shadow(0 0 2px var(--col-select));
+    opacity: 1;
   }
 }
 
 /* Bounding box para selección con flecha negra */
 .svg-bounding-box {
   fill: none;
-  stroke: #00b9ff;
+  stroke: var(--col-select);
   stroke-width: 1;
   stroke-dasharray: none;
   pointer-events: none;
+  z-index: 10000;
 }
 
 /* Handles del bounding box */
 .svg-resize-handle {
-  fill: #00b9ff;
+  fill: var(--col-select);
   stroke: #ffffff;
   stroke-width: 1;
   cursor: pointer;
+  z-index: 11000;
 }
 
 .svg-resize-handle:hover {
@@ -219,7 +218,7 @@
 
 /* Nodos editables */
 .svg-node {
-  fill: #00b9ff;
+  fill: var(--col-select);
   stroke: #ffffff;
   stroke-width: 2;
   cursor: pointer;
