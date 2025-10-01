@@ -2,9 +2,9 @@
 
 Un editor/visor de SVG avanzado con etiquetado semántico, diseñado para trabajar con modelos de lenguaje generativo.
 
-![PictoForge](./docs/screenshot.png)
+![PictoForge](./examples/pictoforge.png)
 
-## 🎯 Características Principales
+## Características Principales
 
 ### Interfaz de Tres Paneles
 - **Panel Superior**: Entrada de texto con carga de archivos SVG por drag & drop
@@ -39,7 +39,7 @@ Un editor/visor de SVG avanzado con etiquetado semántico, diseñado para trabaj
 - Animaciones suaves y micro-interacciones
 - Manejo de errores y validación de archivos SVG
 
-## 🚀 Instalación y Uso
+## Instalación y Uso
 
 ### Prerrequisitos
 - Node.js 18+ 
@@ -48,7 +48,7 @@ Un editor/visor de SVG avanzado con etiquetado semántico, diseñado para trabaj
 ### Instalación
 ```bash
 # Clonar el repositorio
-git clone <repository-url>
+git clone https://github.com/hspencer/pictoforge.git
 cd pictoforge
 
 # Instalar dependencias
@@ -77,7 +77,7 @@ pnpm run build
 # Los archivos se generarán en la carpeta 'dist/'
 ```
 
-## 🏗️ Arquitectura del Proyecto
+## Arquitectura del Proyecto
 
 ```
 pictoforge/
@@ -142,7 +142,7 @@ Editor de código SVG:
 - Edición en tiempo real
 - Validación de SVG
 
-## 🎨 Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 - **React 18** - Framework principal
 - **Vite** - Bundler y servidor de desarrollo
@@ -151,7 +151,7 @@ Editor de código SVG:
 - **Lucide Icons** - Iconografía
 - **JavaScript** - Lenguaje principal
 
-## 📝 Uso Básico
+## Uso Básico
 
 1. **Cargar un SVG**: 
    - Usa el botón de carga en el panel superior
@@ -170,7 +170,7 @@ Editor de código SVG:
    - Usa el botón "Ver código SVG" en la barra de herramientas
    - Edita el código directamente
 
-## 🔮 Funcionalidades Futuras (TODO)
+## Funcionalidades Futuras (TODO)
 
 ### Sistema de "Guardado con Puntuación"
 - Implementar sistema de versionado para fine-tuning de modelos
@@ -193,13 +193,13 @@ Editor de código SVG:
 - Exportación en múltiples formatos
 - Plantillas y bibliotecas de elementos
 
-## 🐛 Problemas Conocidos
+## Problemas Conocidos
 
 - La funcionalidad de deshacer/rehacer está preparada pero no completamente implementada
 - La herramienta de edición "pluma" necesita desarrollo adicional
 - La duplicación y eliminación de elementos requiere implementación completa
 
-## 🤝 Contribución
+## Contribución
 
 Este proyecto está diseñado para ser extensible. Las áreas principales para contribución incluyen:
 
@@ -207,15 +207,3 @@ Este proyecto está diseñado para ser extensible. Las áreas principales para c
 2. **Integración IA**: Conectar con modelos de lenguaje
 3. **Exportación**: Añadir más formatos de exportación
 4. **Performance**: Optimizar para SVGs grandes y complejos
-
-## 📄 Licencia
-
-[Especificar licencia aquí]
-
-## 🙏 Agradecimientos
-
-Desarrollado con las mejores prácticas de React y diseño moderno de interfaces de usuario.
-
----
-
-**Nota**: Este proyecto fue desarrollado como una demostración de capacidades de desarrollo web moderno y está preparado para integración con sistemas de inteligencia artificial.
