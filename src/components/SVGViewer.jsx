@@ -1,18 +1,16 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
-  MousePointer, 
-  Move, 
-  Edit3, 
   ZoomIn, 
   ZoomOut, 
   RotateCcw, 
-  Download,
   Maximize2,
   Undo,
-  Redo,
-  Save
+  Redo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon } from './CustomIcons';
+import BoundingBox from './BoundingBox';
+import NodeEditor from './NodeEditor';
 
 /**
  * Componente para visualizar y editar SVG
@@ -30,6 +28,10 @@ export const SVGViewer = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [selectedSVGElement, setSelectedSVGElement] = useState(null);
+  const [showBoundingBox, setShowBoundingBox] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   /**
    * Maneja la selección de elementos en el SVG
@@ -44,11 +46,15 @@ export const SVGViewer = ({
       const element = findElementInData(elementId, svgData.root);
       if (element) {
         onElementSelect(element);
+        setSelectedSVGElement(target);
+        setShowBoundingBox(true);
       }
     } else if (tool === 'node') {
-      handleNodeManipulation(event);
+      setSelectedSVGElement(target);
+      setShowBoundingBox(false);
     } else if (tool === 'pen') {
-      handlePenTool(event);
+      setSelectedSVGElement(target);
+      setShowBoundingBox(false);
     }
   };
 
@@ -262,7 +268,7 @@ export const SVGViewer = ({
             onClick={() => setTool('select')}
             title="Seleccionar y mover entidades (Flecha negra)"
           >
-            <MousePointer size={16} />
+            <SelectArrowIcon size={16} />
           </Button>
           <Button
             variant={tool === 'node' ? 'default' : 'ghost'}
@@ -270,7 +276,7 @@ export const SVGViewer = ({
             onClick={() => setTool('node')}
             title="Mover nodos (Flecha blanca)"
           >
-            <Move size={16} />
+            <MousePointerIcon size={16} />
           </Button>
           <Button
             variant={tool === 'pen' ? 'default' : 'ghost'}
@@ -278,7 +284,7 @@ export const SVGViewer = ({
             onClick={() => setTool('pen')}
             title="Herramienta pluma - Editar nodos"
           >
-            <Edit3 size={16} />
+            <PenToolIcon size={16} />
           </Button>
         </div>
 
@@ -331,18 +337,9 @@ export const SVGViewer = ({
             variant="ghost"
             size="sm"
             onClick={downloadSVG}
-            title="Descargar SVG"
+            title="Exportar SVG"
           >
-            <Download size={16} />
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {}} // TODO: implementar guardar
-            title="Guardar proyecto"
-          >
-            <Save size={16} />
+            <ShareIcon size={16} />
           </Button>
         </div>
       </div>
@@ -370,8 +367,50 @@ export const SVGViewer = ({
               ref={svgRef}
               className="svg-container"
               onClick={handleElementClick}
-              dangerouslySetInnerHTML={{ __html: svgContent }}
-            />
+            >
+              <div dangerouslySetInnerHTML={{ __html: svgContent }} />
+              
+              {/* Overlay SVG para herramientas de manipulación */}
+              <svg 
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                style={{ zIndex: 10 }}
+              >
+                <BoundingBox
+                  element={selectedSVGElement}
+                  visible={showBoundingBox && tool === 'select'}
+                  onResize={(handleId, deltaX, deltaY) => {
+                    // TODO: Implementar redimensionamiento
+                    console.log('Resize:', handleId, deltaX, deltaY);
+                  }}
+                  onMove={(deltaX, deltaY) => {
+                    // TODO: Implementar movimiento
+                    console.log('Move:', deltaX, deltaY);
+                  }}
+                  onRotate={(angle) => {
+                    // TODO: Implementar rotación
+                    console.log('Rotate:', angle);
+                  }}
+                />
+                
+                <NodeEditor
+                  element={selectedSVGElement}
+                  tool={tool}
+                  visible={(tool === 'node' || tool === 'pen') && selectedSVGElement}
+                  onNodeChange={(oldNode, newNode) => {
+                    // TODO: Implementar cambio de nodo
+                    console.log('Node change:', oldNode, newNode);
+                  }}
+                  onNodeAdd={(position) => {
+                    // TODO: Implementar agregar nodo
+                    console.log('Add node:', position);
+                  }}
+                  onNodeRemove={(node) => {
+                    // TODO: Implementar eliminar nodo
+                    console.log('Remove node:', node);
+                  }}
+                />
+              </svg>
+            </div>
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">

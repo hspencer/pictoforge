@@ -142,8 +142,8 @@
   width: 100%;
   height: 100%;
   min-height: 300px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: #e2e2e2;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 20px;
@@ -183,19 +183,54 @@
 
 /* Elemento seleccionado/resaltado */
 .svg-container svg .highlighted {
-  filter: drop-shadow(0 0 12px rgba(34, 197, 218, 0.8)) drop-shadow(0 0 6px rgba(34, 197, 218, 0.6));
-  stroke: #22c5da !important;
-  stroke-width: 2 !important;
+  filter: drop-shadow(0 0 8px rgba(0, 185, 255, 0.8)) drop-shadow(0 0 16px rgba(0, 185, 255, 0.4));
   animation: pulse-selection 2s infinite;
 }
 
 @keyframes pulse-selection {
   0%, 100% {
-    filter: drop-shadow(0 0 12px rgba(34, 197, 218, 0.8)) drop-shadow(0 0 6px rgba(34, 197, 218, 0.6));
+    filter: drop-shadow(0 0 8px rgba(0, 185, 255, 0.8)) drop-shadow(0 0 16px rgba(0, 185, 255, 0.4));
   }
   50% {
-    filter: drop-shadow(0 0 16px rgba(34, 197, 218, 1)) drop-shadow(0 0 8px rgba(34, 197, 218, 0.8));
+    filter: drop-shadow(0 0 12px rgba(0, 185, 255, 1)) drop-shadow(0 0 24px rgba(0, 185, 255, 0.6));
   }
+}
+
+/* Bounding box para selección con flecha negra */
+.svg-bounding-box {
+  fill: none;
+  stroke: #00b9ff;
+  stroke-width: 1;
+  stroke-dasharray: none;
+  pointer-events: none;
+}
+
+/* Handles del bounding box */
+.svg-resize-handle {
+  fill: #00b9ff;
+  stroke: #ffffff;
+  stroke-width: 1;
+  cursor: pointer;
+}
+
+.svg-resize-handle:hover {
+  fill: #0099dd;
+}
+
+/* Nodos editables */
+.svg-node {
+  fill: #00b9ff;
+  stroke: #ffffff;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.svg-node:hover {
+  fill: #0099dd;
+}
+
+.svg-node.selected {
+  fill: #ff6b35;
 }
 
 /* Tema oscuro para el contenedor SVG */
