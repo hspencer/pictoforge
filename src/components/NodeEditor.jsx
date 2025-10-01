@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { parsePathNodes } from '../utils/svgManipulation';
 
 /**
  * Componente NodeEditor para la manipulación de nodos SVG
@@ -16,79 +17,11 @@ export const NodeEditor = ({
 
   if (!visible || !element || tool !== 'node' && tool !== 'pen') return null;
 
-  // Extraer nodos del path
-  const getNodesFromPath = (pathData) => {
-    if (!pathData) return [];
-    
-    const nodes = [];
-    const commands = pathData.match(/[MmLlHhVvCcSsQqTtAaZz][^MmLlHhVvCcSsQqTtAaZz]*/g) || [];
-    
-    let currentX = 0, currentY = 0;
-    
-    commands.forEach((command, index) => {
-      const type = command[0];
-      const coords = command.slice(1).trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
-      
-      switch (type.toLowerCase()) {
-        case 'm': // moveto
-        case 'l': // lineto
-          if (coords.length >= 2) {
-            currentX = type === type.toLowerCase() ? currentX + coords[0] : coords[0];
-            currentY = type === type.toLowerCase() ? currentY + coords[1] : coords[1];
-            nodes.push({
-              id: `node-${index}`,
-              x: currentX,
-              y: currentY,
-              type: type.toLowerCase() === 'm' ? 'move' : 'line',
-              command: type,
-              coords: coords
-            });
-          }
-          break;
-        case 'c': // curveto
-          if (coords.length >= 6) {
-            const endX = type === type.toLowerCase() ? currentX + coords[4] : coords[4];
-            const endY = type === type.toLowerCase() ? currentY + coords[5] : coords[5];
-            nodes.push({
-              id: `node-${index}`,
-              x: endX,
-              y: endY,
-              type: 'curve',
-              command: type,
-              coords: coords,
-              cp1: { x: currentX + coords[0], y: currentY + coords[1] },
-              cp2: { x: currentX + coords[2], y: currentY + coords[3] }
-            });
-            currentX = endX;
-            currentY = endY;
-          }
-          break;
-        case 'q': // quadratic curveto
-          if (coords.length >= 4) {
-            const endX = type === type.toLowerCase() ? currentX + coords[2] : coords[2];
-            const endY = type === type.toLowerCase() ? currentY + coords[3] : coords[3];
-            nodes.push({
-              id: `node-${index}`,
-              x: endX,
-              y: endY,
-              type: 'quadratic',
-              command: type,
-              coords: coords,
-              cp: { x: currentX + coords[0], y: currentY + coords[1] }
-            });
-            currentX = endX;
-            currentY = endY;
-          }
-          break;
-      }
-    });
-    
-    return nodes;
-  };
+  // Usar la utilidad importada para extraer nodos
 
   // Obtener nodos del elemento
   const nodes = element.tagName === 'path' ? 
-    getNodesFromPath(element.getAttribute('d')) : [];
+    parsePathNodes(element.getAttribute('d')) : [];
 
   const handleNodeClick = (e, node) => {
     e.stopPropagation();

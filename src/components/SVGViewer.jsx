@@ -11,6 +11,16 @@ import { Button } from '@/components/ui/button';
 import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon } from './CustomIcons';
 import BoundingBox from './BoundingBox';
 import NodeEditor from './NodeEditor';
+import useHistory from '../hooks/useHistory';
+import { 
+  getElementBBox, 
+  moveElement, 
+  scaleElement, 
+  rotateElement,
+  updateNodeInPath,
+  addNodeToPath,
+  removeNodeFromPath
+} from '../utils/svgManipulation';
 
 /**
  * Componente para visualizar y editar SVG
@@ -30,8 +40,16 @@ export const SVGViewer = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
   const [showBoundingBox, setShowBoundingBox] = useState(false);
-  const [history, setHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  
+  // Sistema de historial
+  const {
+    currentState: svgHistory,
+    pushState: saveToHistory,
+    undo: undoChange,
+    redo: redoChange,
+    canUndo,
+    canRedo
+  } = useHistory(svgContent);
 
   /**
    * Maneja la selección de elementos en el SVG
@@ -292,7 +310,8 @@ export const SVGViewer = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {}} // TODO: implementar undo
+            onClick={undoChange}
+            disabled={!canUndo}
             title="Deshacer"
           >
             <Undo size={16} />
@@ -300,7 +319,8 @@ export const SVGViewer = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {}} // TODO: implementar redo
+            onClick={redoChange}
+            disabled={!canRedo}
             title="Rehacer"
           >
             <Redo size={16} />
@@ -379,16 +399,57 @@ export const SVGViewer = ({
                   element={selectedSVGElement}
                   visible={showBoundingBox && tool === 'select'}
                   onResize={(handleId, deltaX, deltaY) => {
-                    // TODO: Implementar redimensionamiento
-                    console.log('Resize:', handleId, deltaX, deltaY);
+                    if (!selectedSVGElement) return;
+                    
+                    // Guardar estado antes del cambio
+                    saveToHistory(svgRef.current?.innerHTML);
+                    
+                    const bbox = getElementBBox(selectedSVGElement);
+                    if (!bbox) return;
+                    
+                    // Calcular nueva escala basada en el handle
+                    let scaleX = 1, scaleY = 1;
+                    
+                    switch (handleId) {
+                      case 'se': // esquina inferior derecha
+                        scaleX = (bbox.width + deltaX) / bbox.width;
+                        scaleY = (bbox.height + deltaY) / bbox.height;
+                        break;
+                      case 'e': // lado derecho
+                        scaleX = (bbox.width + deltaX) / bbox.width;
+                        break;
+                      case 's': // lado inferior
+                        scaleY = (bbox.height + deltaY) / bbox.height;
+                        break;
+                      case 'nw': // esquina superior izquierda
+                        scaleX = (bbox.width - deltaX) / bbox.width;
+                        scaleY = (bbox.height - deltaY) / bbox.height;
+                        break;
+                    }
+                    
+                    scaleElement(selectedSVGElement, scaleX, scaleY, bbox.x, bbox.y);
                   }}
                   onMove={(deltaX, deltaY) => {
-                    // TODO: Implementar movimiento
-                    console.log('Move:', deltaX, deltaY);
+                    if (!selectedSVGElement) return;
+                    
+                    // Guardar estado antes del cambio
+                    saveToHistory(svgRef.current?.innerHTML);
+                    
+                    moveElement(selectedSVGElement, deltaX, deltaY);
                   }}
                   onRotate={(angle) => {
-                    // TODO: Implementar rotación
-                    console.log('Rotate:', angle);
+                    if (!selectedSVGElement) return;
+                    
+                    // Guardar estado antes del cambio
+                    saveToHistory(svgRef.current?.innerHTML);
+                    
+                    const bbox = getElementBBox(selectedSVGElement);
+                    if (!bbox) return;
+                    
+                    const centerX = bbox.x + bbox.width / 2;
+                    const centerY = bbox.y + bbox.height / 2;
+                    
+                    rotateElement(selectedSVGElement, angle, centerX, centerY);
                   }}
                 />
                 
@@ -397,16 +458,31 @@ export const SVGViewer = ({
                   tool={tool}
                   visible={(tool === 'node' || tool === 'pen') && selectedSVGElement}
                   onNodeChange={(oldNode, newNode) => {
-                    // TODO: Implementar cambio de nodo
-                    console.log('Node change:', oldNode, newNode);
+                    if (!selectedSVGElement) return;
+                    
+                    // Guardar estado antes del cambio
+                    saveToHistory(svgRef.current?.innerHTML);
+                    
+                    // Actualizar el nodo en el path
+                    updateNodeInPath(selectedSVGElement, oldNode.index, newNode);
                   }}
                   onNodeAdd={(position) => {
-                    // TODO: Implementar agregar nodo
-                    console.log('Add node:', position);
+                    if (!selectedSVGElement) return;
+                    
+                    // Guardar estado antes del cambio
+                    saveToHistory(svgRef.current?.innerHTML);
+                    
+                    // Agregar nuevo nodo al path
+                    addNodeToPath(selectedSVGElement, position);
                   }}
                   onNodeRemove={(node) => {
-                    // TODO: Implementar eliminar nodo
-                    console.log('Remove node:', node);
+                    if (!selectedSVGElement) return;
+                    
+                    // Guardar estado antes del cambio
+                    saveToHistory(svgRef.current?.innerHTML);
+                    
+                    // Eliminar nodo del path
+                    removeNodeFromPath(selectedSVGElement, node.index);
                   }}
                 />
               </svg>
