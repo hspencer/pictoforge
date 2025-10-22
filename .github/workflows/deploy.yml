@@ -1,47 +1,48 @@
 name: Deploy to GitHub Pages
 
-# Se ejecuta en cada push a la rama 'main'
 on:
   push:
     branches:
       - main
-  
-  # Permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. Obtiene el código de la rama 'main'
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configura Node.js (v18+ según el README)
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # 3. Instala pnpm (detectado por 'pnpm-lock.yaml')
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 8
 
-      # 4. Instala dependencias
       - name: Install dependencies
         run: pnpm install
 
-      # 5. Construye el proyecto (usando la config de Vite del Paso 2)
       - name: Build project
         run: pnpm run build
 
-      # 6. Despliega la carpeta 'dist' en la rama 'gh-pages'
+      # --- ESTE ES EL PASO CRUCIAL DE DIAGNÓSTICO ---
+      - name: List build output
+        run: |
+          echo "Listando archivos en la raíz del proyecto:"
+          ls -l
+          echo "---"
+          echo "Listando archivos en ./dist (si existe):"
+          ls -l ./dist
+
+      # --- PASO DE DESPLIEGUE ---
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          publish_branch: gh-pages # El nombre de la rama que especificaste
-          cname: pictoforge.mediafranca.net # Añade el CNAME automáticamente
+          publish_branch: gh-pages
+          cname: pictoforge.mediafranca.net
