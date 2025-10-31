@@ -49,8 +49,9 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Ruta al directorio de salida de la compilación
-          path:./dist # Ajustar 'dist' a 'build' o el directorio correcto
+          # Ruta al directorio de salida de la compilación.
+          # Asegúrate de que coincida con la carpeta que genera tu proceso de 'build' (p. ej., 'build', 'out').
+          path: './dist'
 
   # Segundo trabajo: desplegar el artefacto compilado
   deploy:
