@@ -1,48 +1,74 @@
-name: Deploy to GitHub Pages
+# Nombre del flujo de trabajo para la interfaz de GitHub
+name: Deploy Pictoforge to GitHub Pages
 
+# Configuración de los disparadores del flujo de trabajo
 on:
+  # Se ejecuta en cada push a la rama 'main'
   push:
     branches:
       - main
+  # Permite la ejecución manual desde la pestaña Actions
   workflow_dispatch:
 
+# Configuración de la concurrencia para evitar despliegues conflictivos
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+# Definición de los permisos para el GITHUB_TOKEN
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Definición de los trabajos (jobs) que componen el flujo de trabajo
 jobs:
-  build-and-deploy:
+  # Primer trabajo: compilar la aplicación
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
+          node-version: '20' # Especificar la versión de Node.js requerida por el proyecto
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: npm ci
 
-      - name: Build project
-        run: pnpm run build
+      - name: Build application
+        run: npm run build # Asume que el script de compilación se llama 'build'
+        env:
+          # Si es necesario, configurar la ruta base para el build
+          # Para un dominio personalizado raíz, la base es '/'
+          VITE_BASE_URL: / # Ejemplo para Vite, ajustar según el framework
 
-      # --- ESTE ES EL PASO CRUCIAL DE DIAGNÓSTICO ---
-      - name: List build output
-        run: |
-          echo "Listando archivos en la raíz del proyecto:"
-          ls -l
-          echo "---"
-          echo "Listando archivos en ./dist (si existe):"
-          ls -l ./dist
-
-      # --- PASO DE DESPLIEGUE ---
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
-          cname: pictoforge.mediafranca.net
+          # Ruta al directorio de salida de la compilación
+          path:./dist # Ajustar 'dist' a 'build' o el directorio correcto
+
+  # Segundo trabajo: desplegar el artefacto compilado
+  deploy:
+    # El trabajo de despliegue depende del éxito del trabajo de compilación
+    needs: build
+    
+    # Permisos específicos para el trabajo de despliegue
+    permissions:
+      pages: write
+      id-token: write
+      
+    # Configuración del entorno de despliegue de GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
