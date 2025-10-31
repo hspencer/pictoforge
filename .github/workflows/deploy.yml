@@ -37,7 +37,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        # Se usa --force para ignorar los errores de ERESOLVE (conflictos de peer dependency)
+        # que se muestran en el log (ej. react-day-picker y date-fns).
+        run: npm ci --force
 
       - name: Build application
         run: npm run build # Asume que el script de compilación se llama 'build'
