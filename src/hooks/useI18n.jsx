@@ -86,7 +86,7 @@ const translations = {
     elementsCount: 'elements',
     
     // Footer
-    version: 'PictoForge v1.0 - Semantic SVG Editor',
+    version: 'PictoForge v0.1 - Semantic SVG Editor',
     
     // Messages
     noSVGLoaded: 'No SVG loaded',
@@ -182,7 +182,7 @@ const translations = {
     elementsCount: 'elementos',
     
     // Footer
-    version: 'PictoForge v1.0 - Editor SVG Semántico',
+    version: 'PictoForge v0.1 - Editor SVG Semántico',
     
     // Messages
     noSVGLoaded: 'No hay SVG cargado',
@@ -278,7 +278,7 @@ const translations = {
     elementsCount: 'ngā huānga',
     
     // Footer
-    version: 'PictoForge v1.0 - Ētita SVG Tikanga',
+    version: 'PictoForge v0.1 - Ētita SVG Tikanga',
     
     // Messages
     noSVGLoaded: 'Kāore he SVG i utaina',
