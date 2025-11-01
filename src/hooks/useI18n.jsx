@@ -8,7 +8,7 @@ const translations = {
     appSubtitle: 'Semantic SVG Editor',
     
     // Text Input
-    textInputPlaceholder: 'Enter description or command...',
+    textInputPlaceholder: 'Make the bed',
     loadSVGFile: 'Load SVG file',
     exportText: 'Export text',
     dragDropText: 'Supports .svg files | Drag & drop enabled',
@@ -104,7 +104,7 @@ const translations = {
     appSubtitle: 'Editor SVG Semántico',
     
     // Text Input
-    textInputPlaceholder: 'Ingresa descripción o comando...',
+    textInputPlaceholder: 'Has la cama',
     loadSVGFile: 'Cargar archivo SVG',
     exportText: 'Exportar texto',
     dragDropText: 'Soporta archivos .svg | Drag & drop habilitado',
@@ -200,7 +200,7 @@ const translations = {
     appSubtitle: 'Ētita SVG Tikanga',
     
     // Text Input
-    textInputPlaceholder: 'Whakauru whakaahua, whakahau rānei...',
+    textInputPlaceholder: 'Hangaia te moenga',
     loadSVGFile: 'Uta kōnae SVG',
     exportText: 'Kaweake kupu',
     dragDropText: 'Ka tautoko i ngā kōnae .svg | Tō & taka whakahohea',
