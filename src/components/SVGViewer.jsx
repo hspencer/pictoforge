@@ -35,6 +35,7 @@ export const SVGViewer = ({
 }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
+  const overlayRef = useRef(null);
   const [tool, setTool] = useState('select'); // select, node, pen
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -42,6 +43,7 @@ export const SVGViewer = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
   const [showBoundingBox, setShowBoundingBox] = useState(false);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
   
   // Sistema de historial
   const {
@@ -69,27 +71,59 @@ export const SVGViewer = ({
   const [showMetrics, setShowMetrics] = useState(false);
 
   /**
+   * Actualiza las dimensiones del contenedor para el overlay
+   */
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerDimensions({
+          width: rect.width,
+          height: rect.height
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
+  /**
    * Maneja la selección de elementos en el SVG
    */
   const handleElementClick = (event) => {
     event.stopPropagation();
-    
+
     const target = event.target;
     const elementId = target.id || target.getAttribute('id');
-    
-    if (tool === 'select' && elementId && svgData) {
-      const element = findElementInData(elementId, svgData.root);
-      if (element) {
-        onElementSelect(element);
-        setSelectedSVGElement(target);
-        setShowBoundingBox(true);
+
+    if (tool === 'select') {
+      // FLECHA NEGRA: Seleccionar elemento completo para mover/escalar/rotar
+      if (elementId && svgData) {
+        const element = findElementInData(elementId, svgData.root);
+        if (element) {
+          onElementSelect(element);
+          setSelectedSVGElement(target);
+          setShowBoundingBox(true); // Mostrar bounding box con handles
+        }
       }
     } else if (tool === 'node') {
-      setSelectedSVGElement(target);
-      setShowBoundingBox(false);
+      // FLECHA BLANCA: Seleccionar path para editar nodos
+      if (target.tagName === 'path') {
+        const element = findElementInData(elementId, svgData.root);
+        if (element) {
+          onElementSelect(element);
+          setSelectedSVGElement(target);
+          setShowBoundingBox(false); // NO mostrar bounding box, solo nodos
+        }
+      }
     } else if (tool === 'pen') {
-      setSelectedSVGElement(target);
-      setShowBoundingBox(false);
+      // HERRAMIENTA PLUMA: Similar a node pero para agregar/eliminar
+      if (target.tagName === 'path') {
+        setSelectedSVGElement(target);
+        setShowBoundingBox(false);
+      }
     }
   };
 
@@ -389,39 +423,47 @@ export const SVGViewer = ({
       </div>
 
       {/* Área de visualización */}
-      <div 
+      <div
         ref={containerRef}
         className="flex-1 overflow-hidden relative bg-gradient-to-br from-muted/10 to-muted/30"
         onMouseDown={handleMouseDown}
-        style={{ 
-          cursor: tool === 'node' || isDragging ? 'move' : 
-                  tool === 'pen' ? 'crosshair' : 
-                  'default' 
+        style={{
+          cursor: tool === 'node' || isDragging ? 'move' :
+                  tool === 'pen' ? 'crosshair' :
+                  'default'
         }}
       >
         {svgContent ? (
-          <div 
-            className="absolute inset-0 flex items-center justify-center"
-            style={{
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-              transformOrigin: 'center'
-            }}
-          >
+          <>
+            {/* SVG Content - Con zoom y pan aplicados */}
             <div
-              ref={svgRef}
-              className="svg-container"
-              onClick={handleElementClick}
+              className="absolute inset-0 flex items-center justify-center"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'center'
+              }}
             >
-              <div dangerouslySetInnerHTML={{ __html: svgContent }} />
-
-              {/* Overlay SVG para herramientas de manipulación */}
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                style={{ zIndex: 10 }}
+              <div
+                ref={svgRef}
+                className="svg-container"
+                onClick={handleElementClick}
               >
-                <BoundingBox
+                <div dangerouslySetInnerHTML={{ __html: svgContent }} />
+              </div>
+            </div>
+
+            {/* Overlay SVG para herramientas - SIN zoom ni pan, en coordenadas de pantalla */}
+            <svg
+              ref={overlayRef}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox={`0 0 ${containerDimensions.width} ${containerDimensions.height}`}
+              style={{ zIndex: 10 }}
+            >
+              <BoundingBox
                   element={selectedSVGElement}
                   visible={showBoundingBox && tool === 'select'}
+                  viewport={{ zoom, pan }}
+                  containerRef={containerRef}
                   onResize={(handleId, deltaX, deltaY) => {
                     if (!selectedSVGElement) return;
                     
@@ -455,10 +497,6 @@ export const SVGViewer = ({
                   }}
                   onMove={(deltaX, deltaY) => {
                     if (!selectedSVGElement) return;
-                    
-                    // Guardar estado antes del cambio
-                    saveToHistory(svgRef.current?.innerHTML);
-                    
                     moveElement(selectedSVGElement, deltaX, deltaY);
                   }}
                   onRotate={(angle, centerX, centerY) => {
@@ -477,6 +515,8 @@ export const SVGViewer = ({
                   element={selectedSVGElement}
                   tool={tool}
                   visible={(tool === 'node' || tool === 'pen') && selectedSVGElement}
+                  viewport={{ zoom, pan }}
+                  containerRef={containerRef}
                   onNodeChange={(oldNode, newNode) => {
                     if (!selectedSVGElement) return;
                     
@@ -506,14 +546,13 @@ export const SVGViewer = ({
                   }}
                 />
               </svg>
-            </div>
-            
+
             {/* Métricas de rendimiento */}
-            <PerformanceMetrics 
+            <PerformanceMetrics
               metrics={metrics}
               visible={showMetrics}
             />
-          </div>
+          </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center">

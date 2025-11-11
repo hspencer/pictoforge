@@ -1,4 +1,5 @@
 import React from 'react';
+import { screenToSVGCoordinates, svgToScreenCoordinates, screenDeltaToSVGDelta } from '@/utils/coordinateTransform';
 
 /**
  * Obtiene el bounding box de un elemento SVG en coordenadas del SVG
@@ -98,19 +99,30 @@ export const BoundingBox = ({
   onResize,
   onMove,
   onRotate,
-  visible = true
+  visible = true,
+  viewport = { zoom: 1, pan: { x: 0, y: 0 } }, // Agregar viewport como prop
+  containerRef // Referencia al contenedor para calcular coordenadas relativas
 }) => {
   if (!visible || !element) return null;
 
   // Obtener las dimensiones del elemento con transformaciones aplicadas (en espacio SVG)
   const bbox = getTransformedBBox(element);
+  const svg = element.ownerSVGElement;
 
-  // Convertir las coordenadas SVG a coordenadas de pantalla para el overlay
-  const topLeft = svgToScreenCoords(element, bbox.x, bbox.y);
-  const bottomRight = svgToScreenCoords(element, bbox.x + bbox.width, bbox.y + bbox.height);
+  // Convertir las coordenadas SVG a coordenadas de pantalla considerando viewport (zoom y pan)
+  const topLeft = svgToScreenCoordinates(bbox.x, bbox.y, svg, viewport);
+  const bottomRight = svgToScreenCoordinates(bbox.x + bbox.width, bbox.y + bbox.height, svg, viewport);
 
-  const x = topLeft.x;
-  const y = topLeft.y;
+  // Ajustar coordenadas relativas al contenedor si está disponible
+  let x = topLeft.x;
+  let y = topLeft.y;
+
+  if (containerRef?.current) {
+    const containerRect = containerRef.current.getBoundingClientRect();
+    x = topLeft.x - containerRect.left;
+    y = topLeft.y - containerRect.top;
+  }
+
   const width = bottomRight.x - topLeft.x;
   const height = bottomRight.y - topLeft.y;
   
@@ -151,17 +163,55 @@ export const BoundingBox = ({
   const handleMouseDown = (e, handleId) => {
     e.stopPropagation();
 
-    // Convertir coordenadas iniciales a espacio SVG
-    const startSVG = screenToSVGCoords(e.clientX, e.clientY);
+    // Guardar posición inicial en pantalla
+    const startScreenX = e.clientX;
+    const startScreenY = e.clientY;
 
     const handleMouseMove = (e) => {
-      // Convertir coordenadas actuales a espacio SVG
-      const currentSVG = screenToSVGCoords(e.clientX, e.clientY);
+      // Calcular delta en pantalla
+      const deltaScreenX = e.clientX - startScreenX;
+      const deltaScreenY = e.clientY - startScreenY;
 
-      const deltaX = currentSVG.x - startSVG.x;
-      const deltaY = currentSVG.y - startSVG.y;
+      // Convertir delta a coordenadas SVG usando el viewport
+      const svg = element.ownerSVGElement;
+      const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY, svg, viewport);
 
-      onResize?.(handleId, deltaX, deltaY);
+      onResize?.(handleId, dx, dy);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Handler para arrastrar todo el elemento
+  const handleElementDrag = (e) => {
+    e.stopPropagation();
+
+    const startScreenX = e.clientX;
+    const startScreenY = e.clientY;
+    let lastDx = 0;
+    let lastDy = 0;
+
+    const handleMouseMove = (e) => {
+      const deltaScreenX = e.clientX - startScreenX;
+      const deltaScreenY = e.clientY - startScreenY;
+
+      const svg = element.ownerSVGElement;
+      const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY, svg, viewport);
+
+      // Solo enviar el delta incremental desde la última posición
+      const incrementalDx = dx - lastDx;
+      const incrementalDy = dy - lastDy;
+
+      onMove?.(incrementalDx, incrementalDy);
+
+      lastDx = dx;
+      lastDy = dy;
     };
 
     const handleMouseUp = () => {
@@ -175,15 +225,18 @@ export const BoundingBox = ({
 
   return (
     <g className="bounding-box" pointerEvents="none">
-      {/* Rectángulo del bounding box */}
+      {/* Rectángulo del bounding box - DRAGGABLE para mover el elemento */}
       <rect
         x={x}
         y={y}
         width={width}
         height={height}
         className="svg-bounding-box"
+        style={{ cursor: 'move' }}
+        pointerEvents="all"
+        onMouseDown={handleElementDrag}
       />
-      
+
       {/* Handles de redimensionamiento */}
       {handles.map(handle => (
         <rect
@@ -212,13 +265,17 @@ export const BoundingBox = ({
 
           const centerX = x + width / 2;
           const centerY = y + height / 2;
-          const startSVG = screenToSVGCoords(e.clientX, e.clientY);
+
+          // Convertir posición inicial a coordenadas SVG
+          const svg = element.ownerSVGElement;
+          const startSVG = screenToSVGCoordinates(e.clientX, e.clientY, svg, viewport);
 
           // Calcular ángulo inicial
           const startAngle = Math.atan2(startSVG.y - centerY, startSVG.x - centerX) * 180 / Math.PI;
 
           const handleMouseMove = (e) => {
-            const currentSVG = screenToSVGCoords(e.clientX, e.clientY);
+            // Convertir posición actual a coordenadas SVG
+            const currentSVG = screenToSVGCoordinates(e.clientX, e.clientY, svg, viewport);
             const currentAngle = Math.atan2(currentSVG.y - centerY, currentSVG.x - centerX) * 180 / Math.PI;
             const deltaAngle = currentAngle - startAngle;
 

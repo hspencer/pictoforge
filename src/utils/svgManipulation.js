@@ -2,17 +2,43 @@
  * Utilidades para manipulación de elementos SVG
  */
 
+// Re-exportar funciones de transformación de coordenadas para conveniencia
+export {
+  screenToSVGCoordinates,
+  svgToScreenCoordinates,
+  screenDeltaToSVGDelta,
+  getClosestPointOnPath,
+  useCoordinateTransform
+} from './coordinateTransform';
+
+// Re-exportar funciones de codificación de paths para conveniencia
+export {
+  pointToMoveTo,
+  pointToLineTo,
+  pointsToCubicBezier,
+  pointsToQuadraticBezier,
+  pointsToPath,
+  rectToPath,
+  circleToPath,
+  ellipseToPath,
+  parsePathCommand,
+  relativeToAbsolute,
+  absoluteToRelative,
+  buildPathString,
+  formatNumber
+} from './pathEncoding';
+
 /**
- * Obtiene el bounding box de un elemento SVG
+ * Obtiene el bounding box de un elemento SVG en coordenadas SVG locales
  */
 export const getElementBBox = (element) => {
   if (!element) return null;
-  
+
   try {
     if (element.getBBox) {
       return element.getBBox();
     }
-    
+
     // Fallback para elementos que no tienen getBBox
     const rect = element.getBoundingClientRect();
     return {

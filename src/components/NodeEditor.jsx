@@ -1,27 +1,81 @@
 import React, { useState } from 'react';
 import { parsePathNodes } from '../utils/svgManipulation';
+import { screenToSVGCoordinates, svgToScreenCoordinates, screenDeltaToSVGDelta } from '@/utils/coordinateTransform';
 
 /**
  * Componente NodeEditor para la manipulación de nodos SVG
  */
-export const NodeEditor = ({ 
-  element, 
-  tool, 
+export const NodeEditor = ({
+  element,
+  tool,
   onNodeChange,
   onNodeAdd,
   onNodeRemove,
-  visible = true 
+  visible = true,
+  viewport = { zoom: 1, pan: { x: 0, y: 0 } }, // Agregar viewport como prop
+  containerRef // Referencia al contenedor para calcular coordenadas relativas
 }) => {
   const [selectedNodes, setSelectedNodes] = useState(new Set());
   const [hoveredNode, setHoveredNode] = useState(null);
 
-  if (!visible || !element || tool !== 'node' && tool !== 'pen') return null;
+  if (!visible || !element) return null;
+  if (tool !== 'node' && tool !== 'pen') return null;
+
+  // Solo funciona con elementos path
+  if (element.tagName !== 'path' && element.tagName !== 'PATH') return null;
 
   // Usar la utilidad importada para extraer nodos
 
   // Obtener nodos del elemento
-  const nodes = element.tagName === 'path' ? 
-    parsePathNodes(element.getAttribute('d')) : [];
+  const nodes = parsePathNodes(element.getAttribute('d') || '');
+  const svg = element.ownerSVGElement;
+
+  // Convertir posiciones de nodos a coordenadas de pantalla
+  const screenNodes = nodes.map(node => {
+    const screenPos = svgToScreenCoordinates(node.x, node.y, svg, viewport);
+
+    // Ajustar coordenadas relativas al contenedor si está disponible
+    let finalX = screenPos.x;
+    let finalY = screenPos.y;
+
+    if (containerRef?.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      finalX = screenPos.x - containerRect.left;
+      finalY = screenPos.y - containerRect.top;
+    }
+
+    const screenNode = {
+      ...node,
+      screenX: finalX,
+      screenY: finalY
+    };
+
+    // Convertir puntos de control también
+    if (node.cp1) {
+      const cp1Screen = svgToScreenCoordinates(node.cp1.x, node.cp1.y, svg, viewport);
+      let cp1X = cp1Screen.x;
+      let cp1Y = cp1Screen.y;
+      if (containerRef?.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        cp1X = cp1Screen.x - containerRect.left;
+        cp1Y = cp1Screen.y - containerRect.top;
+      }
+      screenNode.cp1Screen = { x: cp1X, y: cp1Y };
+    }
+    if (node.cp2) {
+      const cp2Screen = svgToScreenCoordinates(node.cp2.x, node.cp2.y, svg, viewport);
+      let cp2X = cp2Screen.x;
+      let cp2Y = cp2Screen.y;
+      if (containerRef?.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        cp2X = cp2Screen.x - containerRect.left;
+        cp2Y = cp2Screen.y - containerRect.top;
+      }
+      screenNode.cp2Screen = { x: cp2X, y: cp2Y };
+    }
+
+    return screenNode;
+  });
 
   const handleNodeClick = (e, node) => {
     e.stopPropagation();
@@ -51,23 +105,42 @@ export const NodeEditor = ({
 
   const handleNodeDrag = (e, node) => {
     if (tool !== 'node') return;
-    
+
     e.stopPropagation();
-    const startX = e.clientX;
-    const startY = e.clientY;
+    const startScreenX = e.clientX;
+    const startScreenY = e.clientY;
     const startNodeX = node.x;
     const startNodeY = node.y;
-    
+
     const handleMouseMove = (e) => {
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
-      
+      // Calcular delta en pantalla
+      const deltaScreenX = e.clientX - startScreenX;
+      const deltaScreenY = e.clientY - startScreenY;
+
+      // Convertir delta a coordenadas SVG
+      const svg = element.ownerSVGElement;
+      const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY, svg, viewport);
+
       const newNode = {
         ...node,
-        x: startNodeX + deltaX,
-        y: startNodeY + deltaY
+        x: startNodeX + dx,
+        y: startNodeY + dy
       };
-      
+
+      // Si el nodo tiene puntos de control (curva Bézier), moverlos también
+      if (node.cp1) {
+        newNode.cp1 = {
+          x: node.cp1.x + dx,
+          y: node.cp1.y + dy
+        };
+      }
+      if (node.cp2) {
+        newNode.cp2 = {
+          x: node.cp2.x + dx,
+          y: node.cp2.y + dy
+        };
+      }
+
       onNodeChange?.(node, newNode);
     };
 
@@ -82,14 +155,15 @@ export const NodeEditor = ({
 
   const handlePathClick = (e) => {
     if (tool !== 'pen') return;
-    
+
     e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
+
+    // Convertir posición del click a coordenadas SVG
+    const svg = element.ownerSVGElement;
+    const svgCoords = screenToSVGCoordinates(e.clientX, e.clientY, svg, viewport);
+
     // Agregar nuevo nodo en la posición del click
-    onNodeAdd?.({ x, y, type: 'line' });
+    onNodeAdd?.({ x: svgCoords.x, y: svgCoords.y, type: 'line' });
   };
 
   return (
@@ -106,25 +180,25 @@ export const NodeEditor = ({
         />
       )}
       
-      {/* Nodos */}
-      {nodes.map(node => (
+      {/* Nodos - Renderizados en coordenadas de pantalla */}
+      {screenNodes.map(node => (
         <g key={node.id}>
           {/* Control points para curvas */}
-          {node.type === 'curve' && node.cp1 && node.cp2 && (
+          {node.type === 'curve' && node.cp2Screen && (
             <>
               <line
-                x1={node.x}
-                y1={node.y}
-                x2={node.cp2.x}
-                y2={node.cp2.y}
+                x1={node.screenX}
+                y1={node.screenY}
+                x2={node.cp2Screen.x}
+                y2={node.cp2Screen.y}
                 stroke="#00b9ff"
                 strokeWidth="1"
                 strokeDasharray="3,3"
                 opacity="0.6"
               />
               <circle
-                cx={node.cp2.x}
-                cy={node.cp2.y}
+                cx={node.cp2Screen.x}
+                cy={node.cp2Screen.y}
                 r="3"
                 fill="#00b9ff"
                 stroke="#ffffff"
@@ -133,16 +207,16 @@ export const NodeEditor = ({
               />
             </>
           )}
-          
+
           {/* Nodo principal */}
           <circle
-            cx={node.x}
-            cy={node.y}
+            cx={node.screenX}
+            cy={node.screenY}
             r={selectedNodes.has(node.id) ? 6 : 4}
             className={`svg-node ${selectedNodes.has(node.id) ? 'selected' : ''}`}
-            style={{ 
+            style={{
               cursor: tool === 'node' ? 'move' : tool === 'pen' ? 'pointer' : 'default',
-              fill: node.type === 'curve' ? '#ff6b35' : 
+              fill: node.type === 'curve' ? '#ff6b35' :
                     node.type === 'smooth' ? '#4ade80' : '#00b9ff'
             }}
             onClick={(e) => handleNodeClick(e, node)}
@@ -150,12 +224,12 @@ export const NodeEditor = ({
             onMouseEnter={() => setHoveredNode(node.id)}
             onMouseLeave={() => setHoveredNode(null)}
           />
-          
+
           {/* Tooltip para el nodo */}
           {hoveredNode === node.id && (
             <text
-              x={node.x}
-              y={node.y - 10}
+              x={node.screenX}
+              y={node.screenY - 10}
               textAnchor="middle"
               fontSize="10"
               fill="#374151"
