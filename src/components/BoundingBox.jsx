@@ -103,28 +103,53 @@ export const BoundingBox = ({
   viewport = { zoom: 1, pan: { x: 0, y: 0 } }, // Agregar viewport como prop
   containerRef // Referencia al contenedor para calcular coordenadas relativas
 }) => {
-  if (!visible || !element) return null;
+  if (!visible || !element) {
+    console.log('🚫 BoundingBox no visible:', { visible, hasElement: !!element });
+    return null;
+  }
+
+  console.log('✨ BoundingBox renderizando para:', element.id || element.tagName);
 
   // Obtener las dimensiones del elemento con transformaciones aplicadas (en espacio SVG)
   const bbox = getTransformedBBox(element);
   const svg = element.ownerSVGElement;
 
-  // Convertir las coordenadas SVG a coordenadas de pantalla considerando viewport (zoom y pan)
-  const topLeft = svgToScreenCoordinates(bbox.x, bbox.y, svg, viewport);
-  const bottomRight = svgToScreenCoordinates(bbox.x + bbox.width, bbox.y + bbox.height, svg, viewport);
-
-  // Ajustar coordenadas relativas al contenedor si está disponible
-  let x = topLeft.x;
-  let y = topLeft.y;
-
-  if (containerRef?.current) {
-    const containerRect = containerRef.current.getBoundingClientRect();
-    x = topLeft.x - containerRect.left;
-    y = topLeft.y - containerRect.top;
+  if (!svg || !containerRef?.current) {
+    console.warn('⚠️ No hay SVG o containerRef');
+    return null;
   }
 
-  const width = bottomRight.x - topLeft.x;
-  const height = bottomRight.y - topLeft.y;
+  // Obtener los rects para calcular las coordenadas
+  const svgRect = svg.getBoundingClientRect();
+  const containerRect = containerRef.current.getBoundingClientRect();
+
+  // Crear punto SVG para transformaciones
+  const point = svg.createSVGPoint();
+
+  // Esquina superior izquierda en coordenadas SVG
+  point.x = bbox.x;
+  point.y = bbox.y;
+  const screenTopLeft = point.matrixTransform(svg.getScreenCTM());
+
+  // Esquina inferior derecha en coordenadas SVG
+  point.x = bbox.x + bbox.width;
+  point.y = bbox.y + bbox.height;
+  const screenBottomRight = point.matrixTransform(svg.getScreenCTM());
+
+  // Convertir a coordenadas relativas al contenedor
+  const x = (screenTopLeft.x - containerRect.left);
+  const y = (screenTopLeft.y - containerRect.top);
+  const width = screenBottomRight.x - screenTopLeft.x;
+  const height = screenBottomRight.y - screenTopLeft.y;
+
+  console.log('📐 BoundingBox coords:', {
+    bboxSVG: bbox,
+    screenTopLeft: { x: screenTopLeft.x, y: screenTopLeft.y },
+    screenBottomRight: { x: screenBottomRight.x, y: screenBottomRight.y },
+    final: { x, y, width, height },
+    svgRect: { left: svgRect.left, top: svgRect.top },
+    containerRect: { left: containerRect.left, top: containerRect.top }
+  });
   
   // Posiciones de los handles
   const handles = [

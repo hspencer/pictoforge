@@ -3,6 +3,7 @@ import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSVGParser } from './hooks/useSVGParser';
 import { I18nProvider, useI18n } from './hooks/useI18n.jsx';
+import Container from './components/Container';
 import TextInput from './components/TextInput';
 import SVGHierarchy from './components/SVGHierarchy';
 import SVGViewer from './components/SVGViewer';
@@ -200,7 +201,7 @@ function AppContent() {
   };
 
   return (
-    <div className={`h-screen flex flex-col bg-background text-foreground ${darkMode ? 'dark' : ''}`}>
+    <Container className={`bg-background text-foreground ${darkMode ? 'dark' : ''}`}>
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b bg-muted/20">
         <div className="flex items-center gap-3">
@@ -301,7 +302,7 @@ function AppContent() {
           </div>
         </div>
       </footer>
-    </div>
+    </Container>
   );
 }
 

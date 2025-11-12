@@ -6,6 +6,329 @@ La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la 
 
 ![PictoForge](./examples/pictoforge.png)
 
+## 📊 Diagnóstico del Proyecto (Estado Actual)
+
+### 🏥 Estado General
+- **Versión**: 0.0.1
+- **Estado del Código**: ✅ Limpio (sin errores de compilación)
+- **Diagnósticos**: ⚠️ Solo advertencias de linting en archivos Markdown
+- **Package Manager**: pnpm@10.4.1
+- **Framework**: React 19.1.0 + Vite 6.3.5
+- **Node.js**: Requiere 18+
+
+### 📦 Dependencias Principales
+```json
+{
+  "react": "^19.1.0",
+  "react-dom": "^19.1.0",
+  "vite": "^6.3.5",
+  "tailwindcss": "^4.1.7",
+  "@radix-ui/*": "Múltiples componentes UI",
+  "lucide-react": "^0.510.0",
+  "framer-motion": "^12.15.0"
+}
+```
+
+### 🧪 Testing
+- **Framework**: Vitest 3.2.4
+- **Testing Library**: @testing-library/react 16.3.0
+- **Cobertura**: Configurada pero en desarrollo
+- **Tests Existentes**:
+  - ✅ `useSVGParser.test.js` - Tests de parseo de SVG
+  - ✅ `useHistory.test.js` - Tests de undo/redo
+
+**Scripts disponibles:**
+```bash
+pnpm test          # Ejecutar tests en modo watch
+pnpm test:run      # Ejecutar tests una vez
+pnpm test:ui       # UI interactiva de tests
+pnpm test:coverage # Reporte de cobertura
+```
+
+### 🛠️ Funcionalidades Implementadas
+
+#### ✅ Completamente Funcional
+- [x] Carga de archivos SVG (drag & drop y botón)
+- [x] Parseo y visualización de jerarquía SVG
+- [x] Selección bidireccional (round-trip) entre jerarquía y canvas
+- [x] Panel de estilos CSS con aplicación/remoción dinámica
+- [x] Zoom y pan en el canvas
+- [x] Tema claro/oscuro
+- [x] Internacionalización (ES/EN)
+- [x] Vista de código editable con numeración de líneas
+- [x] Exportación de SVG
+- [x] Sistema de historial (undo/redo)
+- [x] Métricas de rendimiento
+
+#### 🚧 Parcialmente Implementado
+- [ ] **Herramienta Select** (Flecha negra):
+  - [x] Selección de elementos
+  - [x] BoundingBox con handles de resize
+  - [x] Rotación de elementos
+  - [⚠️] Movimiento (implementado pero necesita refinamiento)
+  - [⚠️] Escalado (implementado pero necesita refinamiento)
+
+- [ ] **Herramienta Node** (Flecha blanca):
+  - [x] Visualización de nodos en paths
+  - [x] Detección de nodos
+  - [⚠️] Edición de nodos (estructura presente, lógica en desarrollo)
+  - [⚠️] Manipulación de handles de Bézier (estructura presente)
+
+- [ ] **Herramienta Pen** (Pluma):
+  - [x] Selección de paths
+  - [ ] Agregar nodos (estructura preparada)
+  - [ ] Eliminar nodos (estructura preparada)
+  - [ ] Cambiar tipo de nodos (smooth/corner/bezier)
+
+#### ❌ Pendiente de Implementación
+- [ ] Duplicación de elementos (función preparada en App.jsx:189)
+- [ ] Eliminación de elementos (función preparada en App.jsx:197)
+- [ ] Guardar con puntuación para fine-tuning
+- [ ] Integración con modelos de lenguaje (API)
+- [ ] Generación automática de SVG desde texto
+- [ ] Templates y bibliotecas de elementos
+- [ ] Exportación en múltiples formatos (PNG, PDF)
+
+### 📁 Estructura de Archivos Importantes
+
+```
+src/
+├── App.jsx                          # [202 líneas] Componente principal
+├── components/
+│   ├── SVGViewer.jsx               # [569 líneas] Visor principal con herramientas
+│   ├── SVGHierarchy.jsx            # [135 líneas] Árbol de elementos
+│   ├── TextInput.jsx               # Input superior
+│   ├── StylePanel.jsx              # Panel de estilos CSS
+│   ├── CodeView.jsx                # Vista de código editable
+│   ├── BoundingBox.jsx             # Caja de transformación
+│   ├── NodeEditor.jsx              # Editor de nodos (en desarrollo)
+│   ├── PerformanceMetrics.jsx      # Métricas de rendimiento
+│   ├── CustomIcons.jsx             # Iconos personalizados
+│   ├── LanguageSelector.jsx        # Selector de idioma
+│   └── FileLoadDemo.jsx            # Demo de carga
+├── hooks/
+│   ├── useSVGParser.js             # Hook de parseo de SVG
+│   ├── useHistory.js               # Hook de undo/redo
+│   ├── usePerformance.js           # Hook de optimización
+│   └── useI18n.jsx                 # Hook de internacionalización
+├── utils/
+│   └── svgManipulation.js          # Utilidades de manipulación SVG
+└── tests/
+    ├── setup.js
+    └── hooks/__tests__/
+        ├── useSVGParser.test.js
+        └── useHistory.test.js
+```
+
+### 🐛 Issues Conocidos
+
+1. **Manipulación de Transformaciones SVG** (src/components/SVGViewer.jsx:467-511)
+   - Las transformaciones de resize y move funcionan pero pueden acumularse incorrectamente
+   - Necesita mejor manejo de la matriz de transformación acumulada
+
+2. **Edición de Nodos** (src/components/NodeEditor.jsx)
+   - Estructura preparada pero lógica incompleta
+   - Falta implementación de arrastre de nodos
+   - Falta implementación de handles de control de Bézier
+
+3. **Herramienta Pluma** (src/components/SVGViewer.jsx:153-162)
+   - Preparada pero sin funcionalidad real
+   - TODO comentado para agregar/eliminar nodos
+
+4. **Duplicación/Eliminación** (src/App.jsx:189-200)
+   - Funciones preparadas pero sin implementación
+   - Solo registran console.log
+
+### 🔧 Próximos Pasos Recomendados
+
+#### Alta Prioridad
+1. Completar herramienta de edición de nodos (Node tool)
+2. Implementar duplicación y eliminación de elementos
+3. Mejorar sistema de transformaciones (acumulación de transforms)
+4. Completar herramienta Pen para agregar/eliminar nodos
+
+#### Media Prioridad
+5. Implementar sistema de guardado con puntuación
+6. Agregar más tests unitarios (cobertura actual baja)
+7. Optimizar rendimiento para SVGs muy grandes
+8. Mejorar validación de SVG en carga
+
+#### Baja Prioridad
+9. Integración con API de modelos de lenguaje
+10. Exportación a PNG/PDF
+11. Sistema de templates
+12. Atajos de teclado
+
+### 📝 Notas para Desarrollo con IA
+
+**Nombres importantes para referencia:**
+- Componente principal: `AppContent` en `src/App.jsx`
+- Canvas principal: `SVGViewer` en `src/components/SVGViewer.jsx`
+- Refs importantes: `svgRef`, `containerRef`, `overlayRef`
+- Estados clave: `selectedElement`, `tool`, `zoom`, `pan`
+- Hooks personalizados: `useSVGParser`, `useHistory`, `usePerformance`
+
+**Arquitectura de coordenadas:**
+- SVG usa su propio sistema de coordenadas (viewBox)
+- Canvas aplica zoom y pan con CSS transform
+- Overlay está en coordenadas de pantalla (sin transform)
+- Ver `docs/coordinate-transformation.md` para detalles completos
+
+## 🗺️ Mapa de la Interfaz (ASCII DivMap)
+
+Esta es la estructura completa de la interfaz de PictoForge con todos los nombres de componentes:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ HEADER [<header>]                                                               │
+│ ┌─────────────────────────────────────────┬─────────────────────────────────┐  │
+│ │ App Title + Subtitle                    │ LanguageSelector + ThemeToggle  │  │
+│ │ "PictoForge" | "Editor SVG Semántico"  │ [Button: Sun/Moon]              │  │
+│ └─────────────────────────────────────────┴─────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ TEXTINPUT [TextInput Component]                                                 │
+│ ┌───────────────────────────────────────────────────────────────────────────┐  │
+│ │ Text Input Area + File Upload (Drag & Drop)                               │  │
+│ │ [Upload Button] [placeholder: currentText]                                │  │
+│ └───────────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ FILELOADDEMO [FileLoadDemo Component] - visible when !svgData                   │
+│ Example file loader demonstration                                               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ MAIN LAYOUT [<div className="flex-1 flex">] - Two Panel System                  │
+│                                                                                  │
+│ ┌────────────────────────────────────┬───────────────────────────────────────┐ │
+│ │ LEFT PANEL (w-1/2)                 │ RIGHT PANEL (w-1/2)                   │ │
+│ │                                     │                                        │ │
+│ │ ┌────────────────────────────────┐ │ ┌────────────────────────────────────┐ │
+│ │ │ SVGHIERARCHY                   │ │ │ SVGVIEWER or CODEVIEW             │ │
+│ │ │ [SVGHierarchy Component]       │ │ │ (Toggle: showCodeView)            │ │
+│ │ │                                │ │ │                                    │ │
+│ │ │ Header: "SVG Elements"         │ │ │ ┌────────────────────────────────┐│ │
+│ │ │                                │ │ │ │ TOOLBAR                        ││ │
+│ │ │ Tree Structure:                │ │ │ │ ┌──────────┬─────────────────┐││ │
+│ │ │ - [ChevronRight/Down] Toggle   │ │ │ │ │ Tools    │ Actions         │││ │
+│ │ │ - [Icon] Element Type          │ │ │ │ │ ────────  ─────────────── │││ │
+│ │ │ - [ID] Element Name            │ │ │ │ │ select   │ undo/redo       │││ │
+│ │ │ - [.class] CSS Class           │ │ │ │ │ node     │ zoom in/out     │││ │
+│ │ │ - (N) Children count           │ │ │ │ │ pen      │ reset view      │││ │
+│ │ │                                │ │ │ │ │          │ export          │││ │
+│ │ │ Elements:                      │ │ │ │ │          │ metrics         │││ │
+│ │ │ • selectedElement (highlight)  │ │ │ │ └──────────┴─────────────────┘││ │
+│ │ │ • expandedElements (Set)       │ │ │ └────────────────────────────────┘│ │
+│ │ │ • onClick: onElementSelect     │ │ │                                    │ │
+│ │ │                                │ │ │ ┌────────────────────────────────┐│ │
+│ │ └────────────────────────────────┘ │ │ │ CANVAS AREA                    ││ │
+│ │                                     │ │ │ [containerRef]                 ││ │
+│ │ ┌────────────────────────────────┐ │ │ │                                ││ │
+│ │ │ STYLEPANEL                     │ │ │ │ SVG Content [svgRef]           ││ │
+│ │ │ [StylePanel Component]         │ │ │ │ • zoom + pan applied           ││ │
+│ │ │                                │ │ │ │ • dangerouslySetInnerHTML      ││ │
+│ │ │ Header: "Estilos CSS"          │ │ │ │ • onClick: handleElementClick  ││ │
+│ │ │                                │ │ │ │                                ││ │
+│ │ │ Styles List:                   │ │ │ │ Overlay [overlayRef, <svg>]    ││ │
+│ │ │ • Available CSS classes        │ │ │ │ • pointer-events-none          ││ │
+│ │ │ • Preview properties           │ │ │ │                                ││ │
+│ │ │ • Apply/Remove buttons         │ │ │ │ ┌────────────────────────────┐ ││ │
+│ │ │ • onStyleChange callback       │ │ │ │ │ BOUNDINGBOX                │ ││ │
+│ │ │                                │ │ │ │ │ [BoundingBox Component]    │ ││ │
+│ │ │ For selectedElement:           │ │ │ │ │                            │ ││ │
+│ │ │ • fill, stroke properties      │ │ │ │ │ • 8 resize handles         │ ││ │
+│ │ │ • stroke-width, stroke-join    │ │ │ │ │ • rotation handle          │ ││ │
+│ │ └────────────────────────────────┘ │ │ │ │ • visible: tool=='select'  │ ││ │
+│ │                                     │ │ │ │ • onResize, onMove, onRot  │ ││ │
+│ └─────────────────────────────────────┘ │ │ └────────────────────────────┘ ││ │
+│                                          │ │                                ││ │
+│                                          │ │ ┌────────────────────────────┐ ││ │
+│                                          │ │ │ NODEEDITOR                 │ ││ │
+│                                          │ │ │ [NodeEditor Component]     │ ││ │
+│                                          │ │ │                            │ ││ │
+│                                          │ │ │ • node circles (paths)     │ ││ │
+│                                          │ │ │ • control handles (bezier) │ ││ │
+│                                          │ │ │ • visible: tool=='node'    │ ││ │
+│                                          │ │ │   or tool=='pen'           │ ││ │
+│                                          │ │ │ • onNodeChange, onNodeAdd  │ ││ │
+│                                          │ │ │   onNodeRemove             │ ││ │
+│                                          │ │ └────────────────────────────┘ ││ │
+│                                          │ │                                ││ │
+│                                          │ │ ┌────────────────────────────┐ ││ │
+│                                          │ │ │ PERFORMANCEMETRICS         │ ││ │
+│                                          │ │ │ [PerformanceMetrics Comp]  │ ││ │
+│                                          │ │ │ • visible: showMetrics     │ ││ │
+│                                          │ │ │ • complexity, metrics      │ ││ │
+│                                          │ │ └────────────────────────────┘ ││ │
+│                                          │ └────────────────────────────────┘│ │
+│                                          │                                    │ │
+│                                          │ ┌────────────────────────────────┐ │
+│                                          │ │ CODEVIEW (alternate view)      │ │
+│                                          │ │ [CodeView Component]           │ │
+│                                          │ │                                │ │
+│                                          │ │ • Line numbers                 │ │
+│                                          │ │ • Syntax highlighting          │ │
+│                                          │ │ • Editable SVG code            │ │
+│                                          │ │ • onSVGUpdate callback         │ │
+│                                          │ │ • selectedElement highlight    │ │
+│                                          │ └────────────────────────────────┘ │
+│                                          └────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ FOOTER [<footer>]                                                               │
+│ ┌─────────────────────────────────────────┬─────────────────────────────────┐  │
+│ │ Stats: "N estilos" | "Elemento: id"     │ "Versión 0.0.1"                 │  │
+│ └─────────────────────────────────────────┴─────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 📋 Componentes Principales por Nombre
+
+| Componente | Archivo | Función Principal |
+|------------|---------|-------------------|
+| `AppContent` | `src/App.jsx` | Contenedor principal de la aplicación |
+| `I18nProvider` | `src/hooks/useI18n.jsx` | Proveedor de internacionalización |
+| `LanguageSelector` | `src/components/LanguageSelector.jsx` | Selector de idioma (ES/EN) |
+| `TextInput` | `src/components/TextInput.jsx` | Input de texto + carga de archivos |
+| `FileLoadDemo` | `src/components/FileLoadDemo.jsx` | Demo de carga de ejemplos |
+| `SVGHierarchy` | `src/components/SVGHierarchy.jsx` | Árbol jerárquico de elementos SVG |
+| `StylePanel` | `src/components/StylePanel.jsx` | Panel de gestión de estilos CSS |
+| `SVGViewer` | `src/components/SVGViewer.jsx` | Visor principal con herramientas |
+| `CodeView` | `src/components/CodeView.jsx` | Vista de código editable |
+| `BoundingBox` | `src/components/BoundingBox.jsx` | Caja de transformación con handles |
+| `NodeEditor` | `src/components/NodeEditor.jsx` | Editor de nodos de paths |
+| `PerformanceMetrics` | `src/components/PerformanceMetrics.jsx` | Métricas de rendimiento |
+| `CustomIcons` | `src/components/CustomIcons.jsx` | Iconos personalizados (SelectArrow, Pen, etc.) |
+| `useSVGParser` | `src/hooks/useSVGParser.js` | Hook de parseo y gestión de SVG |
+| `useHistory` | `src/hooks/useHistory.js` | Hook de undo/redo |
+| `usePerformance` | `src/hooks/usePerformance.js` | Hook de optimización de rendimiento |
+
+### 🔄 Estados Principales (State Management)
+
+**En App.jsx:**
+- `darkMode` - Tema claro/oscuro
+- `currentText` - Texto en input superior
+- `expandedElements` - Set de elementos expandidos en jerarquía
+- `showCodeView` - Toggle entre SVGViewer y CodeView
+- `selectedElement` - Elemento actualmente seleccionado
+
+**En SVGViewer.jsx:**
+- `tool` - Herramienta activa: 'select' | 'node' | 'pen'
+- `zoom` - Nivel de zoom del canvas
+- `pan` - {x, y} para paneo del canvas
+- `selectedSVGElement` - Referencia DOM del elemento seleccionado
+- `showBoundingBox` - Visibilidad del bounding box
+- `showMetrics` - Visibilidad de métricas de performance
+
+**En useSVGParser.js:**
+- `svgData` - Estructura parseada del SVG {root, styles, elements}
+- `svgContent` - Contenido string del SVG
+- `selectedElement` - Elemento seleccionado en la jerarquía
+
 ## Características Principales
 
 ### Interfaz de Tres Paneles

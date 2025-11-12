@@ -89,6 +89,8 @@ export const SVGViewer = ({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Auto-selección eliminada - el usuario debe seleccionar manualmente
+
   /**
    * Maneja la selección de elementos en el SVG
    */
@@ -98,15 +100,28 @@ export const SVGViewer = ({
     const target = event.target;
     const elementId = target.id || target.getAttribute('id');
 
+    console.log('🖱️ Click en elemento:', { elementId, tagName: target.tagName, tool });
+
     if (tool === 'select') {
       // FLECHA NEGRA: Seleccionar elemento completo para mover/escalar/rotar
+
+      // Bloquear selección del elemento raíz "pictogram"
+      if (elementId === 'pictogram' || target.tagName === 'svg') {
+        console.log('🚫 No se puede seleccionar el elemento raíz');
+        return;
+      }
+
       if (elementId && svgData) {
         const element = findElementInData(elementId, svgData.root);
+        console.log('✅ Elemento encontrado en data:', element);
         if (element) {
           onElementSelect(element);
           setSelectedSVGElement(target);
           setShowBoundingBox(true); // Mostrar bounding box con handles
+          console.log('📦 BoundingBox activado para:', elementId);
         }
+      } else {
+        console.warn('⚠️ No se pudo seleccionar:', { elementId, hasSvgData: !!svgData });
       }
     } else if (tool === 'node') {
       // FLECHA BLANCA: Seleccionar path para editar nodos
@@ -427,6 +442,15 @@ export const SVGViewer = ({
         ref={containerRef}
         className="flex-1 overflow-hidden relative bg-gradient-to-br from-muted/10 to-muted/30"
         onMouseDown={handleMouseDown}
+        onClick={(e) => {
+          // Des-seleccionar si se hace click en el fondo
+          if (e.target === containerRef.current) {
+            console.log('🚫 Des-seleccionando');
+            setSelectedSVGElement(null);
+            setShowBoundingBox(false);
+            onElementSelect(null);
+          }
+        }}
         style={{
           cursor: tool === 'node' || isDragging ? 'move' :
                   tool === 'pen' ? 'crosshair' :
@@ -452,18 +476,149 @@ export const SVGViewer = ({
               </div>
             </div>
 
-            {/* Overlay SVG para herramientas - SIN zoom ni pan, en coordenadas de pantalla */}
+            {/* Overlay SVG - MISMO sistema de coordenadas que el SVG original */}
+            {selectedSVGElement && (() => {
+              const svg = svgRef.current?.querySelector('svg');
+              if (!svg) return null;
+
+              const viewBox = svg.viewBox.baseVal;
+              const bbox = selectedSVGElement.getBBox();
+
+              console.log('📦 BoundingBox en SVG coords:', { bbox, viewBox: `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}` });
+
+              return (
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  style={{
+                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                    transformOrigin: 'center'
+                  }}
+                >
+                  <svg
+                    style={{
+                      width: svg.clientWidth,
+                      height: svg.clientHeight,
+                      pointerEvents: 'none'
+                    }}
+                    viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
+                  >
+                    {/* BoundingBox simple en coordenadas SVG */}
+                    <rect
+                      x={bbox.x}
+                      y={bbox.y}
+                      width={bbox.width}
+                      height={bbox.height}
+                      fill="none"
+                      stroke="#00aaff"
+                      strokeWidth={0.5}
+                      strokeDasharray="2,2"
+                      pointerEvents="all"
+                      style={{ cursor: 'move' }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+
+                        // Obtener transform actual
+                        const currentTransform = selectedSVGElement.getAttribute('transform') || '';
+                        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                        let currentTx = translateMatch ? parseFloat(translateMatch[1]) : 0;
+                        let currentTy = translateMatch ? parseFloat(translateMatch[2]) : 0;
+
+                        const handleMouseMove = (e) => {
+                          const deltaX = e.clientX - startX;
+                          const deltaY = e.clientY - startY;
+
+                          // Convertir delta de píxeles a unidades SVG
+                          const svgDeltaX = deltaX / zoom;
+                          const svgDeltaY = deltaY / zoom;
+
+                          // Aplicar nuevo transform
+                          const newTx = currentTx + svgDeltaX;
+                          const newTy = currentTy + svgDeltaY;
+
+                          selectedSVGElement.setAttribute('transform', `translate(${newTx}, ${newTy})`);
+
+                          // Forzar re-render del BoundingBox
+                          setSelectedSVGElement(selectedSVGElement);
+                        };
+
+                        const handleMouseUp = () => {
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                          console.log('✅ Drag completado');
+                        };
+
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
+                    />
+
+                    {/* Handles en las esquinas - TAMAÑO FIJO EN PÍXELES */}
+                    {[
+                      { x: bbox.x, y: bbox.y, cursor: 'nw-resize' },
+                      { x: bbox.x + bbox.width, y: bbox.y, cursor: 'ne-resize' },
+                      { x: bbox.x + bbox.width, y: bbox.y + bbox.height, cursor: 'se-resize' },
+                      { x: bbox.x, y: bbox.y + bbox.height, cursor: 'sw-resize' }
+                    ].map((pos, i) => (
+                      <rect
+                        key={i}
+                        x={pos.x - 0.8}
+                        y={pos.y - 0.8}
+                        width={1.6}
+                        height={1.6}
+                        fill="#00aaff"
+                        stroke="#fff"
+                        strokeWidth={0.3}
+                        pointerEvents="all"
+                        style={{ cursor: pos.cursor }}
+                        onMouseDown={(e) => {
+                          console.log('🖱️ MouseDown en handle', i);
+                          e.stopPropagation();
+                        }}
+                      />
+                    ))}
+
+                    {/* Manipulador de rotación - círculo arriba del centro */}
+                    <line
+                      x1={bbox.x + bbox.width / 2}
+                      y1={bbox.y}
+                      x2={bbox.x + bbox.width / 2}
+                      y2={bbox.y - 5}
+                      stroke="#00aaff"
+                      strokeWidth={0.3}
+                      pointerEvents="none"
+                    />
+                    <circle
+                      cx={bbox.x + bbox.width / 2}
+                      cy={bbox.y - 5}
+                      r={1}
+                      fill="#00aaff"
+                      stroke="#fff"
+                      strokeWidth={0.3}
+                      pointerEvents="all"
+                      style={{ cursor: 'grab' }}
+                      onMouseDown={(e) => {
+                        console.log('🔄 MouseDown en rotación');
+                        e.stopPropagation();
+                      }}
+                    />
+                  </svg>
+                </div>
+              );
+            })()}
+
+            {/* Overlay SVG viejo - mantener para NodeEditor */}
             <svg
               ref={overlayRef}
               className="absolute inset-0 w-full h-full pointer-events-none"
-              viewBox={`0 0 ${containerDimensions.width} ${containerDimensions.height}`}
-              style={{ zIndex: 10 }}
+              viewBox={`0 0 ${containerDimensions.width || 800} ${containerDimensions.height || 600}`}
+              style={{ zIndex: 10, display: 'none' }}
             >
               <BoundingBox
-                  element={selectedSVGElement}
-                  visible={showBoundingBox && tool === 'select'}
-                  viewport={{ zoom, pan }}
-                  containerRef={containerRef}
+                  element={null}
                   onResize={(handleId, deltaX, deltaY) => {
                     if (!selectedSVGElement) return;
                     

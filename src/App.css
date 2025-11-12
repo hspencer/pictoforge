@@ -135,6 +135,11 @@
 
 /* Estilos personalizados para PictoForge */
 
+.pictoforge-container{
+  max-width: 74rem;
+  margin: 0 auto;
+}
+
 /* Contenedor SVG */
 .svg-container {
   display: flex;
@@ -177,20 +182,31 @@
 }
 
 /* Elemento seleccionado/resaltado */
+/* Elemento seleccionado - sin glow por defecto */
 .svg-container svg .highlighted {
-  filter: drop-shadow(0 0 1px var(--col-select)) drop-shadow(0 0 3px var(--col-select));
-  animation: glow-fade-in 0.3s ease-in forwards;
+  /* Sin efectos visuales en estado seleccionado */
 }
 
-@keyframes glow-fade-in {
-  0% {
-    filter: drop-shadow(0 0 0px var(--col-select)) drop-shadow(0 0 0px var(--col-select));
-    opacity: 0.5;
-  }
-  100% {
-    filter: drop-shadow(0 0 1px var(--col-select)) drop-shadow(0 0 2px var(--col-select));
-    opacity: 1;
-  }
+/* Glow solo en hover - SOLO el elemento directo, no sus contenedores */
+.svg-container svg path:hover,
+.svg-container svg rect:hover,
+.svg-container svg circle:hover,
+.svg-container svg ellipse:hover,
+.svg-container svg line:hover,
+.svg-container svg polyline:hover,
+.svg-container svg polygon:hover {
+  filter: drop-shadow(0 0 1px var(--col-select)) drop-shadow(0 0 2px var(--col-select));
+  transition: filter 0.15s ease;
+}
+
+/* NO aplicar hover a grupos - solo elementos gráficos individuales */
+.svg-container svg g {
+  pointer-events: none;
+}
+
+/* Pero permitir pointer-events en los elementos hijos */
+.svg-container svg g > * {
+  pointer-events: all;
 }
 
 /* Bounding box para selección con flecha negra */
@@ -199,7 +215,7 @@
   stroke: var(--col-select);
   stroke-width: 1;
   stroke-dasharray: none;
-  pointer-events: none;
+  /* pointer-events configurado inline en el componente */
   z-index: 10000;
 }
 
