@@ -6,9 +6,9 @@ La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la 
 
 ![PictoForge](./examples/pictoforge.png)
 
-## 📊 Diagnóstico del Proyecto (Estado Actual)
+## Diagnóstico del Proyecto (Estado Actual)
 
-### 🏥 Estado General
+### Estado General
 - **Versión**: 0.0.1
 - **Estado del Código**: ✅ Limpio (sin errores de compilación)
 - **Diagnósticos**: ⚠️ Solo advertencias de linting en archivos Markdown
@@ -16,7 +16,7 @@ La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la 
 - **Framework**: React 19.1.0 + Vite 6.3.5
 - **Node.js**: Requiere 18+
 
-### 📦 Dependencias Principales
+### Dependencias Principales
 ```json
 {
   "react": "^19.1.0",
@@ -29,13 +29,13 @@ La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la 
 }
 ```
 
-### 🧪 Testing
+### Testing
 - **Framework**: Vitest 3.2.4
 - **Testing Library**: @testing-library/react 16.3.0
 - **Cobertura**: Configurada pero en desarrollo
 - **Tests Existentes**:
-  - ✅ `useSVGParser.test.js` - Tests de parseo de SVG
-  - ✅ `useHistory.test.js` - Tests de undo/redo
+  - OK `useSVGParser.test.js` - Tests de parseo de SVG
+  - OK `useHistory.test.js` - Tests de undo/redo
 
 **Scripts disponibles:**
 ```bash
@@ -45,9 +45,9 @@ pnpm test:ui       # UI interactiva de tests
 pnpm test:coverage # Reporte de cobertura
 ```
 
-### 🛠️ Funcionalidades Implementadas
+### Funcionalidades Implementadas
 
-#### ✅ Completamente Funcional
+#### Completamente Funcional
 - [x] Carga de archivos SVG (drag & drop y botón)
 - [x] Parseo y visualización de jerarquía SVG
 - [x] Selección bidireccional (round-trip) entre jerarquía y canvas
@@ -65,14 +65,14 @@ pnpm test:coverage # Reporte de cobertura
   - [x] Selección de elementos
   - [x] BoundingBox con handles de resize
   - [x] Rotación de elementos
-  - [⚠️] Movimiento (implementado pero necesita refinamiento)
-  - [⚠️] Escalado (implementado pero necesita refinamiento)
+  - [-] Movimiento (implementado pero necesita refinamiento)
+  - [-] Escalado (implementado pero necesita refinamiento)
 
 - [ ] **Herramienta Node** (Flecha blanca):
   - [x] Visualización de nodos en paths
   - [x] Detección de nodos
-  - [⚠️] Edición de nodos (estructura presente, lógica en desarrollo)
-  - [⚠️] Manipulación de handles de Bézier (estructura presente)
+  - [-] Edición de nodos (estructura presente, lógica en desarrollo)
+  - [-] Manipulación de handles de Bézier (estructura presente)
 
 - [ ] **Herramienta Pen** (Pluma):
   - [x] Selección de paths
@@ -80,7 +80,7 @@ pnpm test:coverage # Reporte de cobertura
   - [ ] Eliminar nodos (estructura preparada)
   - [ ] Cambiar tipo de nodos (smooth/corner/bezier)
 
-#### ❌ Pendiente de Implementación
+#### Pendiente de Implementación
 - [ ] Duplicación de elementos (función preparada en App.jsx:189)
 - [ ] Eliminación de elementos (función preparada en App.jsx:197)
 - [ ] Guardar con puntuación para fine-tuning
@@ -89,7 +89,7 @@ pnpm test:coverage # Reporte de cobertura
 - [ ] Templates y bibliotecas de elementos
 - [ ] Exportación en múltiples formatos (PNG, PDF)
 
-### 📁 Estructura de Archivos Importantes
+### Estructura de Archivos
 
 ```
 src/
@@ -120,7 +120,7 @@ src/
         └── useHistory.test.js
 ```
 
-### 🐛 Issues Conocidos
+### Issues Conocidos
 
 1. **Manipulación de Transformaciones SVG** (src/components/SVGViewer.jsx:467-511)
    - Las transformaciones de resize y move funcionan pero pueden acumularse incorrectamente
@@ -139,7 +139,7 @@ src/
    - Funciones preparadas pero sin implementación
    - Solo registran console.log
 
-### 🔧 Próximos Pasos Recomendados
+### Próximos Pasos Recomendados
 
 #### Alta Prioridad
 1. Completar herramienta de edición de nodos (Node tool)
@@ -159,7 +159,7 @@ src/
 11. Sistema de templates
 12. Atajos de teclado
 
-### 📝 Notas para Desarrollo con IA
+### Notas para Desarrollo con IA
 
 **Nombres importantes para referencia:**
 - Componente principal: `AppContent` en `src/App.jsx`
@@ -174,25 +174,25 @@ src/
 - Overlay está en coordenadas de pantalla (sin transform)
 - Ver `docs/coordinate-transformation.md` para detalles completos
 
-## 🗺️ Mapa de la Interfaz (ASCII DivMap)
+## Mapa de la Interfaz (ASCII DivMap)
 
 Esta es la estructura completa de la interfaz de PictoForge con todos los nombres de componentes:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ HEADER [<header>]                                                               │
-│ ┌─────────────────────────────────────────┬─────────────────────────────────┐  │
-│ │ App Title + Subtitle                    │ LanguageSelector + ThemeToggle  │  │
-│ │ "PictoForge" | "Editor SVG Semántico"  │ [Button: Sun/Moon]              │  │
-│ └─────────────────────────────────────────┴─────────────────────────────────┘  │
+│ ┌─────────────────────────────────────────┬─────────────────────────────────┐   │
+│ │ App Title + Subtitle                    │ LanguageSelector + ThemeToggle  │   │
+│ │ "PictoForge" │ "Editor SVG Semántico"  │ [Button:   Sun/Moon]             │   │
+│ └─────────────────────────────────────────┴─────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ TEXTINPUT [TextInput Component]                                                 │
-│ ┌───────────────────────────────────────────────────────────────────────────┐  │
-│ │ Text Input Area + File Upload (Drag & Drop)                               │  │
-│ │ [Upload Button] [placeholder: currentText]                                │  │
-│ └───────────────────────────────────────────────────────────────────────────┘  │
+│ ┌───────────────────────────────────────────────────────────────────────────┐   │
+│ │ Text Input Area + File Upload (Drag & Drop)                               │   │
+│ │ [Upload Button] [placeholder: currentText]                                │   │
+│ └───────────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -202,112 +202,112 @@ Esta es la estructura completa de la interfaz de PictoForge con todos los nombre
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ MAIN LAYOUT [<div className="flex-1 flex">] - Two Panel System                  │
-│                                                                                  │
-│ ┌────────────────────────────────────┬───────────────────────────────────────┐ │
-│ │ LEFT PANEL (w-1/2)                 │ RIGHT PANEL (w-1/2)                   │ │
-│ │                                     │                                        │ │
-│ │ ┌────────────────────────────────┐ │ ┌────────────────────────────────────┐ │
-│ │ │ SVGHIERARCHY                   │ │ │ SVGVIEWER or CODEVIEW             │ │
-│ │ │ [SVGHierarchy Component]       │ │ │ (Toggle: showCodeView)            │ │
-│ │ │                                │ │ │                                    │ │
-│ │ │ Header: "SVG Elements"         │ │ │ ┌────────────────────────────────┐│ │
-│ │ │                                │ │ │ │ TOOLBAR                        ││ │
-│ │ │ Tree Structure:                │ │ │ │ ┌──────────┬─────────────────┐││ │
-│ │ │ - [ChevronRight/Down] Toggle   │ │ │ │ │ Tools    │ Actions         │││ │
-│ │ │ - [Icon] Element Type          │ │ │ │ │ ────────  ─────────────── │││ │
-│ │ │ - [ID] Element Name            │ │ │ │ │ select   │ undo/redo       │││ │
-│ │ │ - [.class] CSS Class           │ │ │ │ │ node     │ zoom in/out     │││ │
-│ │ │ - (N) Children count           │ │ │ │ │ pen      │ reset view      │││ │
-│ │ │                                │ │ │ │ │          │ export          │││ │
-│ │ │ Elements:                      │ │ │ │ │          │ metrics         │││ │
-│ │ │ • selectedElement (highlight)  │ │ │ │ └──────────┴─────────────────┘││ │
-│ │ │ • expandedElements (Set)       │ │ │ └────────────────────────────────┘│ │
-│ │ │ • onClick: onElementSelect     │ │ │                                    │ │
-│ │ │                                │ │ │ ┌────────────────────────────────┐│ │
-│ │ └────────────────────────────────┘ │ │ │ CANVAS AREA                    ││ │
-│ │                                     │ │ │ [containerRef]                 ││ │
-│ │ ┌────────────────────────────────┐ │ │ │                                ││ │
-│ │ │ STYLEPANEL                     │ │ │ │ SVG Content [svgRef]           ││ │
-│ │ │ [StylePanel Component]         │ │ │ │ • zoom + pan applied           ││ │
-│ │ │                                │ │ │ │ • dangerouslySetInnerHTML      ││ │
-│ │ │ Header: "Estilos CSS"          │ │ │ │ • onClick: handleElementClick  ││ │
-│ │ │                                │ │ │ │                                ││ │
-│ │ │ Styles List:                   │ │ │ │ Overlay [overlayRef, <svg>]    ││ │
-│ │ │ • Available CSS classes        │ │ │ │ • pointer-events-none          ││ │
-│ │ │ • Preview properties           │ │ │ │                                ││ │
-│ │ │ • Apply/Remove buttons         │ │ │ │ ┌────────────────────────────┐ ││ │
-│ │ │ • onStyleChange callback       │ │ │ │ │ BOUNDINGBOX                │ ││ │
-│ │ │                                │ │ │ │ │ [BoundingBox Component]    │ ││ │
-│ │ │ For selectedElement:           │ │ │ │ │                            │ ││ │
-│ │ │ • fill, stroke properties      │ │ │ │ │ • 8 resize handles         │ ││ │
-│ │ │ • stroke-width, stroke-join    │ │ │ │ │ • rotation handle          │ ││ │
-│ │ └────────────────────────────────┘ │ │ │ │ • visible: tool=='select'  │ ││ │
-│ │                                     │ │ │ │ • onResize, onMove, onRot  │ ││ │
-│ └─────────────────────────────────────┘ │ │ └────────────────────────────┘ ││ │
-│                                          │ │                                ││ │
-│                                          │ │ ┌────────────────────────────┐ ││ │
-│                                          │ │ │ NODEEDITOR                 │ ││ │
-│                                          │ │ │ [NodeEditor Component]     │ ││ │
-│                                          │ │ │                            │ ││ │
-│                                          │ │ │ • node circles (paths)     │ ││ │
-│                                          │ │ │ • control handles (bezier) │ ││ │
-│                                          │ │ │ • visible: tool=='node'    │ ││ │
-│                                          │ │ │   or tool=='pen'           │ ││ │
-│                                          │ │ │ • onNodeChange, onNodeAdd  │ ││ │
-│                                          │ │ │   onNodeRemove             │ ││ │
-│                                          │ │ └────────────────────────────┘ ││ │
-│                                          │ │                                ││ │
-│                                          │ │ ┌────────────────────────────┐ ││ │
-│                                          │ │ │ PERFORMANCEMETRICS         │ ││ │
-│                                          │ │ │ [PerformanceMetrics Comp]  │ ││ │
-│                                          │ │ │ • visible: showMetrics     │ ││ │
-│                                          │ │ │ • complexity, metrics      │ ││ │
-│                                          │ │ └────────────────────────────┘ ││ │
-│                                          │ └────────────────────────────────┘│ │
-│                                          │                                    │ │
-│                                          │ ┌────────────────────────────────┐ │
-│                                          │ │ CODEVIEW (alternate view)      │ │
-│                                          │ │ [CodeView Component]           │ │
-│                                          │ │                                │ │
-│                                          │ │ • Line numbers                 │ │
-│                                          │ │ • Syntax highlighting          │ │
-│                                          │ │ • Editable SVG code            │ │
-│                                          │ │ • onSVGUpdate callback         │ │
-│                                          │ │ • selectedElement highlight    │ │
-│                                          │ └────────────────────────────────┘ │
-│                                          └────────────────────────────────────┘
+│                                                                                 │
+│ ┌────────────────────────────────────┬───────────────────────────────────────┐  │
+│ │ LEFT PANEL (w-1/2)                 │ RIGHT PANEL (w-1/2)                   │  │
+│ │                                    │                                       │  │
+│ │ ┌────────────────────────────────┐ │ ┌────────────────────────────────────┐│  │
+│ │ │ SVGHIERARCHY                   │ │ │ SVGVIEWER or CODEVIEW              ││  │
+│ │ │ [SVGHierarchy Component]       │ │ │ (Toggle: showCodeView)             ││  │
+│ │ │                                │ │ │                                    ││  │
+│ │ │ Header: "SVG Elements"         │ │ │ ┌─────────────────────────────-───┐││  │
+│ │ │                                │ │ │ │ TOOLBAR                         │││  │
+│ │ │ Tree Structure:                │ │ │ │ ┌──────────┬─────────────────┐  │││  │
+│ │ │ - [ChevronRight/Down] Toggle   │ │ │ │ │ Tools    │ Actions         │  │││  │
+│ │ │ - [Icon] Element Type          │ │ │ │ │ ────────  ───────────────  │  │││  │
+│ │ │ - [ID] Element Name            │ │ │ │ │ select   │ undo/redo       │  │││  │
+│ │ │ - [.class] CSS Class           │ │ │ │ │ node     │ zoom in/out     │  │││  │
+│ │ │ - (N) Children count           │ │ │ │ │ pen      │ reset view      │  │││  │
+│ │ │                                │ │ │ │ │          │ export          │  │││  │
+│ │ │ Elements:                      │ │ │ │ │          │ metrics         │  │││  │
+│ │ │ • selectedElement (highlight)  │ │ │ │ └──────────┴─────────────────┘  │││  │
+│ │ │ • expandedElements (Set)       │ │ │ └────────────────────────────────-┘││  │
+│ │ │ • onClick: onElementSelect     │ │ │                                    ││  │
+│ │ │                                │ │ │ ┌────────────────────────────────┐ ││  │
+│ │ └────────────────────────────────┘ │ │ │ CANVAS AREA                    │ ││  │
+│ │                                    │ │ │ [containerRef]                 │ ││  │
+│ │ ┌────────────────────────────────┐ │ │ │                                │ ││  │
+│ │ │ STYLEPANEL                     │ │ │ │ SVG Content [svgRef]           │ ││  │
+│ │ │ [StylePanel Component]         │ │ │ │ • zoom + pan applied           │ ││  │
+│ │ │                                │ │ │ │ • dangerouslySetInnerHTML      │ ││  │
+│ │ │ Header: "Estilos CSS"          │ │ │ │ • onClick: handleElementClick  │ ││  │
+│ │ │                                │ │ │ │                                │ ││  │
+│ │ │ Styles List:                   │ │ │ │ Overlay [overlayRef, <svg>]    │ ││  │
+│ │ │ • Available CSS classes        │ │ │ │ • pointer-events-none          │ ││  │
+│ │ │ • Preview properties           │ │ │ │                                │ ││  │
+│ │ │ • Apply/Remove buttons         │ │ │ │ ┌────────────────────────────┐ │ ││  │
+│ │ │ • onStyleChange callback       │ │ │ │ │ BOUNDINGBOX                │ │ ││  │
+│ │ │                                │ │ │ │ │ [BoundingBox Component]    │ │ ││  │
+│ │ │ For selectedElement:           │ │ │ │ │                            │ │ ││  │
+│ │ │ • fill, stroke properties      │ │ │ │ │ • 8 resize handles         │ │ ││  │
+│ │ │ • stroke-width, stroke-join    │ │ │ │ │ • rotation handle          │ │ ││  │
+│ │ └────────────────────────────────┘ │ │ │ │ • visible: tool=='select'  │ │ ││  │
+│ │                                    │ │ │ │ • onResize, onMove, onRot  │ │ ││  │
+│ └────────────────────────────────────┘ │ │ └────────────────────────────┘ │ ││  │
+│                                        │ │                                │ ││  │
+│                                        │ │ ┌────────────────────────────┐ │ ││  │
+│                                        │ │ │ NODEEDITOR                 │ │ ││  │
+│                                        │ │ │ [NodeEditor Component]     │ │ ││  │
+│                                        │ │ │                            │ │ ││  │
+│                                        │ │ │ • node circles (paths)     │ │ ││  │
+│                                        │ │ │ • control handles (bezier) │ │ ││  │
+│                                        │ │ │ • visible: tool=='node'    │ │ ││  │
+│                                        │ │ │   or tool=='pen'           │ │ ││  │
+│                                        │ │ │ • onNodeChange, onNodeAdd  │ │ ││  │
+│                                        │ │ │   onNodeRemove             │ │ ││  │
+│                                        │ │ └────────────────────────────┘ │ ││  │
+│                                        │ │                                │ ││  │
+│                                        │ │ ┌────────────────────────────┐ │ ││  │
+│                                        │ │ │ PERFORMANCEMETRICS         │ │ ││  │
+│                                        │ │ │ [PerformanceMetrics Comp]  │ │ ││  │
+│                                        │ │ │ • visible: showMetrics     │ │ ││  │
+│                                        │ │ │ • complexity, metrics      │ │ ││  │
+│                                        │ │ └────────────────────────────┘ │ ││  │
+│                                        │ └────────────────────────────────┘ ││  │
+│                                        │                                    ││  │
+│                                        │ ┌────────────────────────────────┐ ││  │
+│                                        │ │ CODEVIEW (alternate view)      │ ││  │
+│                                        │ │ [CodeView Component]           │ ││  │
+│                                        │ │                                │ ││  │
+│                                        │ │ • Line numbers                 │ ││  │
+│                                        │ │ • Syntax highlighting          │ ││  │
+│                                        │ │ • Editable SVG code            │ ││  │
+│                                        │ │ • onSVGUpdate callback         │ ││  │
+│                                        │ │ • selectedElement highlight    │ ││  │
+│                                        │ └────────────────────────────────┘ ││  │
+│                                        └────────────────────────────────────┘┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ FOOTER [<footer>]                                                               │
-│ ┌─────────────────────────────────────────┬─────────────────────────────────┐  │
-│ │ Stats: "N estilos" | "Elemento: id"     │ "Versión 0.0.1"                 │  │
-│ └─────────────────────────────────────────┴─────────────────────────────────┘  │
+│ ┌─────────────────────────────────────────┬─────────────────────────────────┐   │
+│ │ Stats: "N estilos" │ "Elemento: id"     │ "Versión 0.0.1"                 │   │
+│ └─────────────────────────────────────────┴─────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 📋 Componentes Principales por Nombre
+### Componentes Principales por Nombre
 
-| Componente | Archivo | Función Principal |
-|------------|---------|-------------------|
-| `AppContent` | `src/App.jsx` | Contenedor principal de la aplicación |
-| `I18nProvider` | `src/hooks/useI18n.jsx` | Proveedor de internacionalización |
-| `LanguageSelector` | `src/components/LanguageSelector.jsx` | Selector de idioma (ES/EN) |
-| `TextInput` | `src/components/TextInput.jsx` | Input de texto + carga de archivos |
-| `FileLoadDemo` | `src/components/FileLoadDemo.jsx` | Demo de carga de ejemplos |
-| `SVGHierarchy` | `src/components/SVGHierarchy.jsx` | Árbol jerárquico de elementos SVG |
-| `StylePanel` | `src/components/StylePanel.jsx` | Panel de gestión de estilos CSS |
-| `SVGViewer` | `src/components/SVGViewer.jsx` | Visor principal con herramientas |
-| `CodeView` | `src/components/CodeView.jsx` | Vista de código editable |
-| `BoundingBox` | `src/components/BoundingBox.jsx` | Caja de transformación con handles |
-| `NodeEditor` | `src/components/NodeEditor.jsx` | Editor de nodos de paths |
-| `PerformanceMetrics` | `src/components/PerformanceMetrics.jsx` | Métricas de rendimiento |
-| `CustomIcons` | `src/components/CustomIcons.jsx` | Iconos personalizados (SelectArrow, Pen, etc.) |
-| `useSVGParser` | `src/hooks/useSVGParser.js` | Hook de parseo y gestión de SVG |
-| `useHistory` | `src/hooks/useHistory.js` | Hook de undo/redo |
-| `usePerformance` | `src/hooks/usePerformance.js` | Hook de optimización de rendimiento |
+│ Componente │ Archivo │ Función Principal │
+│------------│---------│-------------------│
+│ `AppContent` │ `src/App.jsx` │ Contenedor principal de la aplicación │
+│ `I18nProvider` │ `src/hooks/useI18n.jsx` │ Proveedor de internacionalización │
+│ `LanguageSelector` │ `src/components/LanguageSelector.jsx` │ Selector de idioma (ES/EN) │
+│ `TextInput` │ `src/components/TextInput.jsx` │ Input de texto + carga de archivos │
+│ `FileLoadDemo` │ `src/components/FileLoadDemo.jsx` │ Demo de carga de ejemplos │
+│ `SVGHierarchy` │ `src/components/SVGHierarchy.jsx` │ Árbol jerárquico de elementos SVG │
+│ `StylePanel` │ `src/components/StylePanel.jsx` │ Panel de gestión de estilos CSS │
+│ `SVGViewer` │ `src/components/SVGViewer.jsx` │ Visor principal con herramientas │
+│ `CodeView` │ `src/components/CodeView.jsx` │ Vista de código editable │
+│ `BoundingBox` │ `src/components/BoundingBox.jsx` │ Caja de transformación con handles │
+│ `NodeEditor` │ `src/components/NodeEditor.jsx` │ Editor de nodos de paths │
+│ `PerformanceMetrics` │ `src/components/PerformanceMetrics.jsx` │ Métricas de rendimiento │
+│ `CustomIcons` │ `src/components/CustomIcons.jsx` │ Iconos personalizados (SelectArrow, Pen, etc.) │
+│ `useSVGParser` │ `src/hooks/useSVGParser.js` │ Hook de parseo y gestión de SVG │
+│ `useHistory` │ `src/hooks/useHistory.js` │ Hook de undo/redo │
+│ `usePerformance` │ `src/hooks/usePerformance.js` │ Hook de optimización de rendimiento │
 
-### 🔄 Estados Principales (State Management)
+### Estados Principales (State Management)
 
 **En App.jsx:**
 - `darkMode` - Tema claro/oscuro
@@ -317,7 +317,7 @@ Esta es la estructura completa de la interfaz de PictoForge con todos los nombre
 - `selectedElement` - Elemento actualmente seleccionado
 
 **En SVGViewer.jsx:**
-- `tool` - Herramienta activa: 'select' | 'node' | 'pen'
+- `tool` - Herramienta activa: 'select' │ 'node' │ 'pen'
 - `zoom` - Nivel de zoom del canvas
 - `pan` - {x, y} para paneo del canvas
 - `selectedSVGElement` - Referencia DOM del elemento seleccionado
@@ -549,7 +549,7 @@ server {
     }
 
     # Caché para assets estáticos
-    location ~* \.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$ {
+    location ~* \.(js│css│png│jpg│jpeg│gif│svg│ico│woff│woff2│ttf│eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
