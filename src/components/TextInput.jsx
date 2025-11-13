@@ -1,7 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, Download } from 'lucide-react';
+import { Upload, FileText, Download, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n.jsx';
+
+// Tamaño máximo de archivo: 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 /**
  * Componente para la entrada de texto y carga de archivos
@@ -15,6 +18,8 @@ export const TextInput = ({
   const { t } = useI18n();
   const [text, setText] = useState(currentText);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
   /**
@@ -27,22 +32,86 @@ export const TextInput = ({
   };
 
   /**
+   * Valida un archivo SVG
+   */
+  const validateFile = (file) => {
+    // Validar tipo de archivo
+    if (!file.type.includes('svg') && !file.name.endsWith('.svg')) {
+      return { valid: false, error: 'Por favor selecciona un archivo SVG válido (.svg)' };
+    }
+
+    // Validar tamaño de archivo
+    if (file.size > MAX_FILE_SIZE) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      return { valid: false, error: `El archivo es demasiado grande (${sizeMB}MB). Máximo: 5MB` };
+    }
+
+    return { valid: true };
+  };
+
+  /**
+   * Procesa un archivo SVG
+   */
+  const processFile = (file) => {
+    setUploadError(null);
+    setIsLoading(true);
+
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      setIsLoading(false);
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const svgContent = e.target.result;
+
+        // Validar que el contenido sea SVG válido
+        if (!svgContent.trim().startsWith('<svg') && !svgContent.includes('<svg')) {
+          throw new Error('El archivo no contiene un SVG válido');
+        }
+
+        // Llamar al callback y verificar si fue exitoso
+        const success = onFileLoad?.(svgContent, file.name);
+
+        // Si onFileLoad retorna false, significa que hubo un error en el parseo
+        if (success === false) {
+          setUploadError('Error al parsear el archivo SVG. Verifica que el archivo sea válido.');
+        } else {
+          setUploadError(null);
+          setText(`Archivo cargado: ${file.name}`);
+        }
+      } catch (error) {
+        setUploadError(`Error al procesar el archivo: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setUploadError('Error al leer el archivo. Por favor intenta nuevamente.');
+      setIsLoading(false);
+    };
+
+    reader.onabort = () => {
+      setUploadError('Lectura del archivo cancelada');
+      setIsLoading(false);
+    };
+
+    reader.readAsText(file);
+  };
+
+  /**
    * Maneja la carga de archivos
    */
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const svgContent = e.target.result;
-        onFileLoad?.(svgContent, file.name);
-      };
-      reader.readAsText(file);
-    } else {
-      alert('Por favor selecciona un archivo SVG válido');
-    }
+    processFile(file);
 
     // Limpiar el input para permitir cargar el mismo archivo nuevamente
     event.target.value = '';
@@ -56,15 +125,7 @@ export const TextInput = ({
   };
 
   /**
-   * Maneja el arrastre de archivos
-   */
-  const handleDragOver = (event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
-  };
-
-  /**
-   * Detecta cuando un archivo entra en el área de arrastre
+   * Maneja el inicio del arrastre
    */
   const handleDragEnter = (event) => {
     event.preventDefault();
@@ -72,14 +133,23 @@ export const TextInput = ({
   };
 
   /**
-   * Detecta cuando un archivo sale del área de arrastre
+   * Maneja la salida del arrastre
    */
   const handleDragLeave = (event) => {
     event.preventDefault();
-    // Solo cambiar si salimos del contenedor principal
+    // Solo ocultar si realmente salimos del contenedor
     if (event.currentTarget === event.target) {
       setIsDragging(false);
     }
+  };
+
+  /**
+   * Maneja el arrastre de archivos
+   */
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDragging(true);
   };
 
   /**
@@ -88,21 +158,16 @@ export const TextInput = ({
   const handleDrop = (event) => {
     event.preventDefault();
     setIsDragging(false);
+
     const files = event.dataTransfer.files;
 
-    if (files.length > 0) {
-      const file = files[0];
-      if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const svgContent = e.target.result;
-          onFileLoad?.(svgContent, file.name);
-        };
-        reader.readAsText(file);
-      } else {
-        alert('Por favor arrastra un archivo SVG válido');
-      }
+    if (files.length === 0) {
+      setUploadError('No se detectó ningún archivo');
+      return;
     }
+
+    const file = files[0];
+    processFile(file);
   };
 
   /**
@@ -127,6 +192,8 @@ export const TextInput = ({
       <div className="p-4">
         <div
           className="relative"
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
@@ -138,14 +205,17 @@ export const TextInput = ({
               value={text}
               onChange={handleTextChange}
               placeholder={placeholder}
-              className="
-                w-full min-h-[80px] p-4 pr-32 
-                bg-muted/20 border border-border rounded-lg
+              disabled={isLoading}
+              className={`
+                w-full min-h-[80px] p-4 pr-32 text-base leading-6
+                bg-muted/20 border rounded-lg
                 resize-none focus:outline-none focus:ring-2 focus:ring-ring
                 placeholder:text-muted-foreground
                 transition-all duration-200
-              "
-              style={{ fontSize: '16px', lineHeight: '1.5' }}
+                ${isDragging ? 'border-primary border-2 bg-primary/5' : 'border-border'}
+                ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                ${uploadError ? 'border-destructive' : ''}
+              `}
             />
 
             {/* Botones de acción */}
@@ -156,10 +226,11 @@ export const TextInput = ({
                 onClick={openFileSelector}
                 title={t('loadSVGFile')}
                 className="h-8 w-8 p-0"
+                disabled={isLoading}
               >
-                <Upload size={16} />
+                <Upload size={16} className={isLoading ? 'animate-pulse' : ''} />
               </Button>
-              
+
               {text.trim() && (
                 <Button
                   variant="ghost"
@@ -167,6 +238,7 @@ export const TextInput = ({
                   onClick={exportText}
                   title={t('exportText')}
                   className="h-8 w-8 p-0"
+                  disabled={isLoading}
                 >
                   <Download size={16} />
                 </Button>
@@ -181,30 +253,38 @@ export const TextInput = ({
             accept=".svg,image/svg+xml"
             onChange={handleFileUpload}
             className="hidden"
+            disabled={isLoading}
           />
 
-          {/* Indicador de drag & drop */}
+          {/* Overlay de drag & drop */}
           {isDragging && (
             <div className="absolute inset-0 pointer-events-none z-10">
               <div className="
-                w-full h-full border-2 border-dashed border-primary/50
-                rounded-lg transition-colors duration-200
+                w-full h-full border-2 border-dashed border-primary
+                rounded-lg bg-primary/10
                 flex items-center justify-center
-                bg-primary/5
               ">
-                <div className="text-primary text-sm font-medium">
-                  <FileText size={24} className="mx-auto mb-2" />
-                  Suelta el archivo SVG aquí
+                <div className="text-primary text-sm font-medium flex flex-col items-center gap-2">
+                  <FileText size={24} />
+                  <span>Suelta el archivo SVG aquí</span>
                 </div>
               </div>
             </div>
           )}
         </div>
 
+        {/* Mensajes de error */}
+        {uploadError && (
+          <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+            <AlertCircle size={16} className="text-destructive flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-destructive">{uploadError}</div>
+          </div>
+        )}
+
         {/* Información adicional */}
         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-4">
-            <span>{t('dragDropText')}</span>
+            <span>{isLoading ? 'Cargando archivo...' : t('dragDropText')}</span>
           </div>
           <div className="flex items-center gap-2">
             {text.length > 0 && (

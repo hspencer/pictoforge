@@ -7,12 +7,7 @@ import React from 'react';
 export const Container = ({ children, className = '' }) => {
   return (
     <div
-      className={`pictoforge-container h-screen w-screen overflow-hidden border-b ${className}`}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative'
-      }}
+      className={`pictoforge-container h-screen w-screen overflow-hidden border-b flex flex-col relative ${className}`}
     >
       {children}
     </div>

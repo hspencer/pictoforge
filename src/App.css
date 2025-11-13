@@ -139,6 +139,20 @@
   max-width: 90rem;
   margin: 0 auto;
   outline: 2px solid var(--border);
+  outline-radius: 0.5rem;
+}
+
+/* Contenedor panzoom */
+.svg-panzoom-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.svg-panzoom-container:active {
+  cursor: grabbing;
 }
 
 /* Contenedor SVG */
@@ -151,10 +165,13 @@
   min-height: 300px;
   background: #e2e2e2;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 20px;
   transition: all 0.2s ease;
+}
+
+.bg-popover{
+  background-color: ;
 }
 
 .svg-container > div {
@@ -163,6 +180,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  pointer-events: all;
 }
 
 .svg-container svg {
@@ -171,6 +189,7 @@
   width: auto;
   height: auto;
   display: block;
+  pointer-events: all;
 }
 
 .svg-container:hover {
@@ -179,7 +198,7 @@
 
 /* Elementos SVG interactivos */
 .svg-container svg * {
-  cursor: pointer;
+  cursor: default;
 }
 
 /* Elemento seleccionado/resaltado */
@@ -202,7 +221,7 @@
 
 /* NO aplicar hover a grupos - solo elementos gráficos individuales */
 .svg-container svg g {
-  pointer-events: none;
+  pointer-events: all;
 }
 
 /* Pero permitir pointer-events en los elementos hijos */
@@ -220,6 +239,16 @@
   z-index: 10000;
 }
 
+/* Bounding box simple (coordenadas SVG) */
+.svg-bounding-box-simple {
+  fill: none;
+  stroke: #00aaff;
+  stroke-width: 0.5;
+  stroke-dasharray: 2,2;
+  cursor: move;
+  z-index: 10000;
+}
+
 /* Handles del bounding box */
 .svg-resize-handle {
   fill: var(--col-select);
@@ -231,6 +260,42 @@
 
 .svg-resize-handle:hover {
   fill: #0099dd;
+}
+
+/* Handles simples del bounding box (coordenadas SVG) */
+.svg-resize-handle-simple {
+  fill: #00aaff;
+  stroke: #fff;
+  stroke-width: 0.3;
+  z-index: 11000;
+}
+
+/* Cursores para handles de resize */
+.cursor-nw-resize { cursor: nw-resize; }
+.cursor-n-resize { cursor: n-resize; }
+.cursor-ne-resize { cursor: ne-resize; }
+.cursor-e-resize { cursor: e-resize; }
+.cursor-se-resize { cursor: se-resize; }
+.cursor-s-resize { cursor: s-resize; }
+.cursor-sw-resize { cursor: sw-resize; }
+.cursor-w-resize { cursor: w-resize; }
+.cursor-grab { cursor: grab; }
+.cursor-move { cursor: move; }
+.cursor-crosshair { cursor: crosshair; }
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }
+
+/* Handle de rotación */
+.svg-rotation-line {
+  stroke: #00aaff;
+  stroke-width: 0.3;
+}
+
+.svg-rotation-handle {
+  fill: #00aaff;
+  stroke: #fff;
+  stroke-width: 0.3;
+  cursor: grab;
 }
 
 /* Nodos editables */
@@ -247,6 +312,41 @@
 
 .svg-node.selected {
   fill: #ff6b35;
+}
+
+/* Tipos de nodos */
+.svg-node-curve { fill: #ff6b35; }
+.svg-node-smooth { fill: #4ade80; }
+.svg-node-default { fill: #00b9ff; }
+
+/* Control point */
+.svg-control-point {
+  fill: #00b9ff;
+  stroke: #ffffff;
+  stroke-width: 1;
+  cursor: move;
+}
+
+.svg-control-line {
+  stroke: #00b9ff;
+  stroke-width: 1;
+  stroke-dasharray: 3,3;
+  opacity: 0.6;
+}
+
+/* Path overlay para pen tool */
+.svg-path-overlay {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  cursor: crosshair;
+}
+
+/* Tooltip */
+.svg-tooltip {
+  font-size: 10px;
+  fill: #374151;
+  pointer-events: none;
 }
 
 /* Tema oscuro para el contenedor SVG */

@@ -10,8 +10,6 @@ La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la 
 
 ### Estado General
 - **Versión**: 0.0.1
-- **Estado del Código**: ✅ Limpio (sin errores de compilación)
-- **Diagnósticos**: ⚠️ Solo advertencias de linting en archivos Markdown
 - **Package Manager**: pnpm@10.4.1
 - **Framework**: React 19.1.0 + Vite 6.3.5
 - **Node.js**: Requiere 18+
@@ -288,24 +286,24 @@ Esta es la estructura completa de la interfaz de PictoForge con todos los nombre
 
 ### Componentes Principales por Nombre
 
-| Componente            | Archivo                              | Función Principal                          |
-|-----------------------|--------------------------------------|--------------------------------------------|
-| `AppContent`          | `src/App.jsx`                        | Contenedor principal de la aplicación      |
-| `I18nProvider`        | `src/hooks/useI18n.jsx`              | Proveedor de internacionalización          |
-| `LanguageSelector`    | `src/components/LanguageSelector.jsx`| Selector de idioma (ES/EN)                 |
-| `TextInput`           | `src/components/TextInput.jsx`       | Input de texto + carga de archivos         |
-| `FileLoadDemo`        | `src/components/FileLoadDemo.jsx`    | Demo de carga de ejemplos                  |
-| `SVGHierarchy`        | `src/components/SVGHierarchy.jsx`    | Árbol jerárquico de elementos SVG          |
-| `StylePanel`          | `src/components/StylePanel.jsx`      | Panel de gestión de estilos CSS            |
-| `SVGViewer`           | `src/components/SVGViewer.jsx`       | Visor principal con herramientas           |
-| `CodeView`            | `src/components/CodeView.jsx`        | Vista de código editable                   |
-| `BoundingBox`         | `src/components/BoundingBox.jsx`     | Caja de transformación con handles         |
-| `NodeEditor`          | `src/components/NodeEditor.jsx`      | Editor de nodos de paths                   |
-| `PerformanceMetrics`  | `src/components/PerformanceMetrics.jsx` | Métricas de rendimiento                  |
-| `CustomIcons`         | `src/components/CustomIcons.jsx`     | Iconos personalizados (SelectArrow, Pen, etc.) |
-| `useSVGParser`        | `src/hooks/useSVGParser.js`          | Hook de parseo y gestión de SVG            |
-| `useHistory`          | `src/hooks/useHistory.js`            | Hook de undo/redo                          |
-| `usePerformance`      | `src/hooks/usePerformance.js`        | Hook de optimización de rendimiento        |
+│ Componente │ Archivo │ Función Principal │
+│------------│---------│-------------------│
+│ `AppContent` │ `src/App.jsx` │ Contenedor principal de la aplicación │
+│ `I18nProvider` │ `src/hooks/useI18n.jsx` │ Proveedor de internacionalización │
+│ `LanguageSelector` │ `src/components/LanguageSelector.jsx` │ Selector de idioma (ES/EN) │
+│ `TextInput` │ `src/components/TextInput.jsx` │ Input de texto + carga de archivos │
+│ `FileLoadDemo` │ `src/components/FileLoadDemo.jsx` │ Demo de carga de ejemplos │
+│ `SVGHierarchy` │ `src/components/SVGHierarchy.jsx` │ Árbol jerárquico de elementos SVG │
+│ `StylePanel` │ `src/components/StylePanel.jsx` │ Panel de gestión de estilos CSS │
+│ `SVGViewer` │ `src/components/SVGViewer.jsx` │ Visor principal con herramientas │
+│ `CodeView` │ `src/components/CodeView.jsx` │ Vista de código editable │
+│ `BoundingBox` │ `src/components/BoundingBox.jsx` │ Caja de transformación con handles │
+│ `NodeEditor` │ `src/components/NodeEditor.jsx` │ Editor de nodos de paths │
+│ `PerformanceMetrics` │ `src/components/PerformanceMetrics.jsx` │ Métricas de rendimiento │
+│ `CustomIcons` │ `src/components/CustomIcons.jsx` │ Iconos personalizados (SelectArrow, Pen, etc.) │
+│ `useSVGParser` │ `src/hooks/useSVGParser.js` │ Hook de parseo y gestión de SVG │
+│ `useHistory` │ `src/hooks/useHistory.js` │ Hook de undo/redo │
+│ `usePerformance` │ `src/hooks/usePerformance.js` │ Hook de optimización de rendimiento │
 
 ### Estados Principales (State Management)
 

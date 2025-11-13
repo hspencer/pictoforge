@@ -9,6 +9,30 @@ export const useSVGParser = () => {
   const [selectedElement, setSelectedElement] = useState(null);
   const [svgContent, setSvgContent] = useState('');
 
+  // Elementos técnicos que no se deben mostrar en la jerarquía visual
+  const TECHNICAL_ELEMENTS = new Set([
+    'defs',
+    'style',
+    'metadata',
+    'title',
+    'desc',
+    'script',
+    'clipPath',
+    'mask',
+    'linearGradient',
+    'radialGradient',
+    'pattern',
+    'filter',
+    'marker'
+  ]);
+
+  /**
+   * Verifica si un elemento debe incluirse en la jerarquía visual
+   */
+  const shouldIncludeElement = useCallback((tagName) => {
+    return !TECHNICAL_ELEMENTS.has(tagName.toLowerCase());
+  }, []);
+
   /**
    * Parsea un elemento SVG y extrae su información
    */
@@ -30,16 +54,16 @@ export const useSVGParser = () => {
       }
     });
 
-    // Parsear elementos hijos recursivamente
+    // Parsear elementos hijos recursivamente (solo elementos visuales)
     Array.from(element.children).forEach(child => {
-      if (child.tagName) {
+      if (child.tagName && shouldIncludeElement(child.tagName)) {
         const childData = parseElement(child, elementData);
         elementData.children.push(childData);
       }
     });
 
     return elementData;
-  };
+  }, [shouldIncludeElement]);
 
   /**
    * Extrae los estilos CSS definidos en el SVG
@@ -71,13 +95,25 @@ export const useSVGParser = () => {
    */
   const parseSVG = useCallback((svgString) => {
     try {
+      // Validar que el string no esté vacío
+      if (!svgString || typeof svgString !== 'string') {
+        throw new Error('El contenido del SVG está vacío o no es válido');
+      }
+
       // Crear un parser DOM temporal
       const parser = new DOMParser();
       const doc = parser.parseFromString(svgString, 'image/svg+xml');
+
+      // Verificar errores de parseo
+      const parserError = doc.querySelector('parsererror');
+      if (parserError) {
+        throw new Error('El archivo SVG tiene errores de sintaxis XML');
+      }
+
       const svgElement = doc.querySelector('svg');
 
       if (!svgElement) {
-        throw new Error('No se encontró elemento SVG válido');
+        throw new Error('No se encontró elemento SVG válido en el archivo');
       }
 
       // Extraer información del SVG raíz
@@ -102,11 +138,13 @@ export const useSVGParser = () => {
 
       setSvgData(parsedData);
       setSvgContent(svgString);
-      return parsedData;
+      return { success: true, data: parsedData };
 
     } catch (error) {
       console.error('Error al parsear SVG:', error);
-      return null;
+      setSvgData(null);
+      setSvgContent('');
+      return { success: false, error: error.message };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

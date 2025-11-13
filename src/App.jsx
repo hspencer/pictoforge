@@ -71,8 +71,16 @@ function AppContent() {
    * Maneja la carga de archivos SVG
    */
   const handleFileLoad = (svgContent, fileName) => {
-    loadSVG(svgContent);
+    const result = loadSVG(svgContent);
+
+    // Verificar si el parseo fue exitoso
+    if (result && !result.success) {
+      setCurrentText(`Error al cargar ${fileName}: ${result.error}`);
+      return false;
+    }
+
     setCurrentText(`Archivo cargado: ${fileName}`);
+    return true;
   };
 
   /**
