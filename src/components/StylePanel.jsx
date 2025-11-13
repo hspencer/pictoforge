@@ -2,6 +2,8 @@ import React from 'react';
 import { Palette, Eye, EyeOff, Edit2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n';
+import PathDebugger from './PathDebugger';
+import SVGMetadataEditor from './SVGMetadataEditor';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +28,9 @@ import { Label } from '@/components/ui/label';
 export const StylePanel = ({
   svgData,
   selectedElement,
-  onStyleChange
+  svgContent,
+  onStyleChange,
+  onSVGUpdate
 }) => {
   const { t } = useI18n();
   const [activeStyles, setActiveStyles] = React.useState(new Set());
@@ -240,28 +244,45 @@ export const StylePanel = ({
 
         {/* Información del elemento seleccionado */}
         {selectedElement && (
-          <div className="mt-6 pt-4 border-t">
-            <h4 className="font-medium text-sm mb-2">{t('selectedElement')}</h4>
-            <div className="bg-muted/20 rounded p-3 text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ID:</span>
-                <span className="font-mono">{selectedElement.id}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tipo:</span>
-                <span className="font-mono">{selectedElement.tagName}</span>
-              </div>
-              {selectedElement.className && (
+          <div className="mt-6 pt-4 border-t space-y-4">
+            <div>
+              <h4 className="font-medium text-sm mb-2">{t('selectedElement')}</h4>
+              <div className="bg-muted/20 rounded p-3 text-xs space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Clases:</span>
-                  <span className="font-mono">{selectedElement.className}</span>
+                  <span className="text-muted-foreground">ID:</span>
+                  <span className="font-mono">{selectedElement.id}</span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tipo:</span>
+                  <span className="font-mono">{selectedElement.tagName}</span>
+                </div>
+                {selectedElement.className && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Clases:</span>
+                    <span className="font-mono">{selectedElement.className}</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* PathDebugger - Solo para elementos <path> */}
+            {selectedElement.tagName === 'path' && selectedElement.element && (
+              <PathDebugger pathElement={selectedElement.element} />
+            )}
           </div>
         )}
 
-        {!selectedElement && (
+        {/* SVGMetadataEditor - Siempre visible cuando hay SVG */}
+        {svgContent && onSVGUpdate && (
+          <div className="border-t pt-4">
+            <SVGMetadataEditor
+              svgContent={svgContent}
+              onUpdate={onSVGUpdate}
+            />
+          </div>
+        )}
+
+        {!selectedElement && !svgContent && (
           <div className="mt-6 pt-4 border-t text-center text-muted-foreground">
             <p className="text-sm">
               {t('selectElementToApplyStyles')}

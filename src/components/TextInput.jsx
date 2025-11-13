@@ -6,14 +6,15 @@ import { useI18n } from '@/hooks/useI18n.jsx';
 /**
  * Componente para la entrada de texto y carga de archivos
  */
-export const TextInput = ({ 
-  onTextChange, 
-  onFileLoad, 
+export const TextInput = ({
+  onTextChange,
+  onFileLoad,
   currentText = '',
-  placeholder 
+  placeholder
 }) => {
   const { t } = useI18n();
   const [text, setText] = useState(currentText);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   /**
@@ -63,12 +64,32 @@ export const TextInput = ({
   };
 
   /**
+   * Detecta cuando un archivo entra en el área de arrastre
+   */
+  const handleDragEnter = (event) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  /**
+   * Detecta cuando un archivo sale del área de arrastre
+   */
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    // Solo cambiar si salimos del contenedor principal
+    if (event.currentTarget === event.target) {
+      setIsDragging(false);
+    }
+  };
+
+  /**
    * Maneja la suelta de archivos
    */
   const handleDrop = (event) => {
     event.preventDefault();
+    setIsDragging(false);
     const files = event.dataTransfer.files;
-    
+
     if (files.length > 0) {
       const file = files[0];
       if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
@@ -104,9 +125,11 @@ export const TextInput = ({
   return (
     <div className="w-full bg-background border-b">
       <div className="p-4">
-        <div 
+        <div
           className="relative"
           onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           {/* Área de texto principal */}
@@ -161,18 +184,21 @@ export const TextInput = ({
           />
 
           {/* Indicador de drag & drop */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="
-              w-full h-full border-2 border-dashed border-transparent
-              rounded-lg transition-colors duration-200
-              flex items-center justify-center
-            ">
-              <div className="text-muted-foreground/50 text-sm hidden">
-                <FileText size={20} className="mx-auto mb-1" />
-                Arrastra un archivo SVG aquí
+          {isDragging && (
+            <div className="absolute inset-0 pointer-events-none z-10">
+              <div className="
+                w-full h-full border-2 border-dashed border-primary/50
+                rounded-lg transition-colors duration-200
+                flex items-center justify-center
+                bg-primary/5
+              ">
+                <div className="text-primary text-sm font-medium">
+                  <FileText size={24} className="mx-auto mb-2" />
+                  Suelta el archivo SVG aquí
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Información adicional */}

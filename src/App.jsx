@@ -3,11 +3,11 @@ import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSVGParser } from './hooks/useSVGParser';
 import { I18nProvider, useI18n } from './hooks/useI18n.jsx';
+import { createSVGOptimizer } from './services/SVGOptimizer';
 import Container from './components/Container';
 import TextInput from './components/TextInput';
 import SVGHierarchy from './components/SVGHierarchy';
 import SVGViewer from './components/SVGViewer';
-import StylePanel from './components/StylePanel';
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
 import LanguageSelector from './components/LanguageSelector';
@@ -23,6 +23,7 @@ function AppContent() {
   const [currentText, setCurrentText] = useState(t('textInputPlaceholder'));
   const [expandedElements, setExpandedElements] = useState(new Set(['pictogram', 'bed', 'person']));
   const [showCodeView, setShowCodeView] = useState(false);
+  const [currentTool, setCurrentTool] = useState('select');
   
   const {
     svgData,
@@ -46,9 +47,10 @@ function AppContent() {
         console.error('Error cargando SVG de ejemplo:', error);
       }
     };
-    
+
     loadExampleSVG();
-  }, [loadSVG]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Maneja el cambio de tema
@@ -76,18 +78,23 @@ function AppContent() {
   /**
    * Maneja la selección de elementos desde la jerarquía o el visor
    */
-  const handleElementSelect = (element) => {
+  const handleElementSelect = (element, fromHierarchy = false) => {
     setSelectedElement(element);
-    
+
+    // Si la selección viene de la jerarquía, cambiar a herramienta node
+    if (fromHierarchy && element) {
+      setCurrentTool('node');
+    }
+
     // Auto-expandir la ruta hacia el elemento seleccionado
     if (element && svgData) {
       const path = getElementPath(element.id);
       const newExpanded = new Set(expandedElements);
-      
+
       path.forEach(pathElement => {
         newExpanded.add(pathElement.id);
       });
-      
+
       setExpandedElements(newExpanded);
     }
   };
@@ -154,20 +161,56 @@ function AppContent() {
   };
 
   /**
-   * Maneja el guardado del SVG
+   * Maneja el guardado del SVG con optimización
    */
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!svgContent) return;
-    
-    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pictogram_${Date.now()}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    try {
+      // Crear instancia del optimizador
+      const optimizer = createSVGOptimizer();
+
+      // Obtener metadatos del SVG (si existen)
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+      const svgElement = doc.documentElement;
+
+      const metadata = {
+        title: svgElement.querySelector('title')?.textContent || '',
+        desc: svgElement.querySelector('desc')?.textContent || '',
+        lang: svgElement.getAttribute('lang') || 'en',
+      };
+
+      // Optimizar SVG con metadatos de accesibilidad
+      const result = await optimizer.processForExport(svgContent, metadata, {
+        floatPrecision: 4,
+      });
+
+      console.log('✅ SVG optimizado para exportación:', result.info);
+
+      // Descargar SVG optimizado
+      const blob = new Blob([result.data], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pictogram_${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('❌ Error al guardar SVG:', error);
+      // Fallback: guardar sin optimizar
+      const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pictogram_${Date.now()}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   /**
@@ -243,7 +286,7 @@ function AppContent() {
 
 
 
-      {/* Layout principal de tres paneles */}
+      {/* Layout principal de dos paneles */}
       <div className="flex-1 flex overflow-hidden">
         {/* Panel izquierdo - Jerarquía de elementos */}
         <div className="w-1/2 border-r bg-muted/10 flex flex-col">
@@ -253,19 +296,13 @@ function AppContent() {
             onElementSelect={handleElementSelect}
             expandedElements={expandedElements}
             onToggleExpand={handleToggleExpand}
+            onStyleChange={handleStyleChange}
+            onSVGUpdate={handleSVGUpdate}
+            svgContent={svgContent}
           />
-          
-          {/* Panel de estilos en la parte inferior del panel izquierdo */}
-          <div className="border-t">
-            <StylePanel
-              svgData={svgData}
-              selectedElement={selectedElement}
-              onStyleChange={handleStyleChange}
-            />
-          </div>
         </div>
 
-        {/* Panel central - Visor SVG o Vista de Código */}
+        {/* Panel derecho - Visor SVG o Vista de Código */}
         <div className="w-1/2 flex flex-col">
           {showCodeView ? (
             <CodeView
@@ -279,6 +316,8 @@ function AppContent() {
               selectedElement={selectedElement}
               onElementSelect={handleElementSelect}
               svgData={svgData}
+              initialTool={currentTool}
+              onToolChange={setCurrentTool}
             />
           )}
         </div>

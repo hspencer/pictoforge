@@ -12,7 +12,7 @@ export const useSVGParser = () => {
   /**
    * Parsea un elemento SVG y extrae su información
    */
-  const parseElement = useCallback((element, parent = null) => {
+  const parseElement = (element, parent = null) => {
     const elementData = {
       id: element.id || `element_${Math.random().toString(36).substr(2, 9)}`,
       tagName: element.tagName.toLowerCase(),
@@ -39,20 +39,20 @@ export const useSVGParser = () => {
     });
 
     return elementData;
-  }, []);
+  };
 
   /**
    * Extrae los estilos CSS definidos en el SVG
    */
-  const extractStyles = useCallback((svgElement) => {
+  const extractStyles = (svgElement) => {
     const styles = {};
     const styleElements = svgElement.querySelectorAll('style');
-    
+
     styleElements.forEach(styleEl => {
       const cssText = styleEl.textContent;
       // Parsear reglas CSS básicas
       const rules = cssText.match(/\.[^{]+\{[^}]+\}/g) || [];
-      
+
       rules.forEach(rule => {
         const match = rule.match(/\.([^{]+)\{([^}]+)\}/);
         if (match) {
@@ -64,7 +64,7 @@ export const useSVGParser = () => {
     });
 
     return styles;
-  }, []);
+  };
 
   /**
    * Parsea el contenido SVG completo
@@ -82,7 +82,7 @@ export const useSVGParser = () => {
 
       // Extraer información del SVG raíz
       const rootData = parseElement(svgElement);
-      
+
       // Extraer estilos
       const styles = extractStyles(svgElement);
 
@@ -108,7 +108,8 @@ export const useSVGParser = () => {
       console.error('Error al parsear SVG:', error);
       return null;
     }
-  }, [parseElement, extractStyles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Carga un archivo SVG desde una URL o string
@@ -116,7 +117,7 @@ export const useSVGParser = () => {
   const loadSVG = useCallback(async (source) => {
     try {
       let svgString;
-      
+
       if (typeof source === 'string' && source.startsWith('<svg')) {
         // Es contenido SVG directo
         svgString = source;
@@ -136,7 +137,8 @@ export const useSVGParser = () => {
       console.error('Error al cargar SVG:', error);
       return null;
     }
-  }, [parseSVG]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Busca un elemento por ID en la estructura parseada

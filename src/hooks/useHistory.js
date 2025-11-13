@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 /**
  * Hook para manejar historial de cambios y undo/redo
@@ -6,6 +6,16 @@ import { useState, useCallback } from 'react';
 export const useHistory = (initialState = null) => {
   const [history, setHistory] = useState([initialState].filter(Boolean));
   const [currentIndex, setCurrentIndex] = useState(0);
+  const lastInitialState = useRef(initialState);
+
+  // Detectar cuando initialState cambia (por ejemplo, al cargar un nuevo SVG)
+  useEffect(() => {
+    if (initialState && initialState !== lastInitialState.current) {
+      lastInitialState.current = initialState;
+      setHistory([initialState]);
+      setCurrentIndex(0);
+    }
+  }, [initialState]);
 
   // Estado actual
   const currentState = history[currentIndex] || initialState;

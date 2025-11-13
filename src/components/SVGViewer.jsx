@@ -1,50 +1,132 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
   Maximize2,
   Undo,
   Redo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon } from './CustomIcons';
-import BoundingBox from './BoundingBox';
-import NodeEditor from './NodeEditor';
+import MoveableWrapper from './MoveableWrapper';
+import BezierHandleEditor from './BezierHandleEditor';
 import useHistory from '../hooks/useHistory';
 import usePerformance from '../hooks/usePerformance';
+import usePanzoom from '../hooks/usePanzoom';
+import useCoordinateTransformer from '../hooks/useCoordinateTransformer';
+import useMoveable from '../hooks/useMoveable';
 import PerformanceMetrics from './PerformanceMetrics';
-import { 
-  getElementBBox, 
-  moveElement, 
-  scaleElement, 
-  rotateElement,
-  updateNodeInPath,
-  addNodeToPath,
-  removeNodeFromPath
-} from '../utils/svgManipulation';
+// Las funciones de manipulación SVG ya no se usan - reemplazadas por MoveableWrapper y PathDataProcessor
 
 /**
  * Componente para visualizar y editar SVG
  */
-export const SVGViewer = ({ 
-  svgContent, 
-  selectedElement, 
+export const SVGViewer = ({
+  svgContent,
+  selectedElement,
   onElementSelect,
-  svgData 
+  svgData,
+  initialTool = 'select',
+  onToolChange
 }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
-  const overlayRef = useRef(null);
-  const [tool, setTool] = useState('select'); // select, node, pen
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const svgContainerRef = useRef(null); // Ref para el contenedor panzoom
+  const [tool, setToolInternal] = useState(initialTool);
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
-  const [showBoundingBox, setShowBoundingBox] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
-  
+
+  // Wrapper para setTool que también llama al callback
+  const setTool = (newTool) => {
+    setToolInternal(newTool);
+    onToolChange?.(newTool);
+  };
+
+  // Actualizar tool cuando cambia initialTool desde fuera
+  useEffect(() => {
+    setToolInternal(initialTool);
+  }, [initialTool]);
+
+  // Sincronizar selectedSVGElement cuando cambia selectedElement desde fuera (jerarquía)
+  useEffect(() => {
+    if (selectedElement && svgRef.current) {
+      const domElement = svgRef.current.querySelector(`#${selectedElement.id}`);
+      if (domElement) {
+        setSelectedSVGElement(domElement);
+        console.log('🔄 Sincronizando selección desde jerarquía:', selectedElement.id);
+      }
+    } else if (!selectedElement) {
+      setSelectedSVGElement(null);
+    }
+  }, [selectedElement]);
+
+  // Sistema de zoom y pan con @panzoom/panzoom
+  const {
+    panzoomState,
+    isReady: isPanzoomReady,
+    zoomIn: panzoomZoomIn,
+    zoomOut: panzoomZoomOut,
+    reset: panzoomReset,
+    center: panzoomCenter,
+  } = usePanzoom({
+    elementRef: svgContainerRef,
+    panzoomOptions: {
+      maxScale: 10,
+      minScale: 0.1,
+      step: 0.3,
+      startScale: 1,
+      canvas: true,
+    },
+  });
+
+  // Sistema de transformación de coordenadas
+  const {
+    screenToSvg,
+    svgToScreen,
+    screenDeltaToSvgDelta,
+    updateViewBox,
+    isReady: isTransformerReady,
+    transformer: coordinateTransformer,
+  } = useCoordinateTransformer({
+    svgRef: svgContainerRef,
+    panzoomState,
+  });
+
+  // Sistema de manipulación con Moveable
+  const {
+    isDragging: isMoveableDragging,
+    isResizing,
+    isRotating,
+    handleDragStart,
+    handleDrag,
+    handleDragEnd,
+    handleResizeStart,
+    handleResize,
+    handleResizeEnd,
+    handleRotateStart,
+    handleRotate,
+    handleRotateEnd,
+  } = useMoveable({
+    coordinateTransformer,
+    onTransformStart: (data) => {
+      console.log('🎯 Transform Start:', data.type);
+    },
+    onTransform: (data) => {
+      // Actualizar en tiempo real si es necesario
+    },
+    onTransformEnd: (data) => {
+      console.log('🎯 Transform End:', data.type, data.transform);
+      // Guardar en historial
+      if (svgContent) {
+        const svg = svgContainerRef.current?.querySelector('svg');
+        if (svg) {
+          saveToHistory(svg.outerHTML);
+        }
+      }
+    },
+  });
+
   // Sistema de historial
   const {
     currentState: svgHistory,
@@ -100,7 +182,19 @@ export const SVGViewer = ({
     const target = event.target;
     const elementId = target.id || target.getAttribute('id');
 
-    console.log('🖱️ Click en elemento:', { elementId, tagName: target.tagName, tool });
+    // Debug: Probar transformación de coordenadas
+    const screenCoords = { x: event.clientX, y: event.clientY };
+    const svgCoords = screenToSvg(screenCoords.x, screenCoords.y);
+
+    console.log('🖱️ Click en elemento:', {
+      elementId,
+      tagName: target.tagName,
+      tool,
+      screenCoords,
+      svgCoords,
+      panzoomState,
+      transformerReady: isTransformerReady
+    });
 
     if (tool === 'select') {
       // FLECHA NEGRA: Seleccionar elemento completo para mover/escalar/rotar
@@ -117,8 +211,7 @@ export const SVGViewer = ({
         if (element) {
           onElementSelect(element);
           setSelectedSVGElement(target);
-          setShowBoundingBox(true); // Mostrar bounding box con handles
-          console.log('📦 BoundingBox activado para:', elementId);
+          console.log('✅ Elemento seleccionado para edición:', elementId);
         }
       } else {
         console.warn('⚠️ No se pudo seleccionar:', { elementId, hasSvgData: !!svgData });
@@ -130,14 +223,12 @@ export const SVGViewer = ({
         if (element) {
           onElementSelect(element);
           setSelectedSVGElement(target);
-          setShowBoundingBox(false); // NO mostrar bounding box, solo nodos
         }
       }
     } else if (tool === 'pen') {
       // HERRAMIENTA PLUMA: Similar a node pero para agregar/eliminar
       if (target.tagName === 'path') {
         setSelectedSVGElement(target);
-        setShowBoundingBox(false);
       }
     }
   };
@@ -211,59 +302,24 @@ export const SVGViewer = ({
   };
 
   /**
-   * Efecto para resaltar elemento cuando cambia la selección
-   */
-  useEffect(() => {
-    if (selectedElement?.id) {
-      highlightElement(selectedElement.id);
-    }
-  }, [selectedElement]);
-
-  /**
    * Maneja el zoom del SVG
    */
   const handleZoom = (direction) => {
-    const factor = direction === 'in' ? 1.2 : 0.8;
-    setZoom(prev => Math.max(0.1, Math.min(5, prev * factor)));
+    if (direction === 'in') {
+      panzoomZoomIn();
+    } else {
+      panzoomZoomOut();
+    }
   };
 
   /**
    * Resetea la vista del SVG
    */
   const resetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    panzoomReset();
   };
 
-  /**
-   * Maneja el inicio del arrastre para pan
-   */
-  const handleMouseDown = (event) => {
-    if (tool === 'move' || event.button === 1) { // Middle mouse button
-      setIsDragging(true);
-      setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y });
-      event.preventDefault();
-    }
-  };
-
-  /**
-   * Maneja el movimiento del mouse para pan
-   */
-  const handleMouseMove = (event) => {
-    if (isDragging) {
-      setPan({
-        x: event.clientX - dragStart.x,
-        y: event.clientY - dragStart.y
-      });
-    }
-  };
-
-  /**
-   * Maneja el fin del arrastre
-   */
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  // Pan manual eliminado - ahora lo maneja @panzoom/panzoom automáticamente
 
   /**
    * Genera un nombre único con timestamp
@@ -293,22 +349,6 @@ export const SVGViewer = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  // Efectos para manejar eventos globales
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseUp);
-
-    return () => {
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseUp);
-    };
-  }, [isDragging, dragStart, pan]);
 
   // Efecto para resaltar elemento seleccionado
   useEffect(() => {
@@ -398,7 +438,7 @@ export const SVGViewer = ({
             <ZoomOut size={16} />
           </Button>
           <span className="text-sm text-muted-foreground min-w-[4rem] text-center">
-            {Math.round(zoom * 100)}%
+            {Math.round(panzoomState.scale * 100)}%
           </span>
           <Button
             variant="ghost"
@@ -441,30 +481,30 @@ export const SVGViewer = ({
       <div
         ref={containerRef}
         className="flex-1 overflow-hidden relative bg-gradient-to-br from-muted/10 to-muted/30"
-        onMouseDown={handleMouseDown}
         onClick={(e) => {
           // Des-seleccionar si se hace click en el fondo
           if (e.target === containerRef.current) {
             console.log('🚫 Des-seleccionando');
             setSelectedSVGElement(null);
-            setShowBoundingBox(false);
             onElementSelect(null);
           }
         }}
         style={{
-          cursor: tool === 'node' || isDragging ? 'move' :
+          cursor: tool === 'node' || isMoveableDragging ? 'move' :
                   tool === 'pen' ? 'crosshair' :
                   'default'
         }}
       >
         {svgContent ? (
           <>
-            {/* SVG Content - Con zoom y pan aplicados */}
+            {/* SVG Content - Panzoom aplica transformación automáticamente */}
             <div
-              className="absolute inset-0 flex items-center justify-center"
+              ref={svgContainerRef}
+              className="svg-panzoom-container"
               style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                transformOrigin: 'center'
+                position: 'relative',
+                transformOrigin: '0 0',
+                touchAction: 'none',
               }}
             >
               <div
@@ -474,233 +514,60 @@ export const SVGViewer = ({
               >
                 <div dangerouslySetInnerHTML={{ __html: svgContent }} />
               </div>
+
+              {/* BezierHandleEditor - DENTRO del contenedor panzoom para heredar transformación */}
+              {selectedSVGElement && tool === 'node' && selectedElement?.tagName === 'path' && (
+                <BezierHandleEditor
+                  pathElement={selectedSVGElement}
+                  coordinateTransformer={coordinateTransformer}
+                  containerRef={containerRef}
+                  svgContainerRef={svgContainerRef}
+                  zoom={panzoomState.scale}
+                  panzoomState={panzoomState}
+                  onPathUpdate={(newPathString) => {
+                    console.log('🎨 Path actualizado:', newPathString);
+                    // Guardar en historial
+                    const svg = svgContainerRef.current?.querySelector('svg');
+                    if (svg) {
+                      saveToHistory(svg.outerHTML);
+                    }
+                  }}
+                />
+              )}
             </div>
 
-            {/* Overlay SVG - MISMO sistema de coordenadas que el SVG original */}
-            {selectedSVGElement && (() => {
-              const svg = svgRef.current?.querySelector('svg');
-              if (!svg) return null;
-
-              const viewBox = svg.viewBox.baseVal;
-              const bbox = selectedSVGElement.getBBox();
-
-              console.log('📦 BoundingBox en SVG coords:', { bbox, viewBox: `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}` });
-
-              return (
-                <div
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  style={{
-                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                    transformOrigin: 'center'
-                  }}
-                >
-                  <svg
-                    style={{
-                      width: svg.clientWidth,
-                      height: svg.clientHeight,
-                      pointerEvents: 'none'
-                    }}
-                    viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-                  >
-                    {/* BoundingBox simple en coordenadas SVG */}
-                    <rect
-                      x={bbox.x}
-                      y={bbox.y}
-                      width={bbox.width}
-                      height={bbox.height}
-                      fill="none"
-                      stroke="#00aaff"
-                      strokeWidth={0.5}
-                      strokeDasharray="2,2"
-                      pointerEvents="all"
-                      style={{ cursor: 'move' }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        const startX = e.clientX;
-                        const startY = e.clientY;
-
-                        // Obtener transform actual
-                        const currentTransform = selectedSVGElement.getAttribute('transform') || '';
-                        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-                        let currentTx = translateMatch ? parseFloat(translateMatch[1]) : 0;
-                        let currentTy = translateMatch ? parseFloat(translateMatch[2]) : 0;
-
-                        const handleMouseMove = (e) => {
-                          const deltaX = e.clientX - startX;
-                          const deltaY = e.clientY - startY;
-
-                          // Convertir delta de píxeles a unidades SVG
-                          const svgDeltaX = deltaX / zoom;
-                          const svgDeltaY = deltaY / zoom;
-
-                          // Aplicar nuevo transform
-                          const newTx = currentTx + svgDeltaX;
-                          const newTy = currentTy + svgDeltaY;
-
-                          selectedSVGElement.setAttribute('transform', `translate(${newTx}, ${newTy})`);
-
-                          // Forzar re-render del BoundingBox
-                          setSelectedSVGElement(selectedSVGElement);
-                        };
-
-                        const handleMouseUp = () => {
-                          document.removeEventListener('mousemove', handleMouseMove);
-                          document.removeEventListener('mouseup', handleMouseUp);
-                          console.log('✅ Drag completado');
-                        };
-
-                        document.addEventListener('mousemove', handleMouseMove);
-                        document.addEventListener('mouseup', handleMouseUp);
-                      }}
-                    />
-
-                    {/* Handles en las esquinas - TAMAÑO FIJO EN PÍXELES */}
-                    {[
-                      { x: bbox.x, y: bbox.y, cursor: 'nw-resize' },
-                      { x: bbox.x + bbox.width, y: bbox.y, cursor: 'ne-resize' },
-                      { x: bbox.x + bbox.width, y: bbox.y + bbox.height, cursor: 'se-resize' },
-                      { x: bbox.x, y: bbox.y + bbox.height, cursor: 'sw-resize' }
-                    ].map((pos, i) => (
-                      <rect
-                        key={i}
-                        x={pos.x - 0.8}
-                        y={pos.y - 0.8}
-                        width={1.6}
-                        height={1.6}
-                        fill="#00aaff"
-                        stroke="#fff"
-                        strokeWidth={0.3}
-                        pointerEvents="all"
-                        style={{ cursor: pos.cursor }}
-                        onMouseDown={(e) => {
-                          console.log('🖱️ MouseDown en handle', i);
-                          e.stopPropagation();
-                        }}
-                      />
-                    ))}
-
-                    {/* Manipulador de rotación - círculo arriba del centro */}
-                    <line
-                      x1={bbox.x + bbox.width / 2}
-                      y1={bbox.y}
-                      x2={bbox.x + bbox.width / 2}
-                      y2={bbox.y - 5}
-                      stroke="#00aaff"
-                      strokeWidth={0.3}
-                      pointerEvents="none"
-                    />
-                    <circle
-                      cx={bbox.x + bbox.width / 2}
-                      cy={bbox.y - 5}
-                      r={1}
-                      fill="#00aaff"
-                      stroke="#fff"
-                      strokeWidth={0.3}
-                      pointerEvents="all"
-                      style={{ cursor: 'grab' }}
-                      onMouseDown={(e) => {
-                        console.log('🔄 MouseDown en rotación');
-                        e.stopPropagation();
-                      }}
-                    />
-                  </svg>
-                </div>
-              );
-            })()}
-
-            {/* Overlay SVG viejo - mantener para NodeEditor */}
-            <svg
-              ref={overlayRef}
-              className="absolute inset-0 w-full h-full pointer-events-none"
-              viewBox={`0 0 ${containerDimensions.width || 800} ${containerDimensions.height || 600}`}
-              style={{ zIndex: 10, display: 'none' }}
-            >
-              <BoundingBox
-                  element={null}
-                  onResize={(handleId, deltaX, deltaY) => {
-                    if (!selectedSVGElement) return;
-                    
-                    // Guardar estado antes del cambio
-                    saveToHistory(svgRef.current?.innerHTML);
-                    
-                    const bbox = getElementBBox(selectedSVGElement);
-                    if (!bbox) return;
-                    
-                    // Calcular nueva escala basada en el handle
-                    let scaleX = 1, scaleY = 1;
-                    
-                    switch (handleId) {
-                      case 'se': // esquina inferior derecha
-                        scaleX = (bbox.width + deltaX) / bbox.width;
-                        scaleY = (bbox.height + deltaY) / bbox.height;
-                        break;
-                      case 'e': // lado derecho
-                        scaleX = (bbox.width + deltaX) / bbox.width;
-                        break;
-                      case 's': // lado inferior
-                        scaleY = (bbox.height + deltaY) / bbox.height;
-                        break;
-                      case 'nw': // esquina superior izquierda
-                        scaleX = (bbox.width - deltaX) / bbox.width;
-                        scaleY = (bbox.height - deltaY) / bbox.height;
-                        break;
-                    }
-                    
-                    scaleElement(selectedSVGElement, scaleX, scaleY, bbox.x, bbox.y);
-                  }}
-                  onMove={(deltaX, deltaY) => {
-                    if (!selectedSVGElement) return;
-                    moveElement(selectedSVGElement, deltaX, deltaY);
-                  }}
-                  onRotate={(angle, centerX, centerY) => {
-                    if (!selectedSVGElement) return;
-
-                    // Guardar estado antes del cambio (solo la primera vez)
-                    if (!isDragging) {
-                      saveToHistory(svgRef.current?.innerHTML);
-                    }
-
-                    rotateElement(selectedSVGElement, angle, centerX, centerY);
-                  }}
-                />
-                
-                <NodeEditor
-                  element={selectedSVGElement}
-                  tool={tool}
-                  visible={(tool === 'node' || tool === 'pen') && selectedSVGElement}
-                  viewport={{ zoom, pan }}
-                  containerRef={containerRef}
-                  onNodeChange={(oldNode, newNode) => {
-                    if (!selectedSVGElement) return;
-                    
-                    // Guardar estado antes del cambio
-                    saveToHistory(svgRef.current?.innerHTML);
-                    
-                    // Actualizar el nodo en el path
-                    updateNodeInPath(selectedSVGElement, oldNode.index, newNode);
-                  }}
-                  onNodeAdd={(position) => {
-                    if (!selectedSVGElement) return;
-                    
-                    // Guardar estado antes del cambio
-                    saveToHistory(svgRef.current?.innerHTML);
-                    
-                    // Agregar nuevo nodo al path
-                    addNodeToPath(selectedSVGElement, position);
-                  }}
-                  onNodeRemove={(node) => {
-                    if (!selectedSVGElement) return;
-                    
-                    // Guardar estado antes del cambio
-                    saveToHistory(svgRef.current?.innerHTML);
-                    
-                    // Eliminar nodo del path
-                    removeNodeFromPath(selectedSVGElement, node.index);
-                  }}
-                />
-              </svg>
+            {/* MoveableWrapper - Sistema moderno de manipulación */}
+            {selectedSVGElement && tool === 'select' && (
+              <MoveableWrapper
+                target={selectedSVGElement}
+                container={containerRef.current}
+                // Drag
+                draggable={true}
+                onDragStart={handleDragStart}
+                onDrag={handleDrag}
+                onDragEnd={handleDragEnd}
+                // Resize
+                resizable={true}
+                onResizeStart={handleResizeStart}
+                onResize={handleResize}
+                onResizeEnd={handleResizeEnd}
+                // Rotate
+                rotatable={true}
+                onRotateStart={handleRotateStart}
+                onRotate={handleRotate}
+                onRotateEnd={handleRotateEnd}
+                // Snapping
+                snappable={true}
+                snapThreshold={5}
+                snapGap={50}
+                isDisplaySnapDigit={true}
+                isDisplayObjectSnapBound={true}
+                // Configuración visual
+                zoom={panzoomState.scale}
+                keepRatio={false}
+                renderDirections={['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se']}
+              />
+            )}
 
             {/* Métricas de rendimiento */}
             <PerformanceMetrics

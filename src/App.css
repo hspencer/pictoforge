@@ -136,8 +136,9 @@
 /* Estilos personalizados para PictoForge */
 
 .pictoforge-container{
-  max-width: 74rem;
+  max-width: 90rem;
   margin: 0 auto;
+  outline: 2px solid var(--border);
 }
 
 /* Contenedor SVG */
