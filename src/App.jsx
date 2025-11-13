@@ -11,7 +11,7 @@ import SVGViewer from './components/SVGViewer';
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
 import LanguageSelector from './components/LanguageSelector';
-import './App.css';
+import './App.scss';
 
 // Importar el SVG de ejemplo
 import pictogramSVG from './assets/pictogram.svg?url';

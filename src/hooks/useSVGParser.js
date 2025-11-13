@@ -36,9 +36,9 @@ export const useSVGParser = () => {
   /**
    * Parsea un elemento SVG y extrae su información
    */
-  const parseElement = (element, parent = null) => {
+  const parseElement = useCallback((element, parent = null) => {
     const elementData = {
-      id: element.id || `element_${Math.random().toString(36).substr(2, 9)}`,
+      id: element.id || `element_${Math.random().toString(36).substring(2, 11)}`,
       tagName: element.tagName.toLowerCase(),
       className: element.className.baseVal || element.getAttribute('class') || '',
       attributes: {},

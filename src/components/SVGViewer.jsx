@@ -11,13 +11,16 @@ import { Button } from '@/components/ui/button';
 import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon } from './CustomIcons';
 import MoveableWrapper from './MoveableWrapper';
 import BezierHandleEditor from './BezierHandleEditor';
+import NodeEditor from './NodeEditor';
+import BoundingBox from './BoundingBox';
 import useHistory from '../hooks/useHistory';
 import usePerformance from '../hooks/usePerformance';
 import usePanzoom from '../hooks/usePanzoom';
-import useCoordinateTransformer from '../hooks/useCoordinateTransformer';
+import useSVGWorld from '../hooks/useSVGWorld';
 import useMoveable from '../hooks/useMoveable';
 import PerformanceMetrics from './PerformanceMetrics';
-// Las funciones de manipulación SVG ya no se usan - reemplazadas por MoveableWrapper y PathDataProcessor
+import { rotateElement, scaleElement } from '../utils/svgManipulation';
+// SVGWorld proporciona un sistema unificado de coordenadas y manipulación SVG
 
 /**
  * Componente para visualizar y editar SVG
@@ -33,6 +36,7 @@ export const SVGViewer = ({
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const svgContainerRef = useRef(null); // Ref para el contenedor panzoom
+  const overlayRef = useRef(null); // Ref para el SVG overlay
   const [tool, setToolInternal] = useState(initialTool);
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
@@ -80,17 +84,19 @@ export const SVGViewer = ({
     },
   });
 
-  // Sistema de transformación de coordenadas
+  // Sistema unificado de coordenadas y manipulación con SVGWorld
   const {
-    screenToSvg,
+    isReady: isSVGWorldReady,
+    screenToSVG,
     svgToScreen,
-    screenDeltaToSvgDelta,
-    updateViewBox,
-    isReady: isTransformerReady,
-    transformer: coordinateTransformer,
-  } = useCoordinateTransformer({
+    screenDeltaToSVGDelta,
+    getElementBBox,
+    moveElement,
+    world: svgWorld,
+  } = useSVGWorld({
     svgRef: svgContainerRef,
-    panzoomState,
+    containerRef: containerRef,
+    viewport: panzoomState,
   });
 
   // Sistema de manipulación con Moveable
@@ -108,7 +114,7 @@ export const SVGViewer = ({
     handleRotate,
     handleRotateEnd,
   } = useMoveable({
-    coordinateTransformer,
+    coordinateTransformer: svgWorld,
     onTransformStart: (data) => {
       console.log('🎯 Transform Start:', data.type);
     },
@@ -184,7 +190,7 @@ export const SVGViewer = ({
 
     // Debug: Probar transformación de coordenadas
     const screenCoords = { x: event.clientX, y: event.clientY };
-    const svgCoords = screenToSvg(screenCoords.x, screenCoords.y);
+    const svgCoords = screenToSVG(screenCoords.x, screenCoords.y);
 
     console.log('🖱️ Click en elemento:', {
       elementId,
@@ -193,7 +199,7 @@ export const SVGViewer = ({
       screenCoords,
       svgCoords,
       panzoomState,
-      transformerReady: isTransformerReady
+      svgWorldReady: isSVGWorldReady
     });
 
     if (tool === 'select') {
@@ -481,18 +487,9 @@ export const SVGViewer = ({
       <div
         ref={containerRef}
         className={`flex-1 overflow-hidden relative bg-gradient-to-br from-muted/10 to-muted/30
-          ${tool === 'node' || isDragging ? 'cursor-move' :
+          ${tool === 'node' || isMoveableDragging ? 'cursor-move' :
             tool === 'pen' ? 'cursor-crosshair' :
             'cursor-default'}`}
-        onMouseDown={handleMouseDown}
-        onClick={(e) => {
-          // Des-seleccionar si se hace click en el fondo
-          if (e.target === containerRef.current) {
-            console.log('🚫 Des-seleccionando');
-            setSelectedSVGElement(null);
-            onElementSelect(null);
-          }
-        }}
       >
         {svgContent ? (
           <>
@@ -503,7 +500,8 @@ export const SVGViewer = ({
               style={{
                 position: 'relative',
                 transformOrigin: '0 0',
-                touchAction: 'none',
+                width: '100%',
+                height: '100%',
               }}
             >
               <div
@@ -529,7 +527,7 @@ export const SVGViewer = ({
                 <div
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                   style={{
-                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                    transform: `translate(${panzoomState.x}px, ${panzoomState.y}px) scale(${panzoomState.scale})`,
                     transformOrigin: 'center'
                   }}
                 >
@@ -567,8 +565,8 @@ export const SVGViewer = ({
                           const deltaY = e.clientY - startY;
 
                           // Convertir delta de píxeles a unidades SVG
-                          const svgDeltaX = deltaX / zoom;
-                          const svgDeltaY = deltaY / zoom;
+                          const svgDeltaX = deltaX / panzoomState.scale;
+                          const svgDeltaY = deltaY / panzoomState.scale;
 
                           // Aplicar nuevo transform
                           const newTx = currentTx + svgDeltaX;
@@ -686,7 +684,7 @@ export const SVGViewer = ({
                     if (!selectedSVGElement) return;
 
                     // Guardar estado antes del cambio (solo la primera vez)
-                    if (!isDragging) {
+                    if (!isMoveableDragging) {
                       saveToHistory(svgRef.current?.innerHTML);
                     }
 
@@ -698,7 +696,7 @@ export const SVGViewer = ({
                   element={selectedSVGElement}
                   tool={tool}
                   visible={(tool === 'node' || tool === 'pen') && selectedSVGElement}
-                  viewport={{ zoom, pan }}
+                  viewport={{ zoom: panzoomState.scale, pan: { x: panzoomState.x, y: panzoomState.y } }}
                   containerRef={containerRef}
                   onNodeChange={(oldNode, newNode) => {
                     if (!selectedSVGElement) return;

@@ -1,5 +1,9 @@
 import React from 'react';
-import { screenToSVGCoordinates, svgToScreenCoordinates, screenDeltaToSVGDelta } from '@/utils/coordinateTransform';
+
+/**
+ * BoundingBox - Componente para mostrar y manipular el bounding box de un elemento SVG
+ * Ahora usa SVGWorld para transformaciones de coordenadas unificadas
+ */
 
 /**
  * Obtiene el bounding box de un elemento SVG en coordenadas del SVG

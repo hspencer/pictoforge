@@ -1,15 +1,19 @@
 import React from 'react';
-import { Palette, Eye, EyeOff, Edit2, Plus, Trash2 } from 'lucide-react';
+import ReactDOM from 'react-dom';
+import { Palette, Eye, EyeOff, Edit2, Plus, Trash2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n';
 import PathDebugger from './PathDebugger';
 import SVGMetadataEditor from './SVGMetadataEditor';
+import Draggable from 'react-draggable';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogPortal,
+  DialogOverlay,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -291,18 +295,41 @@ export const StylePanel = ({
         )}
       </div>
 
-      {/* Modal de edición de estilos */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{t('editStyle')}</DialogTitle>
-            <DialogDescription>
-              {t('editStyleDescription')}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Modal de edición de estilos - Draggeable */}
+      {editModalOpen && ReactDOM.createPortal(
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={() => setEditModalOpen(false)}
+          />
 
-          {editingStyle && (
-            <div className="space-y-4 py-4">
+          {/* Modal Draggeable */}
+          <Draggable
+            handle=".drag-handle"
+            defaultPosition={{
+              x: window.innerWidth / 2 - 250,
+              y: window.innerHeight / 2 - 300
+            }}
+          >
+            <div
+              className="fixed z-[60] w-[500px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700"
+              style={{
+                left: 0,
+                top: 0,
+              }}
+            >
+              {/* Header con drag handle */}
+              <div className="drag-handle flex items-center gap-2 p-4 border-b cursor-move bg-muted/20">
+                <GripVertical size={16} className="text-muted-foreground" />
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold">{t('editStyle')}</h2>
+                  <p className="text-sm text-muted-foreground">{t('editStyleDescription')}</p>
+                </div>
+              </div>
+
+              {editingStyle && (
+                <div className="space-y-4 p-4 max-h-[600px] overflow-y-auto">
               {/* Nombre del estilo */}
               <div className="space-y-2">
                 <Label htmlFor="style-name">{t('styleName')}</Label>
@@ -346,16 +373,42 @@ export const StylePanel = ({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Input
-                        value={prop.value}
-                        onChange={(e) => {
-                          const newProps = [...editingStyle.properties];
-                          newProps[index].value = e.target.value;
-                          setEditingStyle({ ...editingStyle, properties: newProps });
-                        }}
-                        placeholder={t('valuePlaceholder')}
-                        className="flex-1 text-xs font-mono"
-                      />
+                      {/* Input tipo color para propiedades de color */}
+                      {(prop.key === 'fill' || prop.key === 'stroke' || prop.key.includes('color')) ? (
+                        <div className="flex gap-2 flex-1">
+                          <Input
+                            type="color"
+                            value={prop.value.startsWith('#') ? prop.value : '#000000'}
+                            onChange={(e) => {
+                              const newProps = [...editingStyle.properties];
+                              newProps[index].value = e.target.value;
+                              setEditingStyle({ ...editingStyle, properties: newProps });
+                            }}
+                            className="w-16 h-9 p-1 cursor-pointer"
+                          />
+                          <Input
+                            value={prop.value}
+                            onChange={(e) => {
+                              const newProps = [...editingStyle.properties];
+                              newProps[index].value = e.target.value;
+                              setEditingStyle({ ...editingStyle, properties: newProps });
+                            }}
+                            placeholder={t('valuePlaceholder')}
+                            className="flex-1 text-xs font-mono"
+                          />
+                        </div>
+                      ) : (
+                        <Input
+                          value={prop.value}
+                          onChange={(e) => {
+                            const newProps = [...editingStyle.properties];
+                            newProps[index].value = e.target.value;
+                            setEditingStyle({ ...editingStyle, properties: newProps });
+                          }}
+                          placeholder={t('valuePlaceholder')}
+                          className="flex-1 text-xs font-mono"
+                        />
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -390,37 +443,40 @@ export const StylePanel = ({
                   <Plus size={14} className="mr-1" />
                   {t('addProperty')}
                 </Button>
-              </div>
+                  </div>
 
-              {/* Botones de acción */}
-              <div className="flex justify-between gap-2 pt-4 border-t">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteStyle}
-                >
-                  <Trash2 size={14} className="mr-1" />
-                  {t('deleteStyle')}
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditModalOpen(false);
-                      setEditingStyle(null);
-                    }}
-                  >
-                    {t('cancel')}
-                  </Button>
-                  <Button onClick={handleSaveStyle}>
-                    {t('saveChanges')}
-                  </Button>
+                  {/* Botones de acción */}
+                  <div className="flex justify-between gap-2 pt-4 border-t">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteStyle}
+                    >
+                      <Trash2 size={14} className="mr-1" />
+                      {t('deleteStyle')}
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditModalOpen(false);
+                          setEditingStyle(null);
+                        }}
+                      >
+                        {t('cancel')}
+                      </Button>
+                      <Button onClick={handleSaveStyle}>
+                        {t('saveChanges')}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </Draggable>
+        </>,
+        document.body
+      )}
     </div>
   );
 };

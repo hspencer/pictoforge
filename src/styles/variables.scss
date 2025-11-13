@@ -1,0 +1,91 @@
+// Variables CSS para PictoForge
+// Usa custom properties para permitir temas dinámicos
+
+:root {
+  // ========================================
+  // Colores Primarios
+  // ========================================
+  --color-primary: #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-primary-dark: #2563eb;
+
+  // ========================================
+  // Colores de UI Overlay
+  // ========================================
+  --color-control-line: #94a3b8;
+  --color-bezier-handle: #ec4899;
+  --color-bezier-handle-hover: #f472b6;
+
+  // Colores de tipos de nodo
+  --color-node-line: #64748b;
+  --color-node-curve: #10b981;
+  --color-node-smooth: #f59e0b;
+
+  // ========================================
+  // Tamaños (constantes en pantalla)
+  // ========================================
+  // BoundingBox
+  --ui-handle-size: 8px;
+  --ui-handle-border: 2px;
+  --ui-rotation-handle-size: 12px;
+
+  // NodeEditor
+  --ui-node-size: 6px;
+  --ui-node-border: 2px;
+  --ui-node-hover-size: 8px;
+  --ui-control-point-size: 4px;
+  --ui-control-point-hover-size: 5px;
+
+  // Líneas y bordes
+  --ui-line-width: 1px;
+  --ui-line-width-thick: 2px;
+  --ui-line-width-selected: 3px;
+
+  // ========================================
+  // Z-Index Layers
+  // ========================================
+  --z-svg-content: 1;
+  --z-ui-overlay: 100;
+  --z-moveable: 200;
+  --z-modal: 1000;
+}
+
+// Tema oscuro
+[data-theme="dark"] {
+  --color-control-line: #64748b;
+  --color-bezier-handle: #f472b6;
+  --color-bezier-handle-hover: #fb7ec4;
+}
+
+// ========================================
+// Mixins útiles
+// ========================================
+
+// Mixin para handles que no escalan con zoom
+@mixin ui-element-fixed-size($size) {
+  width: $size;
+  height: $size;
+  // Asegurar que el tamaño es constante
+  box-sizing: border-box;
+}
+
+// Mixin para transiciones suaves
+@mixin smooth-transition($properties: all, $duration: 0.2s) {
+  transition: $properties $duration ease-in-out;
+}
+
+// Mixin para elementos draggeable
+@mixin draggable-cursor {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Mixin para círculos perfectos
+@mixin perfect-circle($size) {
+  width: $size;
+  height: $size;
+  border-radius: 50%;
+}

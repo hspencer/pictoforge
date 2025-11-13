@@ -39,6 +39,7 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
       startY: 0,
       cursor: 'grab',
       canvas: true, // Permite pan fuera de los límites
+      contain: 'outside', // Permite pan sin restricciones
       ...panzoomOptions,
     };
 
@@ -47,10 +48,18 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
       const panzoom = Panzoom(element, defaultOptions);
       panzoomInstanceRef.current = panzoom;
 
-      // Habilitar zoom con la rueda del mouse
+      // Habilitar zoom con la rueda del mouse y trackpad
       const parent = element.parentElement;
       if (parent) {
-        parent.addEventListener('wheel', panzoom.zoomWithWheel);
+        // Usar passive: false para permitir preventDefault y mejorar trackpad
+        parent.addEventListener('wheel', panzoom.zoomWithWheel, { passive: false });
+
+        // Habilitar gestos touch para móviles
+        element.addEventListener('touchstart', (e) => {
+          if (e.touches.length > 1) {
+            e.preventDefault(); // Prevenir zoom del navegador
+          }
+        }, { passive: false });
       }
 
       // Actualizar estado cuando cambia la transformación
@@ -69,6 +78,8 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
       });
 
       setIsReady(true);
+
+      console.log('✅ Panzoom inicializado correctamente con soporte para wheel, trackpad y touch');
 
       // Cleanup
       return () => {

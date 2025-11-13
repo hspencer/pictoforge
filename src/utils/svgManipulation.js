@@ -3,13 +3,14 @@
  */
 
 // Re-exportar funciones de transformación de coordenadas para conveniencia
-export {
-  screenToSVGCoordinates,
-  svgToScreenCoordinates,
-  screenDeltaToSVGDelta,
-  getClosestPointOnPath,
-  useCoordinateTransform
-} from './coordinateTransform';
+// NOTA: coordinateTransform.js no existe actualmente, comentado temporalmente
+// export {
+//   screenToSVGCoordinates,
+//   svgToScreenCoordinates,
+//   screenDeltaToSVGDelta,
+//   getClosestPointOnPath,
+//   useCoordinateTransform
+// } from './coordinateTransform';
 
 // Re-exportar funciones de codificación de paths para conveniencia
 export {

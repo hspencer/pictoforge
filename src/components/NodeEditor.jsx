@@ -1,6 +1,39 @@
 import React, { useState } from 'react';
 import { parsePathNodes } from '../utils/svgManipulation';
-import { screenToSVGCoordinates, svgToScreenCoordinates, screenDeltaToSVGDelta } from '@/utils/coordinateTransform';
+
+// Funciones auxiliares para transformación de coordenadas
+// TODO: Migrar a usar useCoordinateTransformer hook cuando sea posible
+const screenToSVGCoordinates = (screenX, screenY, svg, viewport) => {
+  if (!svg) return { x: screenX, y: screenY };
+  const rect = svg.getBoundingClientRect();
+  const scale = viewport?.zoom || 1;
+  const panX = viewport?.pan?.x || 0;
+  const panY = viewport?.pan?.y || 0;
+  return {
+    x: (screenX - rect.left - panX) / scale,
+    y: (screenY - rect.top - panY) / scale
+  };
+};
+
+const screenDeltaToSVGDelta = (deltaX, deltaY, svg, viewport) => {
+  const scale = viewport?.zoom || 1;
+  return {
+    dx: deltaX / scale,
+    dy: deltaY / scale
+  };
+};
+
+const svgToScreenCoordinates = (svgX, svgY, svg, viewport) => {
+  if (!svg) return { x: svgX, y: svgY };
+  const rect = svg.getBoundingClientRect();
+  const scale = viewport?.zoom || 1;
+  const panX = viewport?.pan?.x || 0;
+  const panY = viewport?.pan?.y || 0;
+  return {
+    x: svgX * scale + rect.left + panX,
+    y: svgY * scale + rect.top + panY
+  };
+};
 
 /**
  * Componente NodeEditor para la manipulación de nodos SVG

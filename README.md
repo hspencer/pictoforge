@@ -1,10 +1,15 @@
-# PictoForge - Editor SVG Semántico
+# PictoForge - Editor SVG Interactivo
 
-**PictoForge** es un editor de gráficos vectoriales SVG profesional y semántico, diseñado específicamente para trabajar con modelos de lenguaje generativo (LLMs). Proporciona una interfaz visual intuitiva con capacidades de etiquetado semántico, manipulación visual de vectores, y una arquitectura round-trip que permite la edición simultánea mediante interfaz gráfica y código.
+**PictoForge** es un editor de gráficos vectoriales SVG profesional con manipulación directa de elementos gráficos. Proporciona una interfaz visual intuitiva con precisión matemática, sistema unificado de coordenadas, y una arquitectura round-trip que sincroniza código y visualización en tiempo real.
 
-La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la generación, edición y refinamiento de gráficos vectoriales con retroalimentación humana estructurada, ideal para fine-tuning de modelos generativos.
+La aplicación resuelve el problema fundamental de transformación entre múltiples sistemas de coordenadas (pantalla, viewport, SVG) mediante un objeto "mundo" centralizado que garantiza precisión en toda operación de edición.
 
 ![PictoForge](./examples/pictoforge.png)
+
+## 📚 Documentación
+
+- **[Arquitectura del Sistema](./docs/architecture.md)** - Visión general de la arquitectura y componentes principales
+- **[Sistema de Coordenadas](./docs/coordinate-system.md)** - Guía completa sobre transformaciones de coordenadas con SVGWorld
 
 ## Diagnóstico del Proyecto (Estado Actual)
 
@@ -21,11 +26,37 @@ La aplicación está optimizada para el flujo de trabajo con IA, permitiendo la 
   "react-dom": "^19.1.0",
   "vite": "^6.3.5",
   "tailwindcss": "^4.1.7",
+  "@svgdotjs/svg.js": "^3.2.5",
+  "@panzoom/panzoom": "^4.6.0",
+  "react-moveable": "^0.56.0",
   "@radix-ui/*": "Múltiples componentes UI",
   "lucide-react": "^0.510.0",
   "framer-motion": "^12.15.0"
 }
 ```
+
+### 🌍 SVGWorld - Sistema Unificado de Coordenadas
+
+**Problema resuelto**: En editores SVG, existen múltiples sistemas de coordenadas que deben trabajar juntos:
+1. **Coordenadas de Pantalla** - Píxeles del navegador donde el usuario hace click
+2. **Coordenadas del Viewport** - Transformación de pan/zoom aplicada por el usuario
+3. **Coordenadas SVG** - Sistema interno del viewBox donde viven los datos
+
+**Solución**: `SVGWorld` es un objeto centralizado que actúa como intermediario:
+
+```javascript
+// Antes: Funciones auxiliares duplicadas en múltiples archivos
+const svgX = (screenX - offsetX) / scale;  // ❌ Incorrecto para transformaciones complejas
+
+// Ahora: Un único sistema preciso usando getScreenCTM()
+const { x, y } = svgWorld.screenToSVG(e.clientX, e.clientY);  // ✅ Matemáticamente correcto
+```
+
+**Ubicación**:
+- `/src/services/SVGWorld.js` - Clase principal
+- `/src/hooks/useSVGWorld.js` - Hook React para integración
+
+Ver [documentación completa del sistema de coordenadas](./docs/coordinate-system.md)
 
 ### Testing
 - **Framework**: Vitest 3.2.4
