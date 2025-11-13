@@ -1,161 +1,161 @@
-# Sistema de Coordenadas en PictoForge
+# Coordinate System in PictoForge
 
-## El Problema
+## The Problem
 
-Cuando trabajas con SVG en un navegador, existen múltiples sistemas de coordenadas que deben trabajar juntos:
+When working with SVG in a browser, there are multiple coordinate systems that must work together:
 
 ```
-Usuario hace click → [Coordenadas de Pantalla]
+User clicks → [Screen Coordinates]
                             ↓
-         Aplicar transformación de viewport (pan/zoom)
+         Apply viewport transformation (pan/zoom)
                             ↓
-              [Coordenadas del Contenedor]
+              [Container Coordinates]
                             ↓
-        Aplicar transformación del viewBox SVG
+        Apply SVG viewBox transformation
                             ↓
-               [Coordenadas SVG internas]
+               [Internal SVG Coordinates]
                             ↓
-         Aquí es donde viven los datos del SVG
+         This is where SVG data lives
 ```
 
-## Sistemas de Coordenadas
+## Coordinate Systems
 
-### 1. Coordenadas de Pantalla (Screen Coordinates)
+### 1. Screen Coordinates
 
-**Origen**: Esquina superior izquierda de la ventana del navegador
-**Unidades**: Píxeles CSS
-**Fuente**: `MouseEvent.clientX`, `MouseEvent.clientY`
+**Origin**: Top-left corner of the browser window
+**Units**: CSS pixels
+**Source**: `MouseEvent.clientX`, `MouseEvent.clientY`
 
 ```javascript
 document.addEventListener('click', (e) => {
-  console.log(e.clientX, e.clientY); // Coordenadas de pantalla
+  console.log(e.clientX, e.clientY); // Screen coordinates
 });
 ```
 
-### 2. Coordenadas del Viewport
+### 2. Viewport Coordinates
 
-**Origen**: Depende del pan aplicado
-**Unidades**: Píxeles CSS escalados
-**Transformación**: `transform: translate(x, y) scale(s)`
+**Origin**: Depends on applied pan
+**Units**: Scaled CSS pixels
+**Transformation**: `transform: translate(x, y) scale(s)`
 
-Ejemplo con `@panzoom/panzoom`:
+Example with `@panzoom/panzoom`:
 ```javascript
 const { scale, x, y } = panzoomState;
-// scale: factor de zoom (1 = 100%, 2 = 200%, etc.)
-// x, y: desplazamiento en píxeles
+// scale: zoom factor (1 = 100%, 2 = 200%, etc.)
+// x, y: displacement in pixels
 ```
 
-### 3. Coordenadas SVG (User Space)
+### 3. SVG Coordinates (User Space)
 
-**Origen**: Definido por el atributo `viewBox`
-**Unidades**: Unidades SVG (arbitrarias)
-**Ejemplo**: `viewBox="0 0 800 600"` → (0,0) a (800,600)
+**Origin**: Defined by the `viewBox` attribute
+**Units**: SVG units (arbitrary)
+**Example**: `viewBox="0 0 800 600"` → (0,0) to (800,600)
 
 ```svg
 <svg viewBox="0 0 100 100" width="500" height="500">
-  <!-- Este círculo está en (50, 50) en coordenadas SVG -->
-  <!-- Pero se renderiza en (250, 250) en pantalla -->
+  <!-- This circle is at (50, 50) in SVG coordinates -->
+  <!-- But renders at (250, 250) on screen -->
   <circle cx="50" cy="50" r="10" />
 </svg>
 ```
 
-## Conversión con SVGWorld
+## Conversion with SVGWorld
 
 ### Screen → SVG
 
 ```javascript
-// Usuario hace click en la pantalla
+// User clicks on screen
 const handleClick = (e) => {
   const { x, y } = screenToSVG(e.clientX, e.clientY);
 
-  // Ahora (x, y) está en coordenadas SVG
-  // Listo para crear elementos o seleccionar
+  // Now (x, y) is in SVG coordinates
+  // Ready to create elements or select
 };
 ```
 
-**¿Cómo funciona internamente?**
+**How does it work internally?**
 
 ```javascript
 screenToSVG(screenX, screenY) {
-  // 1. Crear punto SVG
+  // 1. Create SVG point
   const svgPoint = svg.createSVGPoint();
   svgPoint.x = screenX;
   svgPoint.y = screenY;
 
-  // 2. Obtener matriz de transformación completa (Screen → SVG)
+  // 2. Get complete transformation matrix (Screen → SVG)
   const ctm = svg.getScreenCTM();
 
-  // 3. Aplicar transformación inversa
+  // 3. Apply inverse transformation
   const transformed = svgPoint.matrixTransform(ctm.inverse());
 
   return { x: transformed.x, y: transformed.y };
 }
 ```
 
-La matriz CTM (Current Transformation Matrix) incluye:
-- Transformación del viewBox
-- Transformación del viewport (pan/zoom)
-- Cualquier transform CSS aplicado
+The CTM (Current Transformation Matrix) includes:
+- viewBox transformation
+- Viewport transformation (pan/zoom)
+- Any applied CSS transform
 
 ### SVG → Screen
 
 ```javascript
-// Convertir posición de un elemento SVG a pantalla
+// Convert SVG element position to screen
 const element = svg.getElementById('my-circle');
-const bbox = element.getBBox(); // { x, y, width, height } en SVG
+const bbox = element.getBBox(); // { x, y, width, height } in SVG
 
 const screenPos = svgToScreen(bbox.x, bbox.y);
-console.log(`El elemento aparece en (${screenPos.x}, ${screenPos.y}) en pantalla`);
+console.log(`Element appears at (${screenPos.x}, ${screenPos.y}) on screen`);
 ```
 
 ### Screen Delta → SVG Delta
 
-Para drag & drop, necesitamos convertir **diferencias**:
+For drag and drop, we need to convert **differences**:
 
 ```javascript
 const handleDrag = (e) => {
-  // Delta en píxeles de pantalla
+  // Delta in screen pixels
   const deltaScreenX = e.clientX - startX;
   const deltaScreenY = e.clientY - startY;
 
-  // Convertir a delta SVG
+  // Convert to SVG delta
   const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY);
 
-  // Aplicar movimiento en coordenadas SVG
+  // Apply movement in SVG coordinates
   element.setAttribute('x', originalX + dx);
   element.setAttribute('y', originalY + dy);
 };
 ```
 
-**¿Por qué no simplemente dividir por scale?**
+**Why not simply divide by scale?**
 
 ```javascript
-// ❌ Incorrecto (no considera rotación, skew, etc.)
+// ❌ Incorrect (doesn't consider rotation, skew, etc.)
 const dx = deltaScreenX / scale;
 
-// ✅ Correcto (considera toda la transformación)
+// ✅ Correct (considers entire transformation)
 const { dx } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY);
 ```
 
-## Casos de Uso Comunes
+## Common Use Cases
 
-### Click en un elemento
+### Clicking on an element
 
 ```javascript
 const SVGViewer = () => {
   const { screenToSVG } = useSVGWorld({ ... });
 
   const handleElementClick = (e) => {
-    // 1. Obtener coordenadas de pantalla
+    // 1. Get screen coordinates
     const screenCoords = { x: e.clientX, y: e.clientY };
 
-    // 2. Convertir a SVG
+    // 2. Convert to SVG
     const svgCoords = screenToSVG(screenCoords.x, screenCoords.y);
 
-    // 3. Encontrar elemento en esas coordenadas
+    // 3. Find element at those coordinates
     const element = document.elementFromPoint(e.clientX, e.clientY);
 
-    // 4. Usar svgCoords para operaciones en espacio SVG
+    // 4. Use svgCoords for operations in SVG space
     console.log('Clicked element at SVG position:', svgCoords);
   };
 
@@ -163,27 +163,27 @@ const SVGViewer = () => {
 };
 ```
 
-### Drag & Drop de elemento
+### Element Drag and Drop
 
 ```javascript
 const handleDragStart = (e, element) => {
   const startScreenX = e.clientX;
   const startScreenY = e.clientY;
 
-  // Posición inicial en SVG
+  // Initial position in SVG
   const startSVGPos = screenToSVG(startScreenX, startScreenY);
 
   const handleMouseMove = (e) => {
-    // Delta en pantalla
+    // Delta on screen
     const deltaScreen = {
       x: e.clientX - startScreenX,
       y: e.clientY - startScreenY
     };
 
-    // Convertir a delta SVG
+    // Convert to SVG delta
     const { dx, dy } = screenDeltaToSVGDelta(deltaScreen.x, deltaScreen.y);
 
-    // Mover elemento
+    // Move element
     moveElement(element, dx, dy);
   };
 
@@ -191,16 +191,16 @@ const handleDragStart = (e, element) => {
 };
 ```
 
-### Dibujar overlay en posición de elemento
+### Drawing overlay at element position
 
 ```javascript
 const NodeEditor = ({ element }) => {
   const { svgToScreen } = useSVGWorld({ ... });
 
-  // Obtener posición del elemento en SVG
+  // Get element position in SVG
   const bbox = element.getBBox();
 
-  // Convertir a pantalla para mostrar UI
+  // Convert to screen to display UI
   const screenPos = svgToScreen(bbox.x, bbox.y);
 
   return (
@@ -211,7 +211,7 @@ const NodeEditor = ({ element }) => {
         top: screenPos.y
       }}
     >
-      {/* UI de edición */}
+      {/* Editing UI */}
     </div>
   );
 };
@@ -219,7 +219,7 @@ const NodeEditor = ({ element }) => {
 
 ## Debugging
 
-Para debug de transformaciones:
+For debugging transformations:
 
 ```javascript
 const debugCoordinates = (e) => {
@@ -231,7 +231,7 @@ const debugCoordinates = (e) => {
     screen,
     svg,
     backToScreen,
-    // Deberían ser iguales (con pequeño error de redondeo)
+    // Should be equal (with small rounding error)
     roundTrip: {
       deltaX: Math.abs(screen.x - backToScreen.x),
       deltaY: Math.abs(screen.y - backToScreen.y)
@@ -240,49 +240,49 @@ const debugCoordinates = (e) => {
 };
 ```
 
-## Errores Comunes
+## Common Errors
 
-### ❌ Usar getBoundingClientRect() directamente
+### ❌ Using getBoundingClientRect() directly
 
 ```javascript
-// Incorrecto - no considera transformaciones SVG internas
+// Incorrect - doesn't consider internal SVG transformations
 const rect = element.getBoundingClientRect();
-const x = rect.left; // Esto está en pantalla, no en SVG
+const x = rect.left; // This is in screen space, not SVG
 ```
 
 ```javascript
-// Correcto
+// Correct
 const bbox = element.getBBox(); // SVG coordinates
 const { x, y } = bbox;
 ```
 
-### ❌ Asumir que zoom = scale
+### ❌ Assuming zoom = scale
 
 ```javascript
-// Incorrecto - asume que solo hay zoom uniforme
+// Incorrect - assumes only uniform zoom
 const svgX = screenX / zoom;
 ```
 
 ```javascript
-// Correcto - usa la matriz completa
+// Correct - uses complete matrix
 const { x } = screenToSVG(screenX, screenY);
 ```
 
-### ❌ No considerar el contenedor
+### ❌ Not considering the container
 
 ```javascript
-// Incorrecto - e.clientX es relativo a la ventana
+// Incorrect - e.clientX is relative to window
 const localX = e.clientX;
 ```
 
 ```javascript
-// Correcto - restar offset del contenedor si es necesario
+// Correct - subtract container offset if necessary
 const container = containerRef.current;
 const rect = container.getBoundingClientRect();
 const localX = e.clientX - rect.left;
 ```
 
-## Recursos
+## Resources
 
 - [SVG Coordinate Systems Tutorial](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Positions)
 - [getScreenCTM() API](https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getScreenCTM)

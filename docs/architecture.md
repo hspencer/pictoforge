@@ -1,62 +1,62 @@
-# Arquitectura de PictoForge
+# PictoForge Architecture
 
-## Visión General
+## Overview
 
-PictoForge es un editor SVG interactivo construido con React que permite manipulación directa de elementos gráficos con precisión visual y código.
+PictoForge is an interactive SVG editor built with React that enables direct manipulation of graphical elements with visual and code precision.
 
-## Problema Fundamental: Transformación de Coordenadas
+## Fundamental Problem: Coordinate Transformation
 
-El desafío principal en cualquier editor gráfico SVG es manejar múltiples sistemas de coordenadas:
+The main challenge in any SVG graphical editor is handling multiple coordinate systems:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  1. Coordenadas de Pantalla (Screen)                       │
-│     - Píxeles del navegador (clientX, clientY)             │
-│     - Donde el usuario hace click                          │
+│  1. Screen Coordinates                                      │
+│     - Browser pixels (clientX, clientY)                    │
+│     - Where the user clicks                                │
 └─────────────────────────────────────────────────────────────┘
                             ↕
 ┌─────────────────────────────────────────────────────────────┐
-│  2. Coordenadas del Viewport (Pan/Zoom)                     │
-│     - Transformación aplicada por el usuario               │
+│  2. Viewport Coordinates (Pan/Zoom)                         │
+│     - Transformation applied by the user                   │
 │     - scale, translateX, translateY                        │
 └─────────────────────────────────────────────────────────────┘
                             ↕
 ┌─────────────────────────────────────────────────────────────┐
-│  3. Coordenadas SVG (viewBox)                               │
-│     - Sistema de coordenadas del SVG original              │
-│     - Donde se almacenan los datos de los elementos        │
+│  3. SVG Coordinates (viewBox)                               │
+│     - Original SVG coordinate system                       │
+│     - Where element data is stored                         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Solución: SVGWorld
+## Solution: SVGWorld
 
-`SVGWorld` es un objeto "mundo" centralizado que actúa como intermediario entre todos los sistemas de coordenadas.
+`SVGWorld` is a centralised "world" object that acts as an intermediary between all coordinate systems.
 
-### Ubicación
-- **Clase**: `/src/services/SVGWorld.js`
-- **Hook React**: `/src/hooks/useSVGWorld.js`
+### Location
+- **Class**: `/src/services/SVGWorld.js`
+- **React Hook**: `/src/hooks/useSVGWorld.js`
 
-### Responsabilidades
+### Responsibilities
 
-1. **Transformación de Coordenadas**
-   - `screenToSVG(x, y)` - Convierte pantalla → SVG
-   - `svgToScreen(x, y)` - Convierte SVG → pantalla
-   - `screenDeltaToSVGDelta(dx, dy)` - Convierte deltas para drag & drop
+1. **Coordinate Transformation**
+   - `screenToSVG(x, y)` - Converts screen → SVG
+   - `svgToScreen(x, y)` - Converts SVG → screen
+   - `screenDeltaToSVGDelta(dx, dy)` - Converts deltas for drag and drop
 
-2. **Manipulación de Elementos**
-   - `getElementBBox(element)` - Obtiene bounding box
-   - `moveElement(element, dx, dy)` - Mueve elementos
-   - `applyTransform(element, transform)` - Aplica transformaciones
+2. **Element Manipulation**
+   - `getElementBBox(element)` - Gets bounding box
+   - `moveElement(element, dx, dy)` - Moves elements
+   - `applyTransform(element, transform)` - Applies transformations
 
-3. **Estado del Mundo**
-   - Mantiene referencia al elemento SVG
-   - Sincroniza con el estado de pan/zoom
-   - Proporciona API unificada
+3. **World State**
+   - Maintains reference to SVG element
+   - Synchronises with pan/zoom state
+   - Provides unified API
 
-### Uso
+### Usage
 
 ```javascript
-// En un componente React
+// In a React component
 const {
   screenToSVG,
   svgToScreen,
@@ -68,98 +68,98 @@ const {
   viewport: panzoomState
 });
 
-// Convertir click de pantalla a coordenadas SVG
+// Convert screen click to SVG coordinates
 const handleClick = (e) => {
   const svgCoords = screenToSVG(e.clientX, e.clientY);
   console.log('Clicked at SVG coordinates:', svgCoords);
 };
 ```
 
-## Stack Tecnológico
+## Technology Stack
 
 ### Core
 - **React 19** - UI framework
-- **SVG.js** - Manipulación SVG y transformaciones
-- **@panzoom/panzoom** - Pan y zoom del viewport
+- **SVG.js** - SVG manipulation and transformations
+- **@panzoom/panzoom** - Viewport pan and zoom
 
-### Manipulación de Elementos
-- **react-moveable** - Drag, resize, rotate interactivo
-- **Pathfinding personalizado** - Editor de nodos y curvas Bézier
+### Element Manipulation
+- **react-moveable** - Interactive drag, resize, rotate
+- **Custom pathfinding** - Node and Bézier curve editor
 
 ### UI
-- **Radix UI** - Componentes accesibles
-- **Tailwind CSS** - Estilos
-- **Lucide React** - Iconos
+- **Radix UI** - Accessible components
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
 
-## Estructura de Componentes
+## Component Structure
 
 ```
 App
-├── Container (Layout principal)
-│   ├── SVGViewer (Editor visual)
+├── Container (Main layout)
+│   ├── SVGViewer (Visual editor)
 │   │   ├── usePanzoom (Pan/Zoom)
-│   │   ├── useSVGWorld (Coordenadas) ⭐
-│   │   ├── useMoveable (Manipulación)
+│   │   ├── useSVGWorld (Coordinates) ⭐
+│   │   ├── useMoveable (Manipulation)
 │   │   ├── MoveableWrapper (Drag/Resize/Rotate)
-│   │   ├── NodeEditor (Editor de nodos de path)
-│   │   └── BoundingBox (Bounding box visual)
+│   │   ├── NodeEditor (Path node editor)
+│   │   └── BoundingBox (Visual bounding box)
 │   │
-│   ├── Hierarchy (Árbol de elementos)
-│   └── Properties (Panel de propiedades)
+│   ├── Hierarchy (Element tree)
+│   └── Properties (Properties panel)
 │
-└── TextInput (Upload de archivos)
+└── TextInput (File upload)
 ```
 
-## Flujo de Datos
+## Data Flow
 
-### 1. Carga de SVG
+### 1. SVG Loading
 ```
-Usuario → TextInput → useSVGParser → svgData → SVGViewer
-```
-
-### 2. Selección de Elemento
-```
-Click → SVGViewer → screenToSVG → Identificar elemento → Actualizar estado
+User → TextInput → useSVGParser → svgData → SVGViewer
 ```
 
-### 3. Manipulación
+### 2. Element Selection
+```
+Click → SVGViewer → screenToSVG → Identify element → Update state
+```
+
+### 3. Manipulation
 ```
 Drag → MoveableWrapper → SVGWorld.screenDeltaToSVGDelta →
-Actualizar transform → Guardar en historial
+Update transform → Save to history
 ```
 
-## Sistema de Coordenadas Interno
+## Internal Coordinate System
 
-`SVGWorld` usa `getScreenCTM()` del API nativa de SVG para obtener la matriz de transformación completa:
+`SVGWorld` uses `getScreenCTM()` from the native SVG API to obtain the complete transformation matrix:
 
 ```javascript
-// Obtener la matriz que convierte SVG → Screen
+// Get the matrix that converts SVG → Screen
 const ctm = svgElement.getScreenCTM();
 
-// Convertir punto de pantalla a SVG
+// Convert screen point to SVG
 const svgPoint = svgElement.createSVGPoint();
 svgPoint.x = screenX;
 svgPoint.y = screenY;
 const transformed = svgPoint.matrixTransform(ctm.inverse());
 ```
 
-Esto garantiza precisión matemática incluso con transformaciones complejas.
+This guarantees mathematical precision even with complex transformations.
 
-## Próximos Pasos
+## Next Steps
 
-### Refactorizaciones Pendientes
-1. Migrar `NodeEditor` para usar `useSVGWorld` directamente
-2. Migrar `BoundingBox` para usar `useSVGWorld` directamente
-3. Remover funciones auxiliares duplicadas
-4. Unificar `useCoordinateTransformer` con `useSVGWorld`
+### Pending Refactorings
+1. Migrate `NodeEditor` to use `useSVGWorld` directly
+2. Migrate `BoundingBox` to use `useSVGWorld` directly
+3. Remove duplicate helper functions
+4. Unify `useCoordinateTransformer` with `useSVGWorld`
 
-### Nuevas Funcionalidades
-1. Editor de gradientes
-2. Manipulación de máscaras y clips
-3. Animaciones SVG
-4. Export a formatos adicionales
+### New Features
+1. Gradient editor
+2. Mask and clip manipulation
+3. SVG animations
+4. Export to additional formats
 
-## Referencias
+## References
 
 - [SVG.js Documentation](https://svgjs.dev/)
 - [SVG Coordinate Systems (MDN)](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Positions)
