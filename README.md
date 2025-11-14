@@ -6,7 +6,6 @@ PictoForge is a semantic SVG editor designed as a companion tool for generative 
 
 The editor offers direct manipulation of SVG elements on a canvas that remains synchronised with the underlying code. A unified coordinate system and mathematically coherent transformation layer keep visual operations and textual representation aligned, so that every change made in the interface corresponds to a traceable, structured modification in the SVG source.
 
-
 ### Project Philosophy
 
 PictoForge is built around the idea of round-trip editing between code and canvas. Visual selection, transformation, and styling always have a clear counterpart in the SVG DOM, and edits in the code view are reflected immediately in the graphical interface. This reciprocity turns the editor into an instrument for inspection, curation, and correction of generative output rather than a black box.
