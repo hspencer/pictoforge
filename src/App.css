@@ -111,51 +111,89 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ======================================== */
+/* Base Styles */
+/* ======================================== */
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
     font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     font-weight: 400;
     line-height: 1.5;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Lexend', sans-serif;
     font-weight: 600;
   }
-  
+
   .font-mono {
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   }
 }
 
+/* ======================================== */
+/* Border Color Override */
+/* ======================================== */
+@layer base {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    border-color: var(--border) !important;
+  }
 
-/* Estilos personalizados para PictoForge */
-
-.pictoforge-container{
-  max-width: 90rem;
-  margin: 0 auto;
-  outline: 2px solid var(--border);
-  outline-radius: 0.5rem;
+  .border,
+  .border-t,
+  .border-r,
+  .border-b,
+  .border-l,
+  .border-x,
+  .border-y {
+    border-color: var(--border) !important;
+  }
 }
 
-/* Contenedor panzoom */
+/* ======================================== */
+/* Style Panel Modal Override */
+/* ======================================== */
+.style-panel-modal {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+/* ======================================== */
+/* PictoForge Container */
+/* ======================================== */
+.pictoforge-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  outline: 2px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.bg-popover {
+  background-color: var(--popover);
+}
+
+/* ======================================== */
+/* SVG Container & Panzoom */
+/* ======================================== */
 .svg-panzoom-container {
   position: relative;
   width: 100%;
   height: 100%;
-  cursor: grab;
   touch-action: pan-x pan-y pinch-zoom;
+  cursor: grab;
 }
 
 .svg-panzoom-container:active {
   cursor: grabbing;
 }
 
-/* Contenedor SVG */
 .svg-container {
   display: flex;
   align-items: center;
@@ -168,10 +206,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 20px;
   transition: all 0.2s ease;
-}
-
-.bg-popover{
-  background-color: ;
 }
 
 .svg-container > div {
@@ -192,22 +226,14 @@
   pointer-events: all;
 }
 
-.svg-container:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-/* Elementos SVG interactivos */
 .svg-container svg * {
   cursor: default;
 }
 
-/* Elemento seleccionado/resaltado */
-/* Elemento seleccionado - sin glow por defecto */
-.svg-container svg .highlighted {
-  /* Sin efectos visuales en estado seleccionado */
+.svg-container:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-/* Glow solo en hover - SOLO el elemento directo, no sus contenedores */
 .svg-container svg path:hover,
 .svg-container svg rect:hover,
 .svg-container svg circle:hover,
@@ -219,38 +245,35 @@
   transition: filter 0.15s ease;
 }
 
-/* NO aplicar hover a grupos - solo elementos gráficos individuales */
 .svg-container svg g {
   pointer-events: all;
 }
 
-/* Pero permitir pointer-events en los elementos hijos */
 .svg-container svg g > * {
   pointer-events: all;
 }
 
-/* Bounding box para selección con flecha negra */
-.svg-bounding-box {
+/* ======================================== */
+/* Bounding Box */
+/* ======================================== */
+.svg-bounding-box,
+.svg-bounding-box-simple {
   fill: none;
   stroke: var(--col-select);
   stroke-width: 1;
   stroke-dasharray: none;
-  /* pointer-events configurado inline en el componente */
   z-index: 10000;
 }
 
-/* Bounding box simple (coordenadas SVG) */
 .svg-bounding-box-simple {
-  fill: none;
   stroke: #00aaff;
   stroke-width: 0.5;
   stroke-dasharray: 2,2;
   cursor: move;
-  z-index: 10000;
 }
 
-/* Handles del bounding box */
-.svg-resize-handle {
+.svg-resize-handle,
+.svg-resize-handle-simple {
   fill: var(--col-select);
   stroke: #ffffff;
   stroke-width: 1;
@@ -262,30 +285,11 @@
   fill: #0099dd;
 }
 
-/* Handles simples del bounding box (coordenadas SVG) */
 .svg-resize-handle-simple {
   fill: #00aaff;
-  stroke: #fff;
   stroke-width: 0.3;
-  z-index: 11000;
 }
 
-/* Cursores para handles de resize */
-.cursor-nw-resize { cursor: nw-resize; }
-.cursor-n-resize { cursor: n-resize; }
-.cursor-ne-resize { cursor: ne-resize; }
-.cursor-e-resize { cursor: e-resize; }
-.cursor-se-resize { cursor: se-resize; }
-.cursor-s-resize { cursor: s-resize; }
-.cursor-sw-resize { cursor: sw-resize; }
-.cursor-w-resize { cursor: w-resize; }
-.cursor-grab { cursor: grab; }
-.cursor-move { cursor: move; }
-.cursor-crosshair { cursor: crosshair; }
-.cursor-pointer { cursor: pointer; }
-.cursor-default { cursor: default; }
-
-/* Handle de rotación */
 .svg-rotation-line {
   stroke: #00aaff;
   stroke-width: 0.3;
@@ -298,12 +302,15 @@
   cursor: grab;
 }
 
-/* Nodos editables */
+/* ======================================== */
+/* Node Editor */
+/* ======================================== */
 .svg-node {
   fill: var(--col-select);
   stroke: #ffffff;
   stroke-width: 2;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .svg-node:hover {
@@ -314,12 +321,10 @@
   fill: #ff6b35;
 }
 
-/* Tipos de nodos */
 .svg-node-curve { fill: #ff6b35; }
 .svg-node-smooth { fill: #4ade80; }
 .svg-node-default { fill: #00b9ff; }
 
-/* Control point */
 .svg-control-point {
   fill: #00b9ff;
   stroke: #ffffff;
@@ -334,7 +339,6 @@
   opacity: 0.6;
 }
 
-/* Path overlay para pen tool */
 .svg-path-overlay {
   fill: none;
   stroke: transparent;
@@ -342,16 +346,32 @@
   cursor: crosshair;
 }
 
-/* Tooltip */
 .svg-tooltip {
   font-size: 10px;
   fill: #374151;
   pointer-events: none;
 }
 
-/* Tema oscuro para el contenedor SVG */
+/* ======================================== */
+/* SVG Viewer Grid */
+/* ======================================== */
+.svg-viewer-grid {
+  background-image:
+    linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ======================================== */
+/* Dark Theme */
+/* ======================================== */
+.dark {
+  color-scheme: dark;
+}
+
 .dark .svg-container {
   background: #1f2937;
+  border-color: #374151;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -359,7 +379,27 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* Scrollbars personalizados */
+.dark .svg-viewer-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+}
+
+.dark .bg-muted\/10 {
+  background-color: oklch(0.269 0 0 / 0.1) !important;
+}
+
+.dark .bg-muted\/20 {
+  background-color: oklch(0.269 0 0 / 0.2) !important;
+}
+
+.dark .bg-background {
+  background-color: var(--background);
+}
+
+/* ======================================== */
+/* Scrollbars */
+/* ======================================== */
 .overflow-auto::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -378,25 +418,51 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* Animaciones suaves para transiciones */
+/* ======================================== */
+/* Animations */
+/* ======================================== */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-indicator {
+  position: relative;
+}
+
+.status-indicator::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  animation: pulse 2s infinite;
+}
+
+/* ======================================== */
+/* Utilities */
+/* ======================================== */
 .transition-all {
   transition-property: all;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
 
-/* Efectos de hover para botones */
 .hover\:scale-105:hover {
   transform: scale(1.05);
 }
 
-/* Indicador de drag and drop */
 .drag-over {
   border-color: hsl(var(--primary));
   background-color: hsl(var(--primary) / 0.05);
 }
 
-/* Estilos para elementos colapsables */
+/* ======================================== */
+/* Collapsible */
+/* ======================================== */
 .collapsible-enter {
   opacity: 0;
   max-height: 0;
@@ -419,7 +485,9 @@
   transition: opacity 200ms, max-height 200ms;
 }
 
-/* Mejoras visuales para el panel de jerarquía */
+/* ======================================== */
+/* Hierarchy */
+/* ======================================== */
 .hierarchy-item {
   position: relative;
 }
@@ -443,60 +511,27 @@
   background: hsl(var(--primary));
 }
 
-/* Estilos para el visor SVG */
-.svg-viewer-grid {
-  background-image: 
-    linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-.dark .svg-viewer-grid {
-  background-image: 
-    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-}
-
-/* Indicadores de estado */
-.status-indicator {
-  position: relative;
-}
-
-.status-indicator::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Mejoras de accesibilidad */
+/* ======================================== */
+/* Accessibility */
+/* ======================================== */
 .focus-visible:focus {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .svg-container {
-    padding: 10px;
-  }
-  
-  .w-80 {
-    width: 100%;
-    max-width: 300px;
-  }
-}
+/* ======================================== */
+/* Cursors (Tailwind already has these) */
+/* ======================================== */
+.cursor-nw-resize { cursor: nw-resize; }
+.cursor-n-resize { cursor: n-resize; }
+.cursor-ne-resize { cursor: ne-resize; }
+.cursor-e-resize { cursor: e-resize; }
+.cursor-se-resize { cursor: se-resize; }
+.cursor-s-resize { cursor: s-resize; }
+.cursor-sw-resize { cursor: sw-resize; }
+.cursor-w-resize { cursor: w-resize; }
+.cursor-grab { cursor: grab; }
+.cursor-move { cursor: move; }
+.cursor-crosshair { cursor: crosshair; }
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }

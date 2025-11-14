@@ -65,26 +65,27 @@ export const TextInput = ({
 
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const svgContent = e.target.result;
 
-        // Validar que el contenido sea SVG válido
+        // Validar que el contenido sea SVG válido básico
         if (!svgContent.trim().startsWith('<svg') && !svgContent.includes('<svg')) {
           throw new Error('El archivo no contiene un SVG válido');
         }
 
-        // Llamar al callback y verificar si fue exitoso
-        const success = onFileLoad?.(svgContent, file.name);
+        // Llamar al callback (ahora es async) y esperar el resultado
+        const success = await onFileLoad?.(svgContent, file.name);
 
         // Si onFileLoad retorna false, significa que hubo un error en el parseo
         if (success === false) {
           setUploadError('Error al parsear el archivo SVG. Verifica que el archivo sea válido.');
         } else {
           setUploadError(null);
-          setText(`Archivo cargado: ${file.name}`);
+          // No actualizamos el texto aquí, lo hace handleFileLoad en App.jsx
         }
       } catch (error) {
+        console.error('Error en TextInput.processFile:', error);
         setUploadError(`Error al procesar el archivo: ${error.message}`);
       } finally {
         setIsLoading(false);

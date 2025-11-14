@@ -100,21 +100,40 @@ export const useSVGParser = () => {
         throw new Error('El contenido del SVG está vacío o no es válido');
       }
 
-      // Crear un parser DOM temporal
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgString, 'image/svg+xml');
+      // Limpiar el contenido (eliminar BOM, espacios al inicio/final, etc.)
+      const cleanedSVG = svgString.trim().replace(/^\uFEFF/, '');
 
-      // Verificar errores de parseo
+      // Crear un parser DOM temporal - intentar parsear sin validación previa
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(cleanedSVG, 'image/svg+xml');
+
+      // Verificar errores críticos de parseo XML
       const parserError = doc.querySelector('parsererror');
       if (parserError) {
-        throw new Error('El archivo SVG tiene errores de sintaxis XML');
+        const errorText = parserError.textContent || 'Error de sintaxis XML';
+        console.warn('⚠️ Parser error details:', errorText);
+        // No lanzar error, intentar recuperar el SVG de todas formas
       }
 
-      const svgElement = doc.querySelector('svg');
+      // Buscar el elemento SVG de múltiples formas
+      let svgElement = doc.querySelector('svg');
+
+      // Si no se encuentra, intentar como primer hijo del documento
+      if (!svgElement && doc.documentElement && doc.documentElement.tagName === 'svg') {
+        svgElement = doc.documentElement;
+      }
+
+      // Si aún no se encuentra, intentar buscar en el HTML
+      if (!svgElement) {
+        const htmlDoc = parser.parseFromString(cleanedSVG, 'text/html');
+        svgElement = htmlDoc.querySelector('svg');
+      }
 
       if (!svgElement) {
-        throw new Error('No se encontró elemento SVG válido en el archivo');
+        throw new Error('No se encontró elemento <svg> en el archivo. Verifica que sea un archivo SVG válido.');
       }
+
+      console.log('✓ Elemento SVG encontrado:', svgElement.tagName);
 
       // Extraer información del SVG raíz
       const rootData = parseElement(svgElement);
@@ -122,10 +141,16 @@ export const useSVGParser = () => {
       // Extraer estilos
       const styles = extractStyles(svgElement);
 
-      // Extraer viewBox y dimensiones
-      const viewBox = svgElement.getAttribute('viewBox') || '0 0 100 100';
-      const width = svgElement.getAttribute('width') || '100';
-      const height = svgElement.getAttribute('height') || '100';
+      // Extraer viewBox y dimensiones con valores por defecto más inteligentes
+      const viewBox = svgElement.getAttribute('viewBox') ||
+                      svgElement.getAttribute('viewbox') ||
+                      `0 0 ${svgElement.getAttribute('width') || 100} ${svgElement.getAttribute('height') || 100}`;
+      const width = svgElement.getAttribute('width') ||
+                    svgElement.getAttribute('viewBox')?.split(' ')[2] ||
+                    '100';
+      const height = svgElement.getAttribute('height') ||
+                     svgElement.getAttribute('viewBox')?.split(' ')[3] ||
+                     '100';
 
       const parsedData = {
         root: rootData,
@@ -133,15 +158,22 @@ export const useSVGParser = () => {
         viewBox: viewBox,
         width: width,
         height: height,
-        originalSVG: svgString
+        originalSVG: cleanedSVG,
+        elementCount: rootData.children.length
       };
 
+      console.log('✓ SVG parseado exitosamente:', {
+        elementos: parsedData.elementCount,
+        dimensiones: `${width}x${height}`,
+        viewBox: viewBox
+      });
+
       setSvgData(parsedData);
-      setSvgContent(svgString);
+      setSvgContent(cleanedSVG);
       return { success: true, data: parsedData };
 
     } catch (error) {
-      console.error('Error al parsear SVG:', error);
+      console.error('✗ Error al parsear SVG:', error);
       setSvgData(null);
       setSvgContent('');
       return { success: false, error: error.message };

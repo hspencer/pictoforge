@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover } from './ui/popover';
 
 /**
  * Componente para el panel de estilos CSS
@@ -313,10 +314,12 @@ export const StylePanel = ({
             }}
           >
             <div
-              className="fixed z-[60] w-[500px] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700"
+              className="style-panel-modal fixed z-[60] w-[500px] rounded-lg shadow-2xl"
               style={{
                 left: 0,
                 top: 0,
+                transform: 'translate(-50%, -50%)',
+                background-color: 'var(--popover)',
               }}
             >
               {/* Header con drag handle */}

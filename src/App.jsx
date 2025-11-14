@@ -11,7 +11,7 @@ import SVGViewer from './components/SVGViewer';
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
 import LanguageSelector from './components/LanguageSelector';
-import './App.scss';
+import './App.css';
 
 // Importar el SVG de ejemplo
 import pictogramSVG from './assets/pictogram.svg?url';
@@ -40,11 +40,19 @@ function AppContent() {
   useEffect(() => {
     const loadExampleSVG = async () => {
       try {
+        console.log('🔄 Cargando SVG de ejemplo...');
         const response = await fetch(pictogramSVG);
         const svgContent = await response.text();
-        loadSVG(svgContent);
+        const result = await loadSVG(svgContent);
+
+        if (result && result.success) {
+          console.log('✓ SVG de ejemplo cargado al iniciar la app');
+          setCurrentText('SVG de ejemplo cargado');
+        } else {
+          console.error('✗ Error al cargar SVG de ejemplo:', result?.error);
+        }
       } catch (error) {
-        console.error('Error cargando SVG de ejemplo:', error);
+        console.error('✗ Error cargando SVG de ejemplo:', error);
       }
     };
 
@@ -70,17 +78,25 @@ function AppContent() {
   /**
    * Maneja la carga de archivos SVG
    */
-  const handleFileLoad = (svgContent, fileName) => {
-    const result = loadSVG(svgContent);
+  const handleFileLoad = async (svgContent, fileName) => {
+    try {
+      const result = await loadSVG(svgContent);
 
-    // Verificar si el parseo fue exitoso
-    if (result && !result.success) {
-      setCurrentText(`Error al cargar ${fileName}: ${result.error}`);
+      // Verificar si el parseo fue exitoso
+      if (!result || !result.success) {
+        const errorMsg = result?.error || 'Error desconocido al cargar el archivo';
+        setCurrentText(`Error al cargar ${fileName}: ${errorMsg}`);
+        console.error('Error cargando SVG:', errorMsg);
+        return false;
+      }
+
+      setCurrentText(`✓ Archivo cargado: ${fileName}`);
+      return true;
+    } catch (error) {
+      setCurrentText(`Error al cargar ${fileName}: ${error.message}`);
+      console.error('Error en handleFileLoad:', error);
       return false;
     }
-
-    setCurrentText(`Archivo cargado: ${fileName}`);
-    return true;
   };
 
   /**

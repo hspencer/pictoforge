@@ -76,8 +76,15 @@ export const FileLoadDemo = ({ onLoadExample }) => {
   /**
    * Carga un ejemplo específico
    */
-  const loadExample = (svgContent, name) => {
-    onLoadExample?.(svgContent, name);
+  const loadExample = async (svgContent, name) => {
+    try {
+      const result = await onLoadExample?.(svgContent, name);
+      if (result) {
+        console.log('✓ Ejemplo cargado correctamente:', name);
+      }
+    } catch (error) {
+      console.error('✗ Error al cargar ejemplo:', error);
+    }
   };
 
   return (
