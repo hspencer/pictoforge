@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSVGParser } from './hooks/useSVGParser';
+import { useSVGStorage } from './hooks/useSVGStorage';
 import { I18nProvider, useI18n } from './hooks/useI18n.jsx';
 import { createSVGOptimizer } from './services/SVGOptimizer';
 import Container from './components/Container';
@@ -10,11 +11,13 @@ import SVGHierarchy from './components/SVGHierarchy';
 import SVGViewer from './components/SVGViewer';
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
-import LanguageSelector from './components/LanguageSelector';
+import SettingsView from './components/SettingsView';
 import './App.css';
 
 // Importar el SVG de ejemplo
 import pictogramSVG from './assets/pictogram.svg?url';
+// Importar el ícono de settings
+import settingsIcon from './assets/settings.svg?url';
 
 // Componente principal de la aplicación con internacionalización
 function AppContent() {
@@ -24,7 +27,8 @@ function AppContent() {
   const [expandedElements, setExpandedElements] = useState(new Set(['pictogram', 'bed', 'person']));
   const [showCodeView, setShowCodeView] = useState(false);
   const [currentTool, setCurrentTool] = useState('select');
-  
+  const [showSettings, setShowSettings] = useState(false);
+
   const {
     svgData,
     selectedElement,
@@ -33,6 +37,8 @@ function AppContent() {
     setSelectedElement,
     findElementById
   } = useSVGParser();
+
+  const { userConfig, updateConfig } = useSVGStorage();
 
   /**
    * Carga el SVG de ejemplo al iniciar la aplicación
@@ -267,6 +273,15 @@ function AppContent() {
     // Implementación futura
   };
 
+  /**
+   * Maneja el guardado de configuración
+   */
+  const handleSaveSettings = (newConfig) => {
+    updateConfig(newConfig);
+    setShowSettings(false);
+    console.log('✓ Configuración guardada:', newConfig);
+  };
+
   return (
     <Container className={`bg-background text-foreground ${darkMode ? 'dark' : ''}`}>
       {/* Header */}
@@ -279,7 +294,7 @@ function AppContent() {
             {t('appSubtitle')}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -289,7 +304,14 @@ function AppContent() {
           >
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
           </Button>
-          <LanguageSelector />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+            title="Opciones"
+          >
+            <img src={settingsIcon} alt="Settings" className="w-4 h-4" />
+          </Button>
         </div>
       </header>
 
@@ -365,6 +387,14 @@ function AppContent() {
           </div>
         </div>
       </footer>
+
+      {/* Settings View */}
+      <SettingsView
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        config={userConfig}
+        onSave={handleSaveSettings}
+      />
     </Container>
   );
 }

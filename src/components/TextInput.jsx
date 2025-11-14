@@ -196,8 +196,6 @@ export const TextInput = ({
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
           {/* Área de texto principal */}
