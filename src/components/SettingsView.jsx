@@ -26,6 +26,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
     author: config?.author || '',
     location: config?.location || { address: '', coordinates: null },
     language: config?.language || 'es',
+    swapPanels: config?.swapPanels || false,
     graphicStylePrompt: config?.graphicStylePrompt || '',
     customStyles: config?.customStyles || []
   });
@@ -288,6 +289,29 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                 Integración con mapa disponible en futuras versiones
               </p>
             </div>
+          </section>
+
+          {/* Layout */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Building2 size={20} />
+              Layout
+            </h2>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="swapPanels"
+                checked={localConfig.swapPanels}
+                onChange={(e) => handleFieldChange('swapPanels', e.target.checked)}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              />
+              <Label htmlFor="swapPanels" className="cursor-pointer">
+                Intercambiar paneles (Editor visual ↔ Jerarquía)
+              </Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Cambia la posición del editor visual y la jerarquía de elementos entre el panel izquierdo y derecho.
+            </p>
           </section>
 
           {/* Idioma */}

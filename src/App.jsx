@@ -404,37 +404,73 @@ function AppContent() {
 
       {/* Layout principal de dos paneles */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Panel izquierdo - Jerarquía de elementos */}
+        {/* Panel izquierdo - Condicionalmente Jerarquía o Visor */}
         <div className="w-1/2 border-r bg-muted/10 flex flex-col">
-          <SVGHierarchy
-            svgData={svgData}
-            selectedElement={selectedElement}
-            onElementSelect={handleElementSelect}
-            expandedElements={expandedElements}
-            onToggleExpand={handleToggleExpand}
-            onStyleChange={handleStyleChange}
-            onSVGUpdate={handleSVGUpdate}
-            svgContent={svgContent}
-          />
-        </div>
-
-        {/* Panel derecho - Visor SVG o Vista de Código */}
-        <div className="w-1/2 flex flex-col">
-          {showCodeView ? (
-            <CodeView
-              svgContent={svgContent}
-              selectedElement={selectedElement}
-              onSVGUpdate={handleSVGUpdate}
-            />
+          {userConfig.swapPanels ? (
+            // Si swap activado: Visor a la izquierda
+            showCodeView ? (
+              <CodeView
+                svgContent={svgContent}
+                selectedElement={selectedElement}
+                onSVGUpdate={handleSVGUpdate}
+              />
+            ) : (
+              <SVGViewer
+                svgContent={svgContent}
+                selectedElement={selectedElement}
+                onElementSelect={handleElementSelect}
+                svgData={svgData}
+                initialTool={currentTool}
+                onToolChange={setCurrentTool}
+              />
+            )
           ) : (
-            <SVGViewer
-              svgContent={svgContent}
+            // Si swap desactivado (default): Jerarquía a la izquierda
+            <SVGHierarchy
+              svgData={svgData}
               selectedElement={selectedElement}
               onElementSelect={handleElementSelect}
-              svgData={svgData}
-              initialTool={currentTool}
-              onToolChange={setCurrentTool}
+              expandedElements={expandedElements}
+              onToggleExpand={handleToggleExpand}
+              onStyleChange={handleStyleChange}
+              onSVGUpdate={handleSVGUpdate}
+              svgContent={svgContent}
             />
+          )}
+        </div>
+
+        {/* Panel derecho - Condicionalmente Visor o Jerarquía */}
+        <div className="w-1/2 flex flex-col">
+          {userConfig.swapPanels ? (
+            // Si swap activado: Jerarquía a la derecha
+            <SVGHierarchy
+              svgData={svgData}
+              selectedElement={selectedElement}
+              onElementSelect={handleElementSelect}
+              expandedElements={expandedElements}
+              onToggleExpand={handleToggleExpand}
+              onStyleChange={handleStyleChange}
+              onSVGUpdate={handleSVGUpdate}
+              svgContent={svgContent}
+            />
+          ) : (
+            // Si swap desactivado (default): Visor a la derecha
+            showCodeView ? (
+              <CodeView
+                svgContent={svgContent}
+                selectedElement={selectedElement}
+                onSVGUpdate={handleSVGUpdate}
+              />
+            ) : (
+              <SVGViewer
+                svgContent={svgContent}
+                selectedElement={selectedElement}
+                onElementSelect={handleElementSelect}
+                svgData={svgData}
+                initialTool={currentTool}
+                onToolChange={setCurrentTool}
+              />
+            )
           )}
         </div>
       </div>

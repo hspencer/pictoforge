@@ -24,6 +24,9 @@ export const useSVGStorage = () => {
     showGrid: true,
     autoSave: true,
 
+    // Configuración de layout
+    swapPanels: false, // Intercambiar panel izquierdo/derecho (hierarchy <-> viewer)
+
     // Configuración de instancia
     instanceName: '',
     author: '',
