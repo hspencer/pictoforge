@@ -27,6 +27,11 @@ function AppContent() {
   const [currentTool, setCurrentTool] = useState('select');
   const [showSettings, setShowSettings] = useState(false);
 
+  // Semantic Layer state
+  const [nluSchema, setNluSchema] = useState(null);
+  const [schemaStatus, setSchemaStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'editing'
+  const [schemaError, setSchemaError] = useState(null);
+
   const {
     svgData,
     selectedElement,
@@ -100,6 +105,30 @@ function AppContent() {
       setCurrentText(`Error al cargar ${fileName}: ${error.message}`);
       console.error('Error en handleFileLoad:', error);
       return false;
+    }
+  };
+
+  /**
+   * Maneja cambios en el NLU Schema (cuando el usuario edita)
+   */
+  const handleSchemaChange = (schemaText) => {
+    setSchemaStatus('editing');
+    setSchemaError(null);
+  };
+
+  /**
+   * Maneja la generación de pictograma desde NLU Schema editado
+   */
+  const handleSchemaGenerate = (schema) => {
+    try {
+      console.log('🔄 Generando pictograma desde schema modificado:', schema);
+      // TODO: Implementar generación con PictoNet API (Fase 2.4)
+      setNluSchema(schema);
+      setSchemaStatus('ready');
+      setSchemaError(null);
+    } catch (error) {
+      console.error('✗ Error generando pictograma:', error);
+      setSchemaError(`Error: ${error.message}`);
     }
   };
 
@@ -319,6 +348,12 @@ function AppContent() {
         onTextChange={handleTextChange}
         onFileLoad={handleFileLoad}
         placeholder={t('textInputPlaceholder')}
+        // Semantic Layer props
+        schemaStatus={schemaStatus}
+        nluSchema={nluSchema}
+        onSchemaChange={handleSchemaChange}
+        onSchemaGenerate={handleSchemaGenerate}
+        schemaError={schemaError}
       />
 
       {/* Demostración de carga de archivos */}

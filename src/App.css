@@ -218,10 +218,8 @@
 }
 
 .svg-container svg {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  /* Sin restricciones de tamaño - panzoom maneja todo via transforms */
+  /* El SVG usa su tamaño natural basado en viewBox */
   display: block;
   pointer-events: all;
 }
@@ -535,3 +533,21 @@
 .cursor-crosshair { cursor: crosshair; }
 .cursor-pointer { cursor: pointer; }
 .cursor-default { cursor: default; }
+
+/* ======================================== */
+/* Schema Status Bar Animations */
+/* ======================================== */
+@keyframes pulse-progress {
+  0%, 100% {
+    opacity: 1;
+    width: 0%;
+  }
+  50% {
+    opacity: 0.8;
+    width: 100%;
+  }
+}
+
+.animate-pulse-progress {
+  animation: pulse-progress 2s ease-in-out infinite;
+}

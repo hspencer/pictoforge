@@ -105,11 +105,74 @@ Accessibility is a key architectural consideration.
 -   **Component Interaction**: Interactive editing components like `BezierHandleEditor` are designed to be fully keyboard-accessible. Handles are treated as buttons (`role="button"`) and are navigable with the `Tab` key and manipulable with arrow keys.
 -   **Screen Reader Support**: `aria-label` attributes and hidden instruction blocks provide context for users of screen readers.
 
-## 8. Technology Stack
+## 8. Semantic Layer (Phase 2 - In Progress)
 
+**Status**: Phase 2.1 Complete (Infrastructure setup)
+
+The Semantic Layer is an **optional, non-invasive addition** that enables round-trip editing between SVG visual representation and NLU (Natural Language Understanding) semantic structure.
+
+### 8.1. Architecture Philosophy
+
+-   **Feature-Flagged**: Only active when NLU schema is present
+-   **Non-Breaking**: Visual editor works independently without schema
+-   **Metadata Enrichment**: Adds semantic meaning without modifying rendering
+-   **External Reference**: NLU Schema maintained as git submodule (independently updatable)
+
+### 8.2. NLU Schema Integration
+
+-   **Location**: `schemas/nlu-schema/` (git submodule)
+-   **Repository**: https://github.com/mediafranca/nlu-schema
+-   **Version**: 1.0.1 (stable)
+-   **Format**: JSON Schema with frames, visual_guidelines, logical_form, pragmatics
+
+### 8.3. Semantic Layer Structure
+
+```
+src/semantic/
+├── services/
+│   ├── NLUSchemaParser.js      (Phase 2.2 - Next)
+│   ├── SemanticMapper.js       (Phase 2.4)
+│   └── RoundTripSyncer.js      (Phase 2.5)
+├── components/
+│   ├── SemanticPanel.jsx       (Phase 2.3)
+│   └── NLUTreeView.jsx         (Phase 2.3)
+├── hooks/
+│   ├── useNLUSchema.js         (Phase 2.2)
+│   └── useSemanticMapping.js   (Phase 2.4)
+└── types/
+    └── nlu-schema.d.ts         (Phase 2.2)
+```
+
+### 8.4. SVG ↔ NLU Mapping
+
+Semantic elements are mapped to SVG via `data-*` attributes:
+
+| NLU Schema Field | SVG Attribute | Example |
+|------------------|---------------|---------|
+| `frames[].id` | `data-frame-id` | `data-frame-id="f1"` |
+| `frames[].roles.Agent` | `data-role` | `data-role="Agent"` |
+| `visual_guidelines.focus_actor` | `data-focus` | `data-focus="true"` |
+
+This allows bidirectional selection: clicking an SVG element highlights its semantic node, and vice versa.
+
+### 8.5. Future Integration
+
+**Phase 2.4**: Round-trip synchronization
+-   Visual edits → update geometry in NLU schema
+-   Semantic edits → flag affected SVG elements
+
+**Phase 4**: PictoNet model integration
+-   Full generation from text
+-   Partial regeneration of specific blends
+
+See [ROADMAP.md](./ROADMAP.md) for complete implementation plan.
+
+## 9. Technology Stack
+
+### Core Visual Editor
 -   **UI Framework**: React 19
 -   **Build Tool**: Vite
--   **Styling**: Tailwind CSS
+-   **Styling**: Tailwind CSS v4 (pure CSS, no SCSS)
 -   **Pan & Zoom**: `@panzoom/panzoom`
 -   **Visual Manipulation**: `react-moveable`
 -   **SVG Parsing**: `svg-pathdata`
@@ -117,3 +180,8 @@ Accessibility is a key architectural consideration.
 -   **UI Components**: Radix UI
 -   **Icons**: Lucide React
 -   **Testing**: Vitest
+
+### Semantic Layer (Phase 2+)
+-   **Schema Validation**: `ajv` + `ajv-formats`
+-   **NLU Schema**: git submodule (v1.0.1)
+-   **Future**: PictoNet API client (Phase 2.4)

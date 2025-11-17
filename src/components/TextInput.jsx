@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, FileText, Download, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n.jsx';
+import { SchemaStatusBar } from '@/semantic/components/SchemaStatusBar';
 
 // Tamaño máximo de archivo: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -13,7 +14,13 @@ export const TextInput = ({
   onTextChange,
   onFileLoad,
   currentText = '',
-  placeholder
+  placeholder,
+  // Schema status bar props
+  schemaStatus = 'idle', // 'idle' | 'loading' | 'ready' | 'editing' | 'error'
+  nluSchema = null,
+  onSchemaChange,
+  onSchemaGenerate,
+  schemaError = null
 }) => {
   const { t } = useI18n();
   const [text, setText] = useState(currentText);
@@ -280,16 +287,18 @@ export const TextInput = ({
           </div>
         )}
 
-        {/* Información adicional */}
-        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-4">
-            <span>{isLoading ? 'Cargando archivo...' : t('dragDropText')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {text.length > 0 && (
-              <span>{text.length} {t('charactersCount')}</span>
-            )}
-          </div>
+        {/* Schema Status Bar - Reemplaza info adicional */}
+        <div className="mt-2">
+          <SchemaStatusBar
+            status={isLoading ? 'loading' : (schemaError ? 'error' : schemaStatus)}
+            nluSchema={nluSchema}
+            onSchemaChange={onSchemaChange}
+            onGenerate={onSchemaGenerate}
+            errorMessage={schemaError || uploadError}
+            loadingMessage={isLoading ? 'Cargando archivo...' : 'Generando pictograma...'}
+            characterCount={text.length}
+            dragDropText={t('dragDropText')}
+          />
         </div>
       </div>
     </div>
