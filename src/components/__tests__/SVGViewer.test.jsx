@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@/tests/test-utils';
 import userEvent from '@testing-library/user-event';
 import SVGViewer from '../SVGViewer';
 

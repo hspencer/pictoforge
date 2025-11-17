@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor } from '@/tests/test-utils';
 import userEvent from '@testing-library/user-event';
 import FileLoadDemo from '../FileLoadDemo';
 

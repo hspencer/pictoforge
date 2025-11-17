@@ -4,61 +4,82 @@ import { useState, useCallback, useEffect, useRef } from 'react';
  * Hook para manejar historial de cambios y undo/redo
  */
 export const useHistory = (initialState = null) => {
-  const [history, setHistory] = useState([initialState].filter(Boolean));
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [state, setState] = useState({
+    history: initialState !== null && initialState !== undefined ? [initialState] : [],
+    currentIndex: 0
+  });
   const lastInitialState = useRef(initialState);
 
   // Detectar cuando initialState cambia (por ejemplo, al cargar un nuevo SVG)
   useEffect(() => {
     if (initialState && initialState !== lastInitialState.current) {
       lastInitialState.current = initialState;
-      setHistory([initialState]);
-      setCurrentIndex(0);
+      setState({
+        history: [initialState],
+        currentIndex: 0
+      });
     }
   }, [initialState]);
+
+  const { history, currentIndex } = state;
 
   // Estado actual
   const currentState = history[currentIndex] || initialState;
 
   // Agregar nuevo estado al historial
   const pushState = useCallback((newState) => {
-    setHistory(prev => {
+    setState(prev => {
       // Remover estados futuros si estamos en el medio del historial
-      const newHistory = prev.slice(0, currentIndex + 1);
+      const newHistory = prev.history.slice(0, prev.currentIndex + 1);
       newHistory.push(newState);
-      
+
       // Limitar el historial a 50 estados para evitar problemas de memoria
       if (newHistory.length > 50) {
         newHistory.shift();
-        return newHistory;
+        return {
+          history: newHistory,
+          currentIndex: newHistory.length - 1
+        };
       }
-      
-      return newHistory;
+
+      return {
+        history: newHistory,
+        currentIndex: newHistory.length - 1
+      };
     });
-    
-    setCurrentIndex(prev => {
-      const newIndex = Math.min(prev + 1, history.length);
-      return newIndex;
-    });
-  }, [currentIndex, history.length]);
+  }, []);
 
   // Deshacer (undo)
   const undo = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-      return true;
-    }
-    return false;
-  }, [currentIndex]);
+    let success = false;
+    setState(prev => {
+      if (prev.currentIndex > 0) {
+        success = true;
+        return {
+          ...prev,
+          currentIndex: prev.currentIndex - 1
+        };
+      }
+      return prev;
+    });
+    return success;
+  }, []);
 
   // Rehacer (redo)
   const redo = useCallback(() => {
-    if (currentIndex < history.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      return true;
-    }
-    return false;
-  }, [currentIndex, history.length]);
+    let success = false;
+    setState(prev => {
+      if (prev.currentIndex < prev.history.length - 1) {
+        success = true;
+        return {
+          ...prev,
+          currentIndex: prev.currentIndex + 1
+        };
+      }
+      return prev;
+    });
+    return success;
+  }, []);
 
   // Verificar si se puede deshacer/rehacer
   const canUndo = currentIndex > 0;
@@ -66,8 +87,10 @@ export const useHistory = (initialState = null) => {
 
   // Limpiar historial
   const clearHistory = useCallback(() => {
-    setHistory([initialState].filter(Boolean));
-    setCurrentIndex(0);
+    setState({
+      history: initialState !== null && initialState !== undefined ? [initialState] : [],
+      currentIndex: 0
+    });
   }, [initialState]);
 
   return {

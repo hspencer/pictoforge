@@ -188,7 +188,7 @@ export const useSVGParser = () => {
     try {
       let svgString;
 
-      if (typeof source === 'string' && source.startsWith('<svg')) {
+      if (typeof source === 'string' && source.trim().startsWith('<svg')) {
         // Es contenido SVG directo
         svgString = source;
       } else if (typeof source === 'string') {
