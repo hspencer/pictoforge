@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/BezierHandleEditor.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/BezierHandleEditor.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { SVG } from '@svgdotjs/svg.js';
+import { usePathDataProcessor } from '../hooks/usePathDataProcessor';
+
+/**
+ * BezierHandleEditor Component
+ *
+ * Editor visual de puntos de control Bézier usando eventos nativos del mouse.
+ * Más ligero y sin dependencias externas problemáticas.
+ */
+export const BezierHandleEditor = ({
+  pathElement,
+  coordinateTransformer,
+  containerRef,
+  svgContainerRef,
+  onPathUpdate,
+  zoom = 1,
+  panzoomState = { scale: 1, x: 0, y: 0 },
+}) => {
+  const overlayRef = useRef(null);
+  const svgInstanceRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
+  const dragStateRef = useRef(null);
+
+  const {
+    segments,
+    anchorPoints,
+    controlPoints,
+    updateControlPoint,
+    updateAnchorPoint,
+    toString: getUpdatedPathString,
+    isReady: isPathReady,
+  } = usePathDataProcessor({
+    pathString: pathElement?.getAttribute('d') || '',
+    autoNormalize: true,
+  });
+
+  // Refs para evitar loop infinito en keyboard handlers
+  const updateControlPointRef = useRef(updateControlPoint);
+  const updateAnchorPointRef = useRef(updateAnchorPoint);
+  const getUpdatedPathStringRef = useRef(getUpdatedPathString);
+  const pathElementRef = useRef(pathElement);
+
+  // Actualizar refs cuando cambien las funciones
+  useEffect(() => {
+    updateControlPointRef.current = updateControlPoint;
+    updateAnchorPointRef.current = updateAnchorPoint;
+    getUpdatedPathStringRef.current = getUpdatedPathString;
+    pathElementRef.current = pathElement;
+  }, [updateControlPoint, updateAnchorPoint, getUpdatedPathString, pathElement]);
+
+  useEffect(() => {
+    if (!overlayRef.current || svgInstanceRef.current) return;
+
+    try {
+      // Obtener el viewBox del SVG principal
+      const mainSvg = svgContainerRef.current?.querySelector('svg');
+      if (mainSvg) {
+        const viewBox = mainSvg.getAttribute('viewBox');
+        if (viewBox) {
+          overlayRef.current.setAttribute('viewBox', viewBox);
+          console.log('📐 ViewBox aplicado al overlay:', viewBox);
+        }
+      }
+
+      const svgInstance = SVG(overlayRef.current);
+      svgInstanceRef.current = svgInstance;
+      setIsReady(true);
+      console.log('✅ BezierHandleEditor initialized');
+    } catch (error) {
+      console.error('❌ Error:', error);
+    }
+
+    return () => {
+      if (svgInstanceRef.current) {
+        svgInstanceRef.current.clear();
+        svgInstanceRef.current = null;
+      }
+    };
+  }, [svgContainerRef]);
+
+  // Ahora que el overlay tiene la misma transformación que el SVG,
+  // solo necesitamos las coordenadas SVG directamente (sin transformación adicional)
+  const svgToScreen = useCallback(
+    (svgX, svgY) => {
+      // El overlay ya tiene aplicado el transform de panzoom,
+      // así que simplemente devolvemos las coordenadas SVG
+      return { x: svgX, y: svgY };
+    },
+    []
+  );
+
+  const screenToSvg = useCallback(
+    (screenX, screenY) => {
+      if (!coordinateTransformer?.screenToSvg) {
+        return { x: screenX / zoom, y: screenY / zoom };
+      }
+      return coordinateTransformer.screenToSvg(screenX, screenY);
+    },
+    [coordinateTransformer, zoom]
+  );
+
+  const handleMouseDown = useCallback((e, handleData) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    dragStateRef.current = {
+      ...handleData,
+      startX: e.clientX,
+      startY: e.clientY,
+      isDragging: true,
+    };
+
+    console.log(`🎯 Drag Start: ${handleData.type}`);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!dragStateRef.current?.isDragging) return;
+
+      const { type, segmentIndex, circle, line, anchorScreenPos } = dragStateRef.current;
+
+      const screenX = e.clientX;
+      const screenY = e.clientY;
+
+      if (circle) {
+        circle.center(screenX, screenY);
+      }
+      if (line &amp;&amp; anchorScreenPos) {
+        line.plot(screenX, screenY, anchorScreenPos.x, anchorScreenPos.y);
+      }
+
+      const svgPos = screenToSvg(screenX, screenY);
+
+      if (type === 'anchor') {
+        updateAnchorPoint(segmentIndex, { x: svgPos.x, y: svgPos.y });
+      } else {
+        updateControlPoint(segmentIndex, type, { x: svgPos.x, y: svgPos.y });
+      }
+
+      const updatedPathString = getUpdatedPathString();
+      if (pathElement &amp;&amp; updatedPathString) {
+        pathElement.setAttribute('d', updatedPathString);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (!dragStateRef.current?.isDragging) return;
+
+      console.log(`✅ Drag End: ${dragStateRef.current.type}`);
+
+      if (dragStateRef.current.circle) {
+        dragStateRef.current.circle.scale(1);
+      }
+
+      if (onPathUpdate) {
+        const updatedPathString = getUpdatedPathString();
+        onPathUpdate(updatedPathString);
+      }
+
+      dragStateRef.current = null;
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [
+    screenToSvg,
+    updateControlPoint,
+    updateAnchorPoint,
+    getUpdatedPathString,
+    pathElement,
+    onPathUpdate,
+  ]);
+
+  useEffect(() => {
+    if (!isReady || !isPathReady || !svgInstanceRef.current) return;
+
+    svgInstanceRef.current.clear();
+
+    console.log('🎨 Rendering handles:', {
+      controlPoints: controlPoints.length,
+      anchorPoints: anchorPoints.length,
+    });
+
+    const colors = {
+      C1: '#ff6b6b',
+      C2: '#4ecdc4',
+      Q1: '#ffe66d',
+      anchor: '#00aaff',
+    };
+
+    const svg = svgInstanceRef.current;
+
+    controlPoints.forEach((point) => {
+      const { segmentIndex, type } = point;
+      const color = colors[type] || '#999';
+
+      const screenPos = svgToScreen(point.x, point.y);
+      const anchorScreenPos = svgToScreen(
+        segments[segmentIndex].endPoint.x,
+        segments[segmentIndex].endPoint.y
+      );
+
+      // Tamaño en unidades del viewBox (100x100)
+      const circleSize = 2;
+      const lineWidth = 0.3;
+      const strokeWidth = 0.3;
+      const dashSize = 0.5;
+
+      const line = svg
+        .line(screenPos.x, screenPos.y, anchorScreenPos.x, anchorScreenPos.y)
+        .stroke({ color: color, width: lineWidth, opacity: 0.6, dasharray: `${dashSize},${dashSize}` });
+
+      const circle = svg
+        .circle(circleSize)
+        .center(screenPos.x, screenPos.y)
+        .fill(color)
+        .stroke({ color: '#fff', width: strokeWidth })
+        .css({ cursor: 'move', pointerEvents: 'all' });
+
+      // Texto con tamaño en unidades del viewBox
+      const fontSize = 2;
+      const textOffset = 2.5;
+      const textStrokeWidth = 0.15;
+
+      svg
+        .text(type)
+        .move(screenPos.x + textOffset, screenPos.y - 2.5)
+        .font({ size: fontSize, family: 'monospace', weight: 'bold' })
+        .fill(color)
+        .stroke({ color: '#000', width: textStrokeWidth });
+
+      // Hacer el handle accesible con teclado
+      circle.node.setAttribute('role', 'button');
+      circle.node.setAttribute('tabindex', '0');
+      circle.node.setAttribute('aria-label', `${type} control point for segment ${segmentIndex}`);
+      circle.node.setAttribute('aria-describedby', 'bezier-handle-instructions');
+
+      // Mouse events
+      circle.node.addEventListener('mousedown', (e) => {
+        circle.scale(1.4);
+        handleMouseDown(e, { type, segmentIndex, circle, line, anchorScreenPos });
+      });
+
+      // Keyboard events (Arrow keys para mover handles)
+      circle.node.addEventListener('keydown', (e) => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+
+          // Obtener posición actual
+          const currentPos = { x: point.x, y: point.y };
+          const step = e.shiftKey ? 10 : 1;
+
+          let newX = currentPos.x;
+          let newY = currentPos.y;
+
+          switch (e.key) {
+            case 'ArrowUp':
+              newY -= step;
+              break;
+            case 'ArrowDown':
+              newY += step;
+              break;
+            case 'ArrowLeft':
+              newX -= step;
+              break;
+            case 'ArrowRight':
+              newX += step;
+              break;
+          }
+
+          // Usar refs para evitar re-render loop
+          updateControlPointRef.current(segmentIndex, type, { x: newX, y: newY });
+
+          const updatedPathString = getUpdatedPathStringRef.current();
+          if (pathElementRef.current &amp;&amp; updatedPathString) {
+            pathElementRef.current.setAttribute('d', updatedPathString);
+          }
+
+          // Feedback visual
+          circle.scale(1.2);
+          setTimeout(() => circle.scale(1), 100);
+
+          console.log(`⌨️  Keyboard move ${type}: ${e.key} (step: ${step})`);
+        }
+
+        // Enter/Space para "activar" el handle (feedback visual)
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          circle.scale(1.4);
+          setTimeout(() => circle.scale(1), 200);
+        }
+      });
+    });
+
+    anchorPoints.forEach((point) => {
+      const screenPos = svgToScreen(point.x, point.y);
+
+      // Tamaño en unidades del viewBox (100x100)
+      const rectSize = 1.5;
+      const rectStrokeWidth = 0.3;
+
+      const rect = svg
+        .rect(rectSize, rectSize)
+        .center(screenPos.x, screenPos.y)
+        .fill(colors.anchor)
+        .stroke({ color: '#fff', width: rectStrokeWidth })
+        .css({ cursor: 'move', pointerEvents: 'all' });
+
+      // Hacer el anchor accesible con teclado
+      rect.node.setAttribute('role', 'button');
+      rect.node.setAttribute('tabindex', '0');
+      rect.node.setAttribute('aria-label', `Anchor point for segment ${point.segmentIndex}`);
+      rect.node.setAttribute('aria-describedby', 'bezier-handle-instructions');
+
+      // Mouse events
+      rect.node.addEventListener('mousedown', (e) => {
+        rect.scale(1.4);
+        handleMouseDown(e, {
+          type: 'anchor',
+          segmentIndex: point.segmentIndex,
+          circle: rect,
+          line: null,
+          anchorScreenPos: null,
+        });
+      });
+
+      // Keyboard events
+      rect.node.addEventListener('keydown', (e) => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+
+          const currentPos = { x: point.x, y: point.y };
+          const step = e.shiftKey ? 10 : 1;
+
+          let newX = currentPos.x;
+          let newY = currentPos.y;
+
+          switch (e.key) {
+            case 'ArrowUp':
+              newY -= step;
+              break;
+            case 'ArrowDown':
+              newY += step;
+              break;
+            case 'ArrowLeft':
+              newX -= step;
+              break;
+            case 'ArrowRight':
+              newX += step;
+              break;
+          }
+
+          // Usar refs para evitar re-render loop
+          updateAnchorPointRef.current(point.segmentIndex, { x: newX, y: newY });
+
+          const updatedPathString = getUpdatedPathStringRef.current();
+          if (pathElementRef.current &amp;&amp; updatedPathString) {
+            pathElementRef.current.setAttribute('d', updatedPathString);
+          }
+
+          // Feedback visual
+          rect.scale(1.2);
+          setTimeout(() => rect.scale(1), 100);
+
+          console.log(`⌨️  Keyboard move anchor: ${e.key} (step: ${step})`);
+        }
+
+        // Enter/Space para "activar"
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          rect.scale(1.4);
+          setTimeout(() => rect.scale(1), 200);
+        }
+      });
+    });
+  }, [
+    isReady,
+    isPathReady,
+    controlPoints,
+    anchorPoints,
+    segments,
+    svgToScreen,
+    handleMouseDown,
+    panzoomState.scale,
+    panzoomState.x,
+    panzoomState.y,
+  ]);
+
+  if (!pathElement) {
+    return null;
+  }
+
+  return (
+    &lt;>
+      {/* Instrucciones ocultas para lectores de pantalla */}
+      &lt;div
+        id="bezier-handle-instructions"
+        className="sr-only"
+        role="region"
+        aria-label="Bezier handle editor instructions"
+      >
+        Use arrow keys to move control points and anchor points. Hold Shift for larger movements (10 units). Press Tab to navigate between handles. Press Enter or Space to select a handle.
+      &lt;/div>
+
+      &lt;svg
+        ref={overlayRef}
+        className="bezier-handle-editor"
+        role="application"
+        aria-label="Bezier curve editor overlay"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 1000,
+          overflow: 'visible',
+          pointerEvents: 'none',
+        }}
+      />
+    &lt;/>
+  );
+};
+
+export default BezierHandleEditor;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

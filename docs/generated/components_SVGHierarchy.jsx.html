@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/SVGHierarchy.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/SVGHierarchy.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState } from 'react';
+import { ChevronRight, ChevronDown, Circle, Square, Triangle, Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/useI18n.jsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+/**
+ * Componente para mostrar la jerarquía de elementos SVG
+ */
+export const SVGHierarchy = ({
+  svgData,
+  selectedElement,
+  onElementSelect,
+  expandedElements = new Set(),
+  onToggleExpand,
+  onStyleChange,
+  onSVGUpdate,
+  svgContent
+}) => {
+  const { t } = useI18n();
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingStyle, setEditingStyle] = useState(null);
+
+  // Lista de propiedades CSS comunes para SVG
+  const commonSVGProperties = [
+    'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+    'stroke-dasharray', 'stroke-dashoffset', 'opacity', 'fill-opacity',
+    'stroke-opacity', 'transform', 'filter', 'clip-path', 'mask'
+  ];
+  
+  /**
+   * Obtiene los estilos disponibles del SVG
+   */
+  const getAvailableStyles = () => {
+    if (!svgData?.styles) return [];
+
+    return Object.entries(svgData.styles).map(([className, properties]) => ({
+      name: className,
+      properties: properties,
+      isActive: selectedElement?.className?.includes(className) || false
+    }));
+  };
+
+  /**
+   * Parsea las propiedades CSS para mostrarlas de forma legible
+   */
+  const parseStyleProperties = (properties) => {
+    return properties
+      .split(';')
+      .filter(prop => prop.trim())
+      .map(prop => {
+        const [key, value] = prop.split(':').map(s => s.trim());
+        return { key, value };
+      });
+  };
+
+  /**
+   * Obtiene los estilos CSS inline para el preview (fill, stroke, etc.)
+   */
+  const getStylePreview = (properties) => {
+    const props = parseStyleProperties(properties);
+    const style = {};
+
+    props.forEach(prop => {
+      if (prop.key === 'fill') style.backgroundColor = prop.value;
+      if (prop.key === 'stroke') style.borderColor = prop.value;
+      if (prop.key === 'stroke-width') style.borderWidth = prop.value;
+      if (prop.key === 'opacity') style.opacity = prop.value;
+    });
+
+    // Si no hay fill, usar transparente
+    if (!style.backgroundColor) style.backgroundColor = 'transparent';
+    // Si no hay stroke, usar border por defecto
+    if (!style.borderColor) style.borderColor = '#e5e7eb';
+    if (!style.borderWidth) style.borderWidth = '2px';
+
+    return style;
+  };
+
+  /**
+   * Abre el modal de edición de un estilo
+   */
+  const handleStyleDoubleClick = (style) => {
+    setEditingStyle({
+      name: style.name,
+      properties: parseStyleProperties(style.properties)
+    });
+    setEditModalOpen(true);
+  };
+
+  /**
+   * Crea un nuevo estilo vacío
+   */
+  const handleCreateNewStyle = () => {
+    setEditingStyle({
+      name: 'nuevo-estilo',
+      properties: [
+        { key: 'fill', value: '#000000' },
+        { key: 'stroke', value: '#000000' }
+      ]
+    });
+    setEditModalOpen(true);
+  };
+
+  /**
+   * Guarda los cambios del estilo editado
+   */
+  const handleSaveStyle = () => {
+    // TODO: Implementar guardado de estilos
+    console.log('Guardando estilo:', editingStyle);
+    setEditModalOpen(false);
+    setEditingStyle(null);
+  };
+
+  /**
+   * Elimina el estilo actual
+   */
+  const handleDeleteStyle = () => {
+    // TODO: Implementar eliminación de estilos
+    console.log('Eliminando estilo:', editingStyle?.name);
+    setEditModalOpen(false);
+    setEditingStyle(null);
+  };
+
+  /**
+   * Obtiene las propiedades disponibles (no utilizadas)
+   */
+  const getAvailableProperties = () => {
+    if (!editingStyle) return commonSVGProperties;
+    const usedKeys = editingStyle.properties.map(p => p.key);
+    return commonSVGProperties.filter(prop => !usedKeys.includes(prop));
+  };
+
+  if (!svgData) {
+    return (
+      &lt;div className="p-4 text-muted-foreground">
+        &lt;p>{t('noSVGLoaded')}&lt;/p>
+      &lt;/div>
+    );
+  }
+
+  /**
+   * Filtra nodos innecesarios (root svg, defs)
+   */
+  const getDrawingElements = () => {
+    if (!svgData?.root?.children) return [];
+
+    // Filtrar elementos que no son de dibujo
+    return svgData.root.children.filter(child =>
+      child.tagName !== 'defs' &amp;&amp;
+      child.tagName !== 'style' &amp;&amp;
+      child.tagName !== 'title' &amp;&amp;
+      child.tagName !== 'desc' &amp;&amp;
+      child.tagName !== 'metadata'
+    );
+  };
+
+  /**
+   * Obtiene el icono apropiado para cada tipo de elemento
+   */
+  const getElementIcon = (tagName) => {
+    const iconProps = { size: 16, className: "text-muted-foreground" };
+    
+    switch (tagName) {
+      case 'circle':
+        return &lt;Circle {...iconProps} />;
+      case 'rect':
+      case 'g':
+        return &lt;Square {...iconProps} />;
+      case 'path':
+      case 'polygon':
+        return &lt;Triangle {...iconProps} />;
+      default:
+        return &lt;Circle {...iconProps} />;
+    }
+  };
+
+  /**
+   * Renderiza un elemento individual de la jerarquía
+   */
+  const renderElement = (element, depth = 0) => {
+    const hasChildren = element.children &amp;&amp; element.children.length > 0;
+    const isExpanded = expandedElements.has(element.id);
+    const isSelected = selectedElement?.id === element.id;
+
+    return (
+      &lt;div key={element.id} className="select-none">
+        &lt;div 
+          className={`
+            flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200
+            hover:bg-accent hover:text-accent-foreground
+            ${isSelected ? 'bg-primary text-primary-foreground shadow-sm' : ''}
+          `}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          onClick={() => onElementSelect(element, true)}
+        >
+          {/* Botón de expansión */}
+          {hasChildren &amp;&amp; (
+            &lt;Button
+              variant="ghost"
+              size="sm"
+              className="h-4 w-4 p-0 hover:bg-transparent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleExpand(element.id);
+              }}
+            >
+              {isExpanded ? (
+                &lt;ChevronDown size={12} />
+              ) : (
+                &lt;ChevronRight size={12} />
+              )}
+            &lt;/Button>
+          )}
+          
+          {/* Espaciador si no tiene hijos */}
+          {!hasChildren &amp;&amp; &lt;div className="w-4" />}
+          
+          {/* Icono del elemento */}
+          {getElementIcon(element.tagName)}
+          
+          {/* Información del elemento */}
+          &lt;div className="flex-1 min-w-0">
+            &lt;div className="flex items-center gap-2">
+              &lt;span className="font-medium text-sm truncate">
+                {element.id || element.tagName}
+              &lt;/span>
+              {element.className &amp;&amp; (
+                &lt;span className="text-xs text-muted-foreground bg-muted px-1 rounded">
+                  .{element.className}
+                &lt;/span>
+              )}
+            &lt;/div>
+            &lt;div className="text-xs text-muted-foreground">
+              {element.tagName}
+              {element.children.length > 0 &amp;&amp; (
+                &lt;span className="ml-1">({element.children.length})&lt;/span>
+              )}
+            &lt;/div>
+          &lt;/div>
+        &lt;/div>
+
+        {/* Elementos hijos */}
+        {hasChildren &amp;&amp; isExpanded &amp;&amp; (
+          &lt;div>
+            {element.children.map(child => 
+              renderElement(child, depth + 1)
+            )}
+          &lt;/div>
+        )}
+      &lt;/div>
+    );
+  };
+
+  const availableStyles = getAvailableStyles();
+  const drawingElements = getDrawingElements();
+
+  return (
+    &lt;div className="h-full flex flex-col overflow-hidden">
+      {/* Header con estilos */}
+      &lt;div className="p-3 border-b bg-background flex items-center justify-between gap-2">
+        &lt;h3 className="font-semibold text-sm">{t('svgElements')}&lt;/h3>
+
+        {/* Círculos de estilos */}
+        &lt;TooltipProvider>
+          &lt;div className="flex items-center gap-1">
+            {availableStyles.map((style) => {
+              const previewStyle = getStylePreview(style.properties);
+
+              return (
+                &lt;Tooltip key={style.name}>
+                  &lt;TooltipTrigger asChild>
+                    &lt;button
+                      className="w-6 h-6 rounded-full flex-shrink-0 hover:scale-110 transition-transform cursor-pointer"
+                      style={{
+                        ...previewStyle,
+                        borderStyle: 'solid',
+                      }}
+                      onDoubleClick={() => handleStyleDoubleClick(style)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  &lt;/TooltipTrigger>
+                  &lt;TooltipContent>
+                    &lt;p>{style.name}&lt;/p>
+                  &lt;/TooltipContent>
+                &lt;/Tooltip>
+              );
+            })}
+
+            {/* Botón para agregar nuevo estilo */}
+            &lt;Tooltip>
+              &lt;TooltipTrigger asChild>
+                &lt;Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreateNewStyle}
+                  className="h-6 w-6 p-0 rounded-full"
+                >
+                  &lt;Plus size={12} />
+                &lt;/Button>
+              &lt;/TooltipTrigger>
+              &lt;TooltipContent>
+                &lt;p>{t('createNewStyle')}&lt;/p>
+              &lt;/TooltipContent>
+            &lt;/Tooltip>
+          &lt;/div>
+        &lt;/TooltipProvider>
+      &lt;/div>
+
+      {/* Lista de elementos de dibujo */}
+      &lt;div className="flex-1 overflow-auto p-2">
+        {drawingElements.length === 0 ? (
+          &lt;div className="text-center text-muted-foreground py-8">
+            &lt;p className="text-sm">{t('noDrawingElements')}&lt;/p>
+          &lt;/div>
+        ) : (
+          drawingElements.map(element => renderElement(element, 0))
+        )}
+      &lt;/div>
+
+      {/* Modal de edición de estilos */}
+      &lt;Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        &lt;DialogContent className="sm:max-w-[500px]">
+          &lt;DialogHeader>
+            &lt;DialogTitle>{t('editStyle')}&lt;/DialogTitle>
+            &lt;DialogDescription>
+              {t('editStyleDescription')}
+            &lt;/DialogDescription>
+          &lt;/DialogHeader>
+
+          {editingStyle &amp;&amp; (
+            &lt;div className="space-y-4 py-4">
+              {/* Nombre del estilo */}
+              &lt;div className="space-y-2">
+                &lt;Label htmlFor="style-name">{t('styleName')}&lt;/Label>
+                &lt;Input
+                  id="style-name"
+                  value={editingStyle.name}
+                  onChange={(e) =>
+                    setEditingStyle({ ...editingStyle, name: e.target.value })
+                  }
+                  placeholder={t('styleNamePlaceholder')}
+                />
+              &lt;/div>
+
+              {/* Propiedades CSS */}
+              &lt;div className="space-y-3">
+                &lt;Label>{t('cssProperties')}&lt;/Label>
+                &lt;div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {editingStyle.properties.map((prop, index) => (
+                    &lt;div key={index} className="flex gap-2">
+                      &lt;Select
+                        value={prop.key}
+                        onValueChange={(value) => {
+                          const newProps = [...editingStyle.properties];
+                          newProps[index].key = value;
+                          setEditingStyle({ ...editingStyle, properties: newProps });
+                        }}
+                      >
+                        &lt;SelectTrigger className="w-[140px] text-xs font-mono">
+                          &lt;SelectValue placeholder={t('propertyPlaceholder')} />
+                        &lt;/SelectTrigger>
+                        &lt;SelectContent>
+                          {prop.key &amp;&amp; !commonSVGProperties.includes(prop.key) &amp;&amp; (
+                            &lt;SelectItem value={prop.key}>{prop.key}&lt;/SelectItem>
+                          )}
+                          {commonSVGProperties.map((p) => (
+                            &lt;SelectItem key={p} value={p}>
+                              {p}
+                            &lt;/SelectItem>
+                          ))}
+                        &lt;/SelectContent>
+                      &lt;/Select>
+                      &lt;Input
+                        value={prop.value}
+                        onChange={(e) => {
+                          const newProps = [...editingStyle.properties];
+                          newProps[index].value = e.target.value;
+                          setEditingStyle({ ...editingStyle, properties: newProps });
+                        }}
+                        placeholder={t('valuePlaceholder')}
+                        className="flex-1 text-xs font-mono"
+                      />
+                      &lt;Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newProps = editingStyle.properties.filter((_, i) => i !== index);
+                          setEditingStyle({ ...editingStyle, properties: newProps });
+                        }}
+                        className="h-9 w-9 p-0"
+                        title={t('deleteProperty')}
+                      >
+                        &lt;Trash2 size={14} />
+                      &lt;/Button>
+                    &lt;/div>
+                  ))}
+                &lt;/div>
+
+                {/* Botón para agregar nueva propiedad */}
+                &lt;Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const availableProps = getAvailableProperties();
+                    const newKey = availableProps.length > 0 ? availableProps[0] : '';
+                    setEditingStyle({
+                      ...editingStyle,
+                      properties: [...editingStyle.properties, { key: newKey, value: '' }]
+                    });
+                  }}
+                  className="w-full"
+                  disabled={getAvailableProperties().length === 0}
+                >
+                  &lt;Plus size={14} className="mr-1" />
+                  {t('addProperty')}
+                &lt;/Button>
+              &lt;/div>
+
+              {/* Botones de acción */}
+              &lt;div className="flex justify-between gap-2 pt-4 border-t">
+                &lt;Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteStyle}
+                >
+                  &lt;Trash2 size={14} className="mr-1" />
+                  {t('deleteStyle')}
+                &lt;/Button>
+                &lt;div className="flex gap-2">
+                  &lt;Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditModalOpen(false);
+                      setEditingStyle(null);
+                    }}
+                  >
+                    {t('cancel')}
+                  &lt;/Button>
+                  &lt;Button onClick={handleSaveStyle}>
+                    {t('saveChanges')}
+                  &lt;/Button>
+                &lt;/div>
+              &lt;/div>
+            &lt;/div>
+          )}
+        &lt;/DialogContent>
+      &lt;/Dialog>
+    &lt;/div>
+  );
+};
+
+export default SVGHierarchy;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

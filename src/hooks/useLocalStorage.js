@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
  *
  * @param {string} key - Clave para localStorage
  * @param {*} initialValue - Valor inicial si no existe en localStorage
- * @returns {[value, setValue, removeValue]} - [valor actual, función set, función remove]
+ * @returns {Array} Un array con el valor actual, una función para actualizarlo y una función para eliminarlo.
  */
 export const useLocalStorage = (key, initialValue) => {
   // Estado para almacenar el valor

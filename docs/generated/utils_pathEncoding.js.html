@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/pathEncoding.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/pathEncoding.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Utilidades para codificar y decodificar coordenadas en formato SVG Path
+ * Convierte entre pares ordenados (x,y) y comandos de path SVG
+ */
+
+/**
+ * Formatea un número para uso en paths SVG
+ * Redondea a 3 decimales para reducir tamaño sin perder precisión visual
+ *
+ * @param {number} num - Número a formatear
+ * @param {number} precision - Decimales de precisión (default: 3)
+ * @returns {string} Número formateado
+ */
+export const formatNumber = (num, precision = 3) => {
+  return Number(num.toFixed(precision)).toString();
+};
+
+/**
+ * Convierte un par ordenado a comando MoveTo (M)
+ *
+ * @param {number} x - Coordenada X
+ * @param {number} y - Coordenada Y
+ * @param {boolean} relative - Si es relativo (m) o absoluto (M)
+ * @returns {string} Comando SVG
+ */
+export const pointToMoveTo = (x, y, relative = false) => {
+  const command = relative ? 'm' : 'M';
+  return `${command} ${formatNumber(x)} ${formatNumber(y)}`;
+};
+
+/**
+ * Convierte un par ordenado a comando LineTo (L)
+ *
+ * @param {number} x - Coordenada X
+ * @param {number} y - Coordenada Y
+ * @param {boolean} relative - Si es relativo (l) o absoluto (L)
+ * @returns {string} Comando SVG
+ */
+export const pointToLineTo = (x, y, relative = false) => {
+  const command = relative ? 'l' : 'L';
+  return `${command} ${formatNumber(x)} ${formatNumber(y)}`;
+};
+
+/**
+ * Convierte coordenadas de línea horizontal a comando H
+ *
+ * @param {number} x - Coordenada X
+ * @param {boolean} relative - Si es relativo (h) o absoluto (H)
+ * @returns {string} Comando SVG
+ */
+export const pointToHorizontalLine = (x, relative = false) => {
+  const command = relative ? 'h' : 'H';
+  return `${command} ${formatNumber(x)}`;
+};
+
+/**
+ * Convierte coordenadas de línea vertical a comando V
+ *
+ * @param {number} y - Coordenada Y
+ * @param {boolean} relative - Si es relativo (v) o absoluto (V)
+ * @returns {string} Comando SVG
+ */
+export const pointToVerticalLine = (y, relative = false) => {
+  const command = relative ? 'v' : 'V';
+  return `${command} ${formatNumber(y)}`;
+};
+
+/**
+ * Convierte puntos de curva cúbica Bézier a comando CurveTo (C)
+ *
+ * @param {Object} cp1 - Primer punto de control {x, y}
+ * @param {Object} cp2 - Segundo punto de control {x, y}
+ * @param {Object} end - Punto final {x, y}
+ * @param {boolean} relative - Si es relativo (c) o absoluto (C)
+ * @returns {string} Comando SVG
+ */
+export const pointsToCubicBezier = (cp1, cp2, end, relative = false) => {
+  const command = relative ? 'c' : 'C';
+  return `${command} ${formatNumber(cp1.x)} ${formatNumber(cp1.y)}, ${formatNumber(cp2.x)} ${formatNumber(cp2.y)}, ${formatNumber(end.x)} ${formatNumber(end.y)}`;
+};
+
+/**
+ * Convierte puntos de curva cúbica Bézier suave a comando S
+ *
+ * @param {Object} cp2 - Segundo punto de control {x, y}
+ * @param {Object} end - Punto final {x, y}
+ * @param {boolean} relative - Si es relativo (s) o absoluto (S)
+ * @returns {string} Comando SVG
+ */
+export const pointsToSmoothCubicBezier = (cp2, end, relative = false) => {
+  const command = relative ? 's' : 'S';
+  return `${command} ${formatNumber(cp2.x)} ${formatNumber(cp2.y)}, ${formatNumber(end.x)} ${formatNumber(end.y)}`;
+};
+
+/**
+ * Convierte puntos de curva cuadrática Bézier a comando Q
+ *
+ * @param {Object} cp - Punto de control {x, y}
+ * @param {Object} end - Punto final {x, y}
+ * @param {boolean} relative - Si es relativo (q) o absoluto (Q)
+ * @returns {string} Comando SVG
+ */
+export const pointsToQuadraticBezier = (cp, end, relative = false) => {
+  const command = relative ? 'q' : 'Q';
+  return `${command} ${formatNumber(cp.x)} ${formatNumber(cp.y)}, ${formatNumber(end.x)} ${formatNumber(end.y)}`;
+};
+
+/**
+ * Convierte punto de curva cuadrática suave a comando T
+ *
+ * @param {Object} end - Punto final {x, y}
+ * @param {boolean} relative - Si es relativo (t) o absoluto (T)
+ * @returns {string} Comando SVG
+ */
+export const pointToSmoothQuadraticBezier = (end, relative = false) => {
+  const command = relative ? 't' : 'T';
+  return `${command} ${formatNumber(end.x)} ${formatNumber(end.y)}`;
+};
+
+/**
+ * Convierte parámetros de arco elíptico a comando A
+ *
+ * @param {number} rx - Radio X
+ * @param {number} ry - Radio Y
+ * @param {number} xAxisRotation - Rotación del eje X en grados
+ * @param {boolean} largeArcFlag - Flag de arco grande
+ * @param {boolean} sweepFlag - Flag de dirección del arco
+ * @param {Object} end - Punto final {x, y}
+ * @param {boolean} relative - Si es relativo (a) o absoluto (A)
+ * @returns {string} Comando SVG
+ */
+export const pointsToArc = (rx, ry, xAxisRotation, largeArcFlag, sweepFlag, end, relative = false) => {
+  const command = relative ? 'a' : 'A';
+  const laf = largeArcFlag ? 1 : 0;
+  const sf = sweepFlag ? 1 : 0;
+  return `${command} ${formatNumber(rx)} ${formatNumber(ry)} ${formatNumber(xAxisRotation)} ${laf} ${sf} ${formatNumber(end.x)} ${formatNumber(end.y)}`;
+};
+
+/**
+ * Genera comando ClosePath (Z)
+ *
+ * @returns {string} Comando SVG
+ */
+export const closePath = () => {
+  return 'Z';
+};
+
+/**
+ * Construye un path completo desde un array de comandos
+ *
+ * @param {Array} commands - Array de strings de comandos
+ * @returns {string} String de path SVG completo
+ */
+export const buildPathString = (commands) => {
+  return commands.filter(cmd => cmd &amp;&amp; cmd.trim()).join(' ');
+};
+
+/**
+ * Convierte un array de puntos a un path de líneas (polyline)
+ *
+ * @param {Array} points - Array de objetos {x, y}
+ * @param {boolean} closed - Si el path debe cerrarse
+ * @param {boolean} relative - Si usar comandos relativos
+ * @returns {string} String de path SVG
+ */
+export const pointsToPath = (points, closed = false, relative = false) => {
+  if (!points || points.length === 0) return '';
+
+  const commands = [];
+
+  // Primer punto es siempre MoveTo
+  commands.push(pointToMoveTo(points[0].x, points[0].y, false));
+
+  // Resto de puntos son LineTo
+  for (let i = 1; i &lt; points.length; i++) {
+    if (relative) {
+      const dx = points[i].x - points[i - 1].x;
+      const dy = points[i].y - points[i - 1].y;
+      commands.push(pointToLineTo(dx, dy, true));
+    } else {
+      commands.push(pointToLineTo(points[i].x, points[i].y, false));
+    }
+  }
+
+  // Cerrar el path si se solicita
+  if (closed) {
+    commands.push(closePath());
+  }
+
+  return buildPathString(commands);
+};
+
+/**
+ * Convierte un rectángulo a path
+ *
+ * @param {number} x - Coordenada X superior izquierda
+ * @param {number} y - Coordenada Y superior izquierda
+ * @param {number} width - Ancho
+ * @param {number} height - Alto
+ * @param {number} rx - Radio de esquina X (opcional)
+ * @param {number} ry - Radio de esquina Y (opcional)
+ * @returns {string} String de path SVG
+ */
+export const rectToPath = (x, y, width, height, rx = 0, ry = 0) => {
+  if (rx === 0 &amp;&amp; ry === 0) {
+    // Rectángulo sin esquinas redondeadas
+    return buildPathString([
+      pointToMoveTo(x, y),
+      pointToHorizontalLine(x + width),
+      pointToVerticalLine(y + height),
+      pointToHorizontalLine(x),
+      closePath()
+    ]);
+  }
+
+  // Rectángulo con esquinas redondeadas
+  const effectiveRx = Math.min(rx, width / 2);
+  const effectiveRy = Math.min(ry || rx, height / 2);
+
+  return buildPathString([
+    pointToMoveTo(x + effectiveRx, y),
+    pointToHorizontalLine(x + width - effectiveRx),
+    pointsToArc(effectiveRx, effectiveRy, 0, false, true, { x: x + width, y: y + effectiveRy }),
+    pointToVerticalLine(y + height - effectiveRy),
+    pointsToArc(effectiveRx, effectiveRy, 0, false, true, { x: x + width - effectiveRx, y: y + height }),
+    pointToHorizontalLine(x + effectiveRx),
+    pointsToArc(effectiveRx, effectiveRy, 0, false, true, { x: x, y: y + height - effectiveRy }),
+    pointToVerticalLine(y + effectiveRy),
+    pointsToArc(effectiveRx, effectiveRy, 0, false, true, { x: x + effectiveRx, y: y }),
+    closePath()
+  ]);
+};
+
+/**
+ * Convierte un círculo a path
+ *
+ * @param {number} cx - Centro X
+ * @param {number} cy - Centro Y
+ * @param {number} r - Radio
+ * @returns {string} String de path SVG
+ */
+export const circleToPath = (cx, cy, r) => {
+  return buildPathString([
+    pointToMoveTo(cx + r, cy),
+    pointsToArc(r, r, 0, false, true, { x: cx + r, y: cy + 2 * r }),
+    pointsToArc(r, r, 0, false, true, { x: cx + r, y: cy }),
+    closePath()
+  ]);
+};
+
+/**
+ * Convierte una elipse a path
+ *
+ * @param {number} cx - Centro X
+ * @param {number} cy - Centro Y
+ * @param {number} rx - Radio X
+ * @param {number} ry - Radio Y
+ * @returns {string} String de path SVG
+ */
+export const ellipseToPath = (cx, cy, rx, ry) => {
+  return buildPathString([
+    pointToMoveTo(cx + rx, cy),
+    pointsToArc(rx, ry, 0, false, true, { x: cx - rx, y: cy }),
+    pointsToArc(rx, ry, 0, false, true, { x: cx + rx, y: cy }),
+    closePath()
+  ]);
+};
+
+/**
+ * Parsea un string de comando de path y extrae las coordenadas
+ *
+ * @param {string} command - Comando de path (ej: "M 10 20" o "L 30 40")
+ * @returns {Object} Objeto con tipo de comando y coordenadas
+ */
+export const parsePathCommand = (command) => {
+  const trimmed = command.trim();
+  const commandType = trimmed[0];
+  const coords = trimmed
+    .slice(1)
+    .trim()
+    .split(/[\s,]+/)
+    .map(parseFloat)
+    .filter(n => !isNaN(n));
+
+  return {
+    type: commandType,
+    coords,
+    isRelative: commandType === commandType.toLowerCase()
+  };
+};
+
+/**
+ * Convierte coordenadas relativas a absolutas
+ *
+ * @param {Object} command - Comando parseado con tipo y coords
+ * @param {Object} currentPos - Posición actual {x, y}
+ * @returns {Object} Coordenadas absolutas
+ */
+export const relativeToAbsolute = (command, currentPos = { x: 0, y: 0 }) => {
+  if (!command.isRelative) {
+    return command;
+  }
+
+  const absoluteCoords = [...command.coords];
+  const type = command.type.toUpperCase();
+
+  switch (type) {
+    case 'M':
+    case 'L':
+    case 'T':
+      // Comandos con pares x,y
+      for (let i = 0; i &lt; absoluteCoords.length; i += 2) {
+        absoluteCoords[i] += currentPos.x;
+        absoluteCoords[i + 1] += currentPos.y;
+      }
+      break;
+
+    case 'H':
+      // Línea horizontal
+      absoluteCoords[0] += currentPos.x;
+      break;
+
+    case 'V':
+      // Línea vertical
+      absoluteCoords[0] += currentPos.y;
+      break;
+
+    case 'C':
+      // Curva cúbica: cp1x, cp1y, cp2x, cp2y, x, y
+      for (let i = 0; i &lt; absoluteCoords.length; i += 6) {
+        absoluteCoords[i] += currentPos.x;
+        absoluteCoords[i + 1] += currentPos.y;
+        absoluteCoords[i + 2] += currentPos.x;
+        absoluteCoords[i + 3] += currentPos.y;
+        absoluteCoords[i + 4] += currentPos.x;
+        absoluteCoords[i + 5] += currentPos.y;
+      }
+      break;
+
+    case 'S':
+    case 'Q':
+      // Curvas con punto de control: cpx, cpy, x, y
+      for (let i = 0; i &lt; absoluteCoords.length; i += 4) {
+        absoluteCoords[i] += currentPos.x;
+        absoluteCoords[i + 1] += currentPos.y;
+        absoluteCoords[i + 2] += currentPos.x;
+        absoluteCoords[i + 3] += currentPos.y;
+      }
+      break;
+
+    case 'A':
+      // Arco: rx, ry, rotation, large-arc, sweep, x, y
+      for (let i = 0; i &lt; absoluteCoords.length; i += 7) {
+        absoluteCoords[i + 5] += currentPos.x;
+        absoluteCoords[i + 6] += currentPos.y;
+      }
+      break;
+  }
+
+  return {
+    type,
+    coords: absoluteCoords,
+    isRelative: false
+  };
+};
+
+/**
+ * Convierte coordenadas absolutas a relativas
+ *
+ * @param {Object} command - Comando parseado con tipo y coords
+ * @param {Object} currentPos - Posición actual {x, y}
+ * @returns {Object} Coordenadas relativas
+ */
+export const absoluteToRelative = (command, currentPos = { x: 0, y: 0 }) => {
+  if (command.isRelative) {
+    return command;
+  }
+
+  const relativeCoords = [...command.coords];
+  const type = command.type.toLowerCase();
+
+  switch (command.type.toUpperCase()) {
+    case 'M':
+    case 'L':
+    case 'T':
+      for (let i = 0; i &lt; relativeCoords.length; i += 2) {
+        relativeCoords[i] -= currentPos.x;
+        relativeCoords[i + 1] -= currentPos.y;
+      }
+      break;
+
+    case 'H':
+      relativeCoords[0] -= currentPos.x;
+      break;
+
+    case 'V':
+      relativeCoords[0] -= currentPos.y;
+      break;
+
+    case 'C':
+      for (let i = 0; i &lt; relativeCoords.length; i += 6) {
+        relativeCoords[i] -= currentPos.x;
+        relativeCoords[i + 1] -= currentPos.y;
+        relativeCoords[i + 2] -= currentPos.x;
+        relativeCoords[i + 3] -= currentPos.y;
+        relativeCoords[i + 4] -= currentPos.x;
+        relativeCoords[i + 5] -= currentPos.y;
+      }
+      break;
+
+    case 'S':
+    case 'Q':
+      for (let i = 0; i &lt; relativeCoords.length; i += 4) {
+        relativeCoords[i] -= currentPos.x;
+        relativeCoords[i + 1] -= currentPos.y;
+        relativeCoords[i + 2] -= currentPos.x;
+        relativeCoords[i + 3] -= currentPos.y;
+      }
+      break;
+
+    case 'A':
+      for (let i = 0; i &lt; relativeCoords.length; i += 7) {
+        relativeCoords[i + 5] -= currentPos.x;
+        relativeCoords[i + 6] -= currentPos.y;
+      }
+      break;
+  }
+
+  return {
+    type,
+    coords: relativeCoords,
+    isRelative: true
+  };
+};
+
+/**
+ * Simplifica un path eliminando comandos redundantes
+ *
+ * @param {string} pathString - String de path SVG
+ * @returns {string} Path simplificado
+ */
+export const simplifyPath = (pathString) => {
+  // TODO: Implementar simplificación de path
+  // - Combinar líneas consecutivas en la misma dirección
+  // - Convertir líneas cortas a comandos H/V cuando sea apropiado
+  // - Eliminar puntos redundantes
+  return pathString;
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

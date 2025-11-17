@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/TextInput.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/TextInput.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useRef } from 'react';
+import { Upload, FileText, Download, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useI18n } from '@/hooks/useI18n.jsx';
+
+// Tamaño máximo de archivo: 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+/**
+ * Componente para la entrada de texto y carga de archivos
+ */
+export const TextInput = ({
+  onTextChange,
+  onFileLoad,
+  currentText = '',
+  placeholder
+}) => {
+  const { t } = useI18n();
+  const [text, setText] = useState(currentText);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  /**
+   * Maneja el cambio de texto
+   */
+  const handleTextChange = (event) => {
+    const newText = event.target.value;
+    setText(newText);
+    onTextChange?.(newText);
+  };
+
+  /**
+   * Valida un archivo SVG
+   */
+  const validateFile = (file) => {
+    // Validar tipo de archivo
+    if (!file.type.includes('svg') &amp;&amp; !file.name.endsWith('.svg')) {
+      return { valid: false, error: 'Por favor selecciona un archivo SVG válido (.svg)' };
+    }
+
+    // Validar tamaño de archivo
+    if (file.size > MAX_FILE_SIZE) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      return { valid: false, error: `El archivo es demasiado grande (${sizeMB}MB). Máximo: 5MB` };
+    }
+
+    return { valid: true };
+  };
+
+  /**
+   * Procesa un archivo SVG
+   */
+  const processFile = (file) => {
+    setUploadError(null);
+    setIsLoading(true);
+
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      setUploadError(validation.error);
+      setIsLoading(false);
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const svgContent = e.target.result;
+
+        // Validar que el contenido sea SVG válido básico
+        if (!svgContent.trim().startsWith('&lt;svg') &amp;&amp; !svgContent.includes('&lt;svg')) {
+          throw new Error('El archivo no contiene un SVG válido');
+        }
+
+        // Llamar al callback (ahora es async) y esperar el resultado
+        const success = await onFileLoad?.(svgContent, file.name);
+
+        // Si onFileLoad retorna false, significa que hubo un error en el parseo
+        if (success === false) {
+          setUploadError('Error al parsear el archivo SVG. Verifica que el archivo sea válido.');
+        } else {
+          setUploadError(null);
+          // No actualizamos el texto aquí, lo hace handleFileLoad en App.jsx
+        }
+      } catch (error) {
+        console.error('Error en TextInput.processFile:', error);
+        setUploadError(`Error al procesar el archivo: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setUploadError('Error al leer el archivo. Por favor intenta nuevamente.');
+      setIsLoading(false);
+    };
+
+    reader.onabort = () => {
+      setUploadError('Lectura del archivo cancelada');
+      setIsLoading(false);
+    };
+
+    reader.readAsText(file);
+  };
+
+  /**
+   * Maneja la carga de archivos
+   */
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    processFile(file);
+
+    // Limpiar el input para permitir cargar el mismo archivo nuevamente
+    event.target.value = '';
+  };
+
+  /**
+   * Abre el selector de archivos
+   */
+  const openFileSelector = () => {
+    fileInputRef.current?.click();
+  };
+
+  /**
+   * Maneja el inicio del arrastre
+   */
+  const handleDragEnter = (event) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  /**
+   * Maneja la salida del arrastre
+   */
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    // Solo ocultar si realmente salimos del contenedor
+    if (event.currentTarget === event.target) {
+      setIsDragging(false);
+    }
+  };
+
+  /**
+   * Maneja el arrastre de archivos
+   */
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDragging(true);
+  };
+
+  /**
+   * Maneja la suelta de archivos
+   */
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+
+    const files = event.dataTransfer.files;
+
+    if (files.length === 0) {
+      setUploadError('No se detectó ningún archivo');
+      return;
+    }
+
+    const file = files[0];
+    processFile(file);
+  };
+
+  /**
+   * Exporta el texto actual como archivo
+   */
+  const exportText = () => {
+    if (!text.trim()) return;
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'descripcion.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    &lt;div className="w-full bg-background border-b">
+      &lt;div className="p-4">
+        &lt;div
+          className="relative"
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          {/* Área de texto principal */}
+          &lt;div className="relative">
+            &lt;textarea
+              value={text}
+              onChange={handleTextChange}
+              placeholder={placeholder}
+              disabled={isLoading}
+              className={`
+                w-full min-h-[80px] p-4 pr-32 text-base leading-6
+                bg-muted/20 border rounded-lg
+                resize-none focus:outline-none focus:ring-2 focus:ring-ring
+                placeholder:text-muted-foreground
+                transition-all duration-200
+                ${isDragging ? 'border-primary border-2 bg-primary/5' : 'border-border'}
+                ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                ${uploadError ? 'border-destructive' : ''}
+              `}
+            />
+
+            {/* Botones de acción */}
+            &lt;div className="absolute top-2 right-2 flex gap-1">
+              &lt;Button
+                variant="ghost"
+                size="sm"
+                onClick={openFileSelector}
+                title={t('loadSVGFile')}
+                className="h-8 w-8 p-0"
+                disabled={isLoading}
+              >
+                &lt;Upload size={16} className={isLoading ? 'animate-pulse' : ''} />
+              &lt;/Button>
+
+              {text.trim() &amp;&amp; (
+                &lt;Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={exportText}
+                  title={t('exportText')}
+                  className="h-8 w-8 p-0"
+                  disabled={isLoading}
+                >
+                  &lt;Download size={16} />
+                &lt;/Button>
+              )}
+            &lt;/div>
+          &lt;/div>
+
+          {/* Input de archivo oculto */}
+          &lt;input
+            ref={fileInputRef}
+            type="file"
+            accept=".svg,image/svg+xml"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={isLoading}
+          />
+
+          {/* Overlay de drag &amp; drop */}
+          {isDragging &amp;&amp; (
+            &lt;div className="absolute inset-0 pointer-events-none z-10">
+              &lt;div className="
+                w-full h-full border-2 border-dashed border-primary
+                rounded-lg bg-primary/10
+                flex items-center justify-center
+              ">
+                &lt;div className="text-primary text-sm font-medium flex flex-col items-center gap-2">
+                  &lt;FileText size={24} />
+                  &lt;span>Suelta el archivo SVG aquí&lt;/span>
+                &lt;/div>
+              &lt;/div>
+            &lt;/div>
+          )}
+        &lt;/div>
+
+        {/* Mensajes de error */}
+        {uploadError &amp;&amp; (
+          &lt;div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+            &lt;AlertCircle size={16} className="text-destructive flex-shrink-0 mt-0.5" />
+            &lt;div className="text-sm text-destructive">{uploadError}&lt;/div>
+          &lt;/div>
+        )}
+
+        {/* Información adicional */}
+        &lt;div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+          &lt;div className="flex items-center gap-4">
+            &lt;span>{isLoading ? 'Cargando archivo...' : t('dragDropText')}&lt;/span>
+          &lt;/div>
+          &lt;div className="flex items-center gap-2">
+            {text.length > 0 &amp;&amp; (
+              &lt;span>{text.length} {t('charactersCount')}&lt;/span>
+            )}
+          &lt;/div>
+        &lt;/div>
+      &lt;/div>
+    &lt;/div>
+  );
+};
+
+export default TextInput;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

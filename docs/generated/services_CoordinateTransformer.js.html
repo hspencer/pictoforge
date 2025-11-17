@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: services/CoordinateTransformer.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: services/CoordinateTransformer.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * CoordinateTransformer Service
+ *
+ * Servicio centralizado para conversión de coordenadas entre espacios de coordenadas.
+ * Consume el estado de Panning y Zoom de @panzoom/panzoom y proporciona transformaciones
+ * bidireccionales entre coordenadas de pantalla y coordenadas SVG del usuario.
+ *
+ * Espacios de coordenadas:
+ * - Screen Space: Coordenadas del navegador relativas a la ventana
+ * - Client Space: Coordenadas relativas al contenedor SVG
+ * - SVG User Space: Coordenadas del sistema de coordenadas del viewBox del SVG
+ */
+
+export class CoordinateTransformer {
+  /**
+   * @param {Object} config - Configuración inicial
+   * @param {HTMLElement} config.svgElement - Elemento SVG para transformaciones
+   */
+  constructor(config = {}) {
+    this.svgElement = config.svgElement || null;
+
+    // Estado de transformación de panzoom
+    this.panzoomState = {
+      scale: 1,        // Factor de zoom actual
+      x: 0,            // Traslación X en píxeles
+      y: 0,            // Traslación Y en píxeles
+    };
+
+    // Dimensiones del contenedor y viewBox
+    this.containerDimensions = {
+      width: 0,
+      height: 0,
+    };
+
+    this.viewBox = {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+    };
+  }
+
+  /**
+   * Actualiza el elemento SVG de referencia
+   * @param {SVGSVGElement} svgElement - Elemento SVG
+   */
+  setSvgElement(svgElement) {
+    this.svgElement = svgElement;
+
+    if (svgElement) {
+      this.updateViewBox();
+      this.updateContainerDimensions();
+    }
+  }
+
+  /**
+   * Actualiza el estado de panzoom (debe ser llamado cuando cambia el zoom/pan)
+   * @param {Object} state - Estado de panzoom { scale, x, y }
+   */
+  updatePanzoomState(state) {
+    this.panzoomState = {
+      scale: state.scale || 1,
+      x: state.x || 0,
+      y: state.y || 0,
+    };
+  }
+
+  /**
+   * Actualiza el viewBox desde el elemento SVG
+   */
+  updateViewBox() {
+    if (!this.svgElement) return;
+
+    const viewBoxAttr = this.svgElement.getAttribute('viewBox');
+    if (viewBoxAttr) {
+      const [x, y, width, height] = viewBoxAttr.split(' ').map(Number);
+      this.viewBox = { x, y, width, height };
+    } else {
+      // Fallback a dimensiones del elemento
+      const bbox = this.svgElement.getBBox();
+      this.viewBox = {
+        x: bbox.x,
+        y: bbox.y,
+        width: bbox.width || 100,
+        height: bbox.height || 100,
+      };
+    }
+  }
+
+  /**
+   * Actualiza las dimensiones del contenedor
+   */
+  updateContainerDimensions() {
+    if (!this.svgElement) return;
+
+    const rect = this.svgElement.getBoundingClientRect();
+    this.containerDimensions = {
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  /**
+   * Convierte coordenadas de pantalla a coordenadas SVG del usuario
+   * Esta es la función crítica que implementa la transformación inversa
+   *
+   * @param {number} screenX - Coordenada X de pantalla
+   * @param {number} screenY - Coordenada Y de pantalla
+   * @returns {Object} { x, y } - Coordenadas en el espacio del usuario SVG
+   */
+  screenToSvg(screenX, screenY) {
+    if (!this.svgElement) {
+      console.warn('CoordinateTransformer: SVG element not set');
+      return { x: 0, y: 0 };
+    }
+
+    // 1. Convertir coordenadas de pantalla a coordenadas del cliente (relativas al contenedor)
+    const rect = this.svgElement.getBoundingClientRect();
+    const clientX = screenX - rect.left;
+    const clientY = screenY - rect.top;
+
+    // 2. Aplicar la transformación inversa de panzoom
+    // Fórmula: svgCoord = (clientCoord - translation) / scale
+    const { scale, x: panX, y: panY } = this.panzoomState;
+
+    const transformedX = (clientX - panX) / scale;
+    const transformedY = (clientY - panY) / scale;
+
+    // 3. Convertir de coordenadas del contenedor a coordenadas del viewBox
+    // Ratio entre el tamaño del contenedor y el viewBox
+    const { width: containerWidth, height: containerHeight } = this.containerDimensions;
+    const { x: vbX, y: vbY, width: vbWidth, height: vbHeight } = this.viewBox;
+
+    const svgX = vbX + (transformedX / containerWidth) * vbWidth;
+    const svgY = vbY + (transformedY / containerHeight) * vbHeight;
+
+    return { x: svgX, y: svgY };
+  }
+
+  /**
+   * Convierte coordenadas SVG del usuario a coordenadas de pantalla
+   * Transformación directa (inversa de screenToSvg)
+   *
+   * @param {number} svgX - Coordenada X en el espacio del usuario SVG
+   * @param {number} svgY - Coordenada Y en el espacio del usuario SVG
+   * @returns {Object} { x, y } - Coordenadas de pantalla
+   */
+  svgToScreen(svgX, svgY) {
+    if (!this.svgElement) {
+      console.warn('CoordinateTransformer: SVG element not set');
+      return { x: 0, y: 0 };
+    }
+
+    const rect = this.svgElement.getBoundingClientRect();
+    const { scale, x: panX, y: panY } = this.panzoomState;
+    const { width: containerWidth, height: containerHeight } = this.containerDimensions;
+    const { x: vbX, y: vbY, width: vbWidth, height: vbHeight } = this.viewBox;
+
+    // 1. Convertir de coordenadas viewBox a coordenadas del contenedor
+    const containerX = ((svgX - vbX) / vbWidth) * containerWidth;
+    const containerY = ((svgY - vbY) / vbHeight) * containerHeight;
+
+    // 2. Aplicar transformación de panzoom
+    const transformedX = containerX * scale + panX;
+    const transformedY = containerY * scale + panY;
+
+    // 3. Convertir a coordenadas de pantalla
+    const screenX = transformedX + rect.left;
+    const screenY = transformedY + rect.top;
+
+    return { x: screenX, y: screenY };
+  }
+
+  /**
+   * Convierte un delta (diferencia) de pantalla a delta SVG
+   * Útil para operaciones de arrastre
+   *
+   * @param {number} deltaScreenX - Delta X de pantalla
+   * @param {number} deltaScreenY - Delta Y de pantalla
+   * @returns {Object} { dx, dy } - Delta en coordenadas SVG
+   */
+  screenDeltaToSvgDelta(deltaScreenX, deltaScreenY) {
+    const { scale } = this.panzoomState;
+    const { width: containerWidth, height: containerHeight } = this.containerDimensions;
+    const { width: vbWidth, height: vbHeight } = this.viewBox;
+
+    // Aplicar escala inversa y ratio viewBox/container
+    const dx = (deltaScreenX / scale) * (vbWidth / containerWidth);
+    const dy = (deltaScreenY / scale) * (vbHeight / containerHeight);
+
+    return { dx, dy };
+  }
+
+  /**
+   * Obtiene información de debug del estado actual
+   * @returns {Object} Estado actual del transformador
+   */
+  getDebugInfo() {
+    return {
+      panzoomState: { ...this.panzoomState },
+      containerDimensions: { ...this.containerDimensions },
+      viewBox: { ...this.viewBox },
+      hasSvgElement: !!this.svgElement,
+    };
+  }
+
+  /**
+   * Resetea el estado del transformador
+   */
+  reset() {
+    this.panzoomState = { scale: 1, x: 0, y: 0 };
+    this.updateViewBox();
+    this.updateContainerDimensions();
+  }
+}
+
+/**
+ * Factory function para crear una instancia del transformador
+ * @param {Object} config - Configuración inicial
+ * @returns {CoordinateTransformer} Nueva instancia del transformador
+ */
+export function createCoordinateTransformer(config) {
+  return new CoordinateTransformer(config);
+}
+
+export default CoordinateTransformer;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

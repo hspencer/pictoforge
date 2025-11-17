@@ -109,6 +109,52 @@ npm run preview
 # Application will be available at http://localhost:4173
 ```
 
+## Automatic Documentation
+
+This project uses [JSDoc](https://jsdoc.app/) to automatically generate documentation from code comments.
+
+### How to Document Your Code
+
+To ensure your code is included in the documentation, you must use a special comment block format (`/** ... */`) before each function, method, or class you want to document.
+
+Inside these blocks, you can use tags to describe different aspects of the code:
+- `@description`: Briefly explains the purpose of the code.
+- `@param {type} name`: Describes a parameter, its type, and its purpose.
+- `@returns {type}`: Describes the return value and its type.
+- `@example`: Provides a code example of how to use the function.
+
+**Example:**
+```javascript
+/**
+ * Converts screen coordinates to SVG coordinates.
+ * @param {number} screenX The X-coordinate in the screen space.
+ * @param {number} screenY The Y-coordinate in the screen space.
+ * @param {object} viewport The viewport object.
+ * @returns {{x: number, y: number}} An object with the coordinates in SVG space.
+ */
+export const screenToSvg = (screenX, screenY, viewport) => {
+  // ... function logic
+};
+```
+
+### Generating the Documentation
+
+To generate the documentation website, run the following command:
+
+```bash
+pnpm run docs
+```
+
+This command will scan the `src` directory, process the JSDoc comments, and output a static website to the `docs/generated/` directory.
+
+### Live Documentation
+
+The generated documentation is hosted using GitHub Pages and is available at the following link:
+
+[**Ver Documentación Completa**](https://hspencer.github.io/pictoforge/)
+
+> **Nota:** Para que la documentación esté disponible en línea, los archivos generados en la carpeta `docs/generated` deben ser desplegados a través de GitHub Pages en la configuración del repositorio.
+
 ## Project Roadmap
 
 ### Fully Functional Features

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/SVGHistory.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/SVGHistory.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React from 'react';
+import { History, Trash2, Download, Upload, HardDrive } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useSVGStorage } from '@/hooks/useSVGStorage';
+
+/**
+ * Componente para mostrar y gestionar el historial de SVGs
+ */
+export const SVGHistory = ({ onLoadSVG }) => {
+  const {
+    recentSVGs,
+    deleteSVG,
+    clearHistory,
+    getStorageStats,
+    exportHistory,
+    importHistory
+  } = useSVGStorage();
+
+  const stats = getStorageStats();
+
+  /**
+   * Maneja la importación de historial
+   */
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const success = importHistory(event.target.result);
+          if (success) {
+            alert('✓ Historial importado correctamente');
+          } else {
+            alert('✗ Error al importar historial');
+          }
+        } catch (error) {
+          alert('✗ Archivo JSON inválido');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    input.click();
+  };
+
+  /**
+   * Carga un SVG del historial
+   */
+  const handleLoadSVG = (svgEntry) => {
+    if (onLoadSVG) {
+      onLoadSVG(svgEntry.content, svgEntry.metadata.name);
+    }
+  };
+
+  /**
+   * Formatea fecha para mostrar
+   */
+  const formatDate = (isoString) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins &lt; 1) return 'Hace un momento';
+    if (diffMins &lt; 60) return `Hace ${diffMins} min`;
+    if (diffHours &lt; 24) return `Hace ${diffHours}h`;
+    if (diffDays &lt; 7) return `Hace ${diffDays}d`;
+    return date.toLocaleDateString();
+  };
+
+  return (
+    &lt;div className="p-4 space-y-4">
+      {/* Header */}
+      &lt;div className="flex items-center justify-between">
+        &lt;h3 className="font-semibold text-sm flex items-center gap-2">
+          &lt;History size={16} />
+          Historial Reciente
+        &lt;/h3>
+
+        {recentSVGs &amp;&amp; recentSVGs.length > 0 &amp;&amp; (
+          &lt;Button
+            variant="ghost"
+            size="sm"
+            onClick={clearHistory}
+            className="h-7 text-xs text-destructive"
+            title="Limpiar historial"
+          >
+            &lt;Trash2 size={12} className="mr-1" />
+            Limpiar
+          &lt;/Button>
+        )}
+      &lt;/div>
+
+      {/* Lista de SVGs recientes */}
+      {recentSVGs &amp;&amp; recentSVGs.length > 0 ? (
+        &lt;div className="space-y-2">
+          {recentSVGs.map((svg) => (
+            &lt;div
+              key={svg.id}
+              className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+              onClick={() => handleLoadSVG(svg)}
+            >
+              &lt;div className="flex items-start justify-between gap-2">
+                &lt;div className="flex-1 min-w-0">
+                  &lt;p className="font-medium text-sm truncate">
+                    {svg.metadata.name || 'Sin título'}
+                  &lt;/p>
+                  &lt;div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                    &lt;span>{svg.metadata.elementCount || 0} elementos&lt;/span>
+                    &lt;span>•&lt;/span>
+                    &lt;span>{formatDate(svg.metadata.dateModified)}&lt;/span>
+                  &lt;/div>
+                &lt;/div>
+
+                &lt;Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm('¿Eliminar este SVG del historial?')) {
+                      deleteSVG(svg.id);
+                    }
+                  }}
+                  className="h-7 w-7 p-0 flex-shrink-0"
+                  title="Eliminar del historial"
+                >
+                  &lt;Trash2 size={14} />
+                &lt;/Button>
+              &lt;/div>
+            &lt;/div>
+          ))}
+        &lt;/div>
+      ) : (
+        &lt;div className="text-center py-8 text-muted-foreground">
+          &lt;History size={32} className="mx-auto mb-2 opacity-50" />
+          &lt;p className="text-sm">No hay SVGs en el historial&lt;/p>
+        &lt;/div>
+      )}
+
+      {/* Estadísticas y acciones */}
+      &lt;div className="pt-4 border-t space-y-3">
+        &lt;div className="flex items-center justify-between text-xs text-muted-foreground">
+          &lt;span className="flex items-center gap-1">
+            &lt;HardDrive size={12} />
+            Almacenamiento usado
+          &lt;/span>
+          &lt;span className="font-mono">{stats.totalSizeKB} KB&lt;/span>
+        &lt;/div>
+
+        &lt;div className="grid grid-cols-2 gap-2">
+          &lt;Button
+            variant="outline"
+            size="sm"
+            onClick={exportHistory}
+            className="h-8 text-xs"
+          >
+            &lt;Download size={12} className="mr-1" />
+            Exportar
+          &lt;/Button>
+
+          &lt;Button
+            variant="outline"
+            size="sm"
+            onClick={handleImport}
+            className="h-8 text-xs"
+          >
+            &lt;Upload size={12} className="mr-1" />
+            Importar
+          &lt;/Button>
+        &lt;/div>
+      &lt;/div>
+    &lt;/div>
+  );
+};
+
+export default SVGHistory;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

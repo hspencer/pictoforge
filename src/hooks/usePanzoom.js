@@ -19,15 +19,15 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
   });
   const [isReady, setIsReady] = useState(false);
 
+  const element = elementRef?.current;
+
   /**
    * Inicializa panzoom en el elemento
    */
   useEffect(() => {
-    if (!elementRef?.current || panzoomInstanceRef.current) {
+    if (!element || panzoomInstanceRef.current) {
       return;
     }
-
-    const element = elementRef.current;
 
     // Configuración por defecto de panzoom
     const defaultOptions = {
@@ -96,7 +96,7 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
       return undefined;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementRef]);
+  }, [element, panzoomOptions]);
 
   /**
    * Hace zoom in

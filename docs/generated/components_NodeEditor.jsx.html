@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/NodeEditor.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/NodeEditor.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState } from 'react';
+import { parsePathNodes } from '../utils/svgManipulation';
+
+// Funciones auxiliares para transformación de coordenadas
+// TODO: Migrar a usar useCoordinateTransformer hook cuando sea posible
+const screenToSVGCoordinates = (screenX, screenY, svg, viewport) => {
+  if (!svg) return { x: screenX, y: screenY };
+  const rect = svg.getBoundingClientRect();
+  const scale = viewport?.zoom || 1;
+  const panX = viewport?.pan?.x || 0;
+  const panY = viewport?.pan?.y || 0;
+  return {
+    x: (screenX - rect.left - panX) / scale,
+    y: (screenY - rect.top - panY) / scale
+  };
+};
+
+const screenDeltaToSVGDelta = (deltaX, deltaY, svg, viewport) => {
+  const scale = viewport?.zoom || 1;
+  return {
+    dx: deltaX / scale,
+    dy: deltaY / scale
+  };
+};
+
+const svgToScreenCoordinates = (svgX, svgY, svg, viewport) => {
+  if (!svg) return { x: svgX, y: svgY };
+  const rect = svg.getBoundingClientRect();
+  const scale = viewport?.zoom || 1;
+  const panX = viewport?.pan?.x || 0;
+  const panY = viewport?.pan?.y || 0;
+  return {
+    x: svgX * scale + rect.left + panX,
+    y: svgY * scale + rect.top + panY
+  };
+};
+
+/**
+ * Componente NodeEditor para la manipulación de nodos SVG
+ */
+export const NodeEditor = ({
+  element,
+  tool,
+  onNodeChange,
+  onNodeAdd,
+  onNodeRemove,
+  visible = true,
+  viewport = { zoom: 1, pan: { x: 0, y: 0 } }, // Agregar viewport como prop
+  containerRef // Referencia al contenedor para calcular coordenadas relativas
+}) => {
+  const [selectedNodes, setSelectedNodes] = useState(new Set());
+  const [hoveredNode, setHoveredNode] = useState(null);
+
+  if (!visible || !element) return null;
+  if (tool !== 'node' &amp;&amp; tool !== 'pen') return null;
+
+  // Solo funciona con elementos path
+  if (element.tagName !== 'path' &amp;&amp; element.tagName !== 'PATH') return null;
+
+  // Usar la utilidad importada para extraer nodos
+
+  // Obtener nodos del elemento
+  const nodes = parsePathNodes(element.getAttribute('d') || '');
+  const svg = element.ownerSVGElement;
+
+  // Convertir posiciones de nodos a coordenadas de pantalla
+  const screenNodes = nodes.map(node => {
+    const screenPos = svgToScreenCoordinates(node.x, node.y, svg, viewport);
+
+    // Ajustar coordenadas relativas al contenedor si está disponible
+    let finalX = screenPos.x;
+    let finalY = screenPos.y;
+
+    if (containerRef?.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      finalX = screenPos.x - containerRect.left;
+      finalY = screenPos.y - containerRect.top;
+    }
+
+    const screenNode = {
+      ...node,
+      screenX: finalX,
+      screenY: finalY
+    };
+
+    // Convertir puntos de control también
+    if (node.cp1) {
+      const cp1Screen = svgToScreenCoordinates(node.cp1.x, node.cp1.y, svg, viewport);
+      let cp1X = cp1Screen.x;
+      let cp1Y = cp1Screen.y;
+      if (containerRef?.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        cp1X = cp1Screen.x - containerRect.left;
+        cp1Y = cp1Screen.y - containerRect.top;
+      }
+      screenNode.cp1Screen = { x: cp1X, y: cp1Y };
+    }
+    if (node.cp2) {
+      const cp2Screen = svgToScreenCoordinates(node.cp2.x, node.cp2.y, svg, viewport);
+      let cp2X = cp2Screen.x;
+      let cp2Y = cp2Screen.y;
+      if (containerRef?.current) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        cp2X = cp2Screen.x - containerRect.left;
+        cp2Y = cp2Screen.y - containerRect.top;
+      }
+      screenNode.cp2Screen = { x: cp2X, y: cp2Y };
+    }
+
+    return screenNode;
+  });
+
+  const handleNodeClick = (e, node) => {
+    e.stopPropagation();
+    
+    if (tool === 'pen') {
+      // Cambiar tipo de nodo o eliminar
+      if (e.ctrlKey || e.metaKey) {
+        onNodeRemove?.(node);
+      } else {
+        // Ciclar entre tipos: line -> curve -> smooth -> line
+        const nextType = node.type === 'line' ? 'curve' : 
+                        node.type === 'curve' ? 'smooth' : 'line';
+        onNodeChange?.(node, { ...node, type: nextType });
+      }
+    } else if (tool === 'node') {
+      // Seleccionar nodo para mover
+      const newSelected = new Set(selectedNodes);
+      if (newSelected.has(node.id)) {
+        newSelected.delete(node.id);
+      } else {
+        if (!e.shiftKey) newSelected.clear();
+        newSelected.add(node.id);
+      }
+      setSelectedNodes(newSelected);
+    }
+  };
+
+  const handleNodeDrag = (e, node) => {
+    if (tool !== 'node') return;
+
+    e.stopPropagation();
+    const startScreenX = e.clientX;
+    const startScreenY = e.clientY;
+    const startNodeX = node.x;
+    const startNodeY = node.y;
+
+    const handleMouseMove = (e) => {
+      // Calcular delta en pantalla
+      const deltaScreenX = e.clientX - startScreenX;
+      const deltaScreenY = e.clientY - startScreenY;
+
+      // Convertir delta a coordenadas SVG
+      const svg = element.ownerSVGElement;
+      const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY, svg, viewport);
+
+      const newNode = {
+        ...node,
+        x: startNodeX + dx,
+        y: startNodeY + dy
+      };
+
+      // Si el nodo tiene puntos de control (curva Bézier), moverlos también
+      if (node.cp1) {
+        newNode.cp1 = {
+          x: node.cp1.x + dx,
+          y: node.cp1.y + dy
+        };
+      }
+      if (node.cp2) {
+        newNode.cp2 = {
+          x: node.cp2.x + dx,
+          y: node.cp2.y + dy
+        };
+      }
+
+      onNodeChange?.(node, newNode);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handlePathClick = (e) => {
+    if (tool !== 'pen') return;
+
+    e.stopPropagation();
+
+    // Convertir posición del click a coordenadas SVG
+    const svg = element.ownerSVGElement;
+    const svgCoords = screenToSVGCoordinates(e.clientX, e.clientY, svg, viewport);
+
+    // Agregar nuevo nodo en la posición del click
+    onNodeAdd?.({ x: svgCoords.x, y: svgCoords.y, type: 'line' });
+  };
+
+  return (
+    &lt;g className="node-editor">
+      {/* Overlay invisible para detectar clicks en el path */}
+      {tool === 'pen' &amp;&amp; (
+        &lt;path
+          d={element.getAttribute('d')}
+          className="svg-path-overlay"
+          onClick={handlePathClick}
+        />
+      )}
+      
+      {/* Nodos - Renderizados en coordenadas de pantalla */}
+      {screenNodes.map(node => (
+        &lt;g key={node.id}>
+          {/* Control points para curvas */}
+          {node.type === 'curve' &amp;&amp; node.cp2Screen &amp;&amp; (
+            &lt;>
+              &lt;line
+                x1={node.screenX}
+                y1={node.screenY}
+                x2={node.cp2Screen.x}
+                y2={node.cp2Screen.y}
+                className="svg-control-line"
+              />
+              &lt;circle
+                cx={node.cp2Screen.x}
+                cy={node.cp2Screen.y}
+                r="3"
+                className="svg-control-point"
+              />
+            &lt;/>
+          )}
+
+          {/* Nodo principal */}
+          &lt;circle
+            cx={node.screenX}
+            cy={node.screenY}
+            r={selectedNodes.has(node.id) ? 6 : 4}
+            className={`svg-node ${selectedNodes.has(node.id) ? 'selected' : ''}
+              ${node.type === 'curve' ? 'svg-node-curve' :
+                node.type === 'smooth' ? 'svg-node-smooth' : 'svg-node-default'}
+              ${tool === 'node' ? 'cursor-move' : tool === 'pen' ? 'cursor-pointer' : 'cursor-default'}`}
+            onClick={(e) => handleNodeClick(e, node)}
+            onMouseDown={(e) => handleNodeDrag(e, node)}
+            onMouseEnter={() => setHoveredNode(node.id)}
+            onMouseLeave={() => setHoveredNode(null)}
+          />
+
+          {/* Tooltip para el nodo */}
+          {hoveredNode === node.id &amp;&amp; (
+            &lt;text
+              x={node.screenX}
+              y={node.screenY - 10}
+              textAnchor="middle"
+              className="svg-tooltip"
+            >
+              {node.type}
+            &lt;/text>
+          )}
+        &lt;/g>
+      ))}
+    &lt;/g>
+  );
+};
+
+export default NodeEditor;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

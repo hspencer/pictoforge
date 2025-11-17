@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/CodeView.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/CodeView.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useEffect } from 'react';
+import { Copy, Download, RefreshCw, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+/**
+ * Componente para mostrar y editar el código SVG
+ */
+export const CodeView = ({ 
+  svgContent, 
+  onSVGUpdate,
+  selectedElement 
+}) => {
+  const [code, setCode] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Sincronizar el código con el contenido SVG
+  useEffect(() => {
+    if (svgContent) {
+      setCode(formatSVG(svgContent));
+    }
+  }, [svgContent]);
+
+  /**
+   * Formatea el código SVG para mejor legibilidad
+   */
+  const formatSVG = (svg) => {
+    try {
+      // Crear un parser DOM temporal
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svg, 'image/svg+xml');
+      const svgElement = doc.querySelector('svg');
+      
+      if (!svgElement) return svg;
+
+      // Formatear con indentación
+      return formatXML(svgElement.outerHTML);
+    } catch (error) {
+      return svg;
+    }
+  };
+
+  /**
+   * Formatea XML con indentación
+   */
+  const formatXML = (xml) => {
+    const PADDING = '  '; // 2 espacios
+    const reg = /(>)(&lt;)(\/*)/g;
+    let formatted = xml.replace(reg, '$1\r\n$2$3');
+    let pad = 0;
+    
+    return formatted.split('\r\n').map(line => {
+      let indent = 0;
+      if (line.match(/.+&lt;\/\w[^>]*>$/)) {
+        indent = 0;
+      } else if (line.match(/^&lt;\/\w/) &amp;&amp; pad !== 0) {
+        pad -= 1;
+      } else if (line.match(/^&lt;\w[^>]*[^\/]>.*$/)) {
+        indent = 1;
+      } else {
+        indent = 0;
+      }
+      
+      const padding = PADDING.repeat(pad);
+      pad += indent;
+      
+      return padding + line;
+    }).join('\n');
+  };
+
+  /**
+   * Maneja el cambio en el código
+   */
+  const handleCodeChange = (event) => {
+    setCode(event.target.value);
+    setIsEditing(true);
+  };
+
+  /**
+   * Aplica los cambios del código al SVG
+   */
+  const applyChanges = () => {
+    try {
+      // Validar que el SVG sea válido
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(code, 'image/svg+xml');
+      const parseError = doc.querySelector('parsererror');
+      
+      if (parseError) {
+        alert('Error en el código SVG. Por favor verifica la sintaxis.');
+        return;
+      }
+
+      onSVGUpdate?.(code);
+      setIsEditing(false);
+    } catch (error) {
+      alert('Error al procesar el código SVG: ' + error.message);
+    }
+  };
+
+  /**
+   * Copia el código al clipboard
+   */
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Error al copiar:', error);
+    }
+  };
+
+  /**
+   * Descarga el código como archivo SVG
+   */
+  const downloadCode = () => {
+    const blob = new Blob([code], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pictogram_edited.svg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Resalta la línea del elemento seleccionado
+   */
+  const highlightSelectedElement = () => {
+    if (!selectedElement) return code;
+    
+    const lines = code.split('\n');
+    const elementPattern = new RegExp(`id="${selectedElement.id}"`, 'g');
+    
+    return lines.map(line => {
+      if (elementPattern.test(line)) {
+        return `→ ${line}`;
+      }
+      return `  ${line}`;
+    }).join('\n');
+  };
+
+  return (
+    &lt;div className="h-full flex flex-col bg-background">
+      {/* Header */}
+      &lt;div className="flex items-center justify-between p-3 border-b bg-muted/20">
+        &lt;div className="flex items-center gap-2">
+          &lt;h3 className="font-semibold text-sm">Código SVG&lt;/h3>
+          {isEditing &amp;&amp; (
+            &lt;span className="text-xs text-orange-500 bg-orange-100 px-2 py-1 rounded">
+              Modificado
+            &lt;/span>
+          )}
+        &lt;/div>
+        
+        &lt;div className="flex items-center gap-1">
+          &lt;Button
+            variant="ghost"
+            size="sm"
+            onClick={copyCode}
+            title="Copiar código"
+          >
+            {copied ? &lt;Check size={14} /> : &lt;Copy size={14} />}
+          &lt;/Button>
+          &lt;Button
+            variant="ghost"
+            size="sm"
+            onClick={downloadCode}
+            title="Descargar SVG"
+          >
+            &lt;Download size={14} />
+          &lt;/Button>
+          {isEditing &amp;&amp; (
+            &lt;Button
+              variant="default"
+              size="sm"
+              onClick={applyChanges}
+              title="Aplicar cambios"
+            >
+              &lt;RefreshCw size={14} />
+            &lt;/Button>
+          )}
+        &lt;/div>
+      &lt;/div>
+
+      {/* Editor de código */}
+      &lt;div className="flex-1 relative">
+        &lt;textarea
+          value={selectedElement ? highlightSelectedElement() : code}
+          onChange={handleCodeChange}
+          className="
+            w-full h-full p-4 font-mono text-sm
+            bg-muted/10 border-0 resize-none
+            focus:outline-none focus:ring-2 focus:ring-ring
+            leading-relaxed
+          "
+          placeholder="El código SVG aparecerá aquí..."
+          spellCheck={false}
+        />
+        
+        {/* Indicador de líneas */}
+        &lt;div className="absolute left-0 top-0 bottom-0 w-12 bg-muted/30 border-r pointer-events-none">
+          &lt;div className="p-4 font-mono text-xs text-muted-foreground leading-relaxed">
+            {code.split('\n').map((_, index) => (
+              &lt;div key={index} className="text-right">
+                {index + 1}
+              &lt;/div>
+            ))}
+          &lt;/div>
+        &lt;/div>
+      &lt;/div>
+
+      {/* Footer con información */}
+      &lt;div className="p-2 border-t bg-muted/20 text-xs text-muted-foreground">
+        &lt;div className="flex items-center justify-between">
+          &lt;div>
+            {code.split('\n').length} líneas • {code.length} caracteres
+          &lt;/div>
+          {selectedElement &amp;&amp; (
+            &lt;div>
+              Elemento seleccionado: {selectedElement.id}
+            &lt;/div>
+          )}
+        &lt;/div>
+      &lt;/div>
+    &lt;/div>
+  );
+};
+
+export default CodeView;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

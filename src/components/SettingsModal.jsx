@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { Settings, X, Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare } from 'lucide-react';
+import { Settings, X, Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ import Draggable from 'react-draggable';
  */
 export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
   const { t } = useI18n();
+  const fileInputRef = useRef(null);
 
   const [localConfig, setLocalConfig] = useState({
     instanceName: config?.instanceName || '',
@@ -31,6 +32,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
   });
 
   const [editingStyleIndex, setEditingStyleIndex] = useState(null);
+  const [importError, setImportError] = useState(null);
 
   /**
    * Actualiza un campo de configuración
@@ -102,6 +104,110 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
         customStyles: prev.customStyles.filter((_, i) => i !== index)
       }));
     }
+  };
+
+  /**
+   * Exporta la configuración a un archivo JSON
+   */
+  const handleExport = () => {
+    try {
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        config: localConfig
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pictoforge-config-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log('✓ Configuración exportada exitosamente');
+    } catch (error) {
+      console.error('✗ Error al exportar configuración:', error);
+      alert('Error al exportar la configuración');
+    }
+  };
+
+  /**
+   * Importa la configuración desde un archivo JSON
+   */
+  const handleImport = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target.result;
+        const importedData = JSON.parse(content);
+
+        // Validar estructura del archivo
+        if (!importedData.config) {
+          throw new Error('Formato de archivo inválido');
+        }
+
+        // Validar campos requeridos
+        const validConfig = {
+          instanceName: importedData.config.instanceName || '',
+          author: importedData.config.author || '',
+          location: importedData.config.location || { address: '', coordinates: null },
+          language: importedData.config.language || 'es',
+          graphicStylePrompt: importedData.config.graphicStylePrompt || '',
+          customStyles: Array.isArray(importedData.config.customStyles)
+            ? importedData.config.customStyles
+            : []
+        };
+
+        // Validar cada estilo personalizado
+        validConfig.customStyles = validConfig.customStyles.map(style => ({
+          id: style.id || Date.now().toString(),
+          name: style.name || 'Estilo sin nombre',
+          properties: {
+            fill: style.properties?.fill || '#000000',
+            stroke: style.properties?.stroke || '#000000',
+            'stroke-width': style.properties?.['stroke-width'] || '2'
+          }
+        }));
+
+        setLocalConfig(validConfig);
+        setImportError(null);
+        console.log('✓ Configuración importada exitosamente');
+        alert('Configuración importada exitosamente. No olvides guardar los cambios.');
+      } catch (error) {
+        console.error('✗ Error al importar configuración:', error);
+        setImportError('Error al importar el archivo. Verifica que sea un archivo válido.');
+        alert('Error al importar la configuración. Verifica que el archivo sea válido.');
+      }
+    };
+
+    reader.onerror = () => {
+      console.error('✗ Error al leer el archivo');
+      setImportError('Error al leer el archivo');
+      alert('Error al leer el archivo');
+    };
+
+    reader.readAsText(file);
+
+    // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  /**
+   * Abre el selector de archivos
+   */
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
   };
 
   /**
@@ -363,6 +469,60 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                   ))}
                 </div>
               )}
+            </section>
+
+            {/* Exportar/Importar Configuración */}
+            <section className="space-y-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
+                💾 Exportar/Importar Configuración
+              </h3>
+
+              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Guarda tu configuración en un archivo JSON para respaldo o para compartirla con otros.
+                </p>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    className="flex-1"
+                  >
+                    <Download size={14} className="mr-2" />
+                    Exportar Configuración
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleImportClick}
+                    className="flex-1"
+                  >
+                    <Upload size={14} className="mr-2" />
+                    Importar Configuración
+                  </Button>
+                </div>
+
+                {/* Input oculto para seleccionar archivos */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+
+                {importError && (
+                  <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                    {importError}
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  ⚠️ Al importar, la configuración actual será reemplazada. Asegúrate de exportar tu configuración actual antes de importar otra.
+                </p>
+              </div>
             </section>
           </div>
 

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: hooks/useSVGWorld.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: hooks/useSVGWorld.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useRef, useEffect, useCallback, useState } from 'react';
+import { createSVGWorld } from '../services/SVGWorld';
+
+/**
+ * Hook React para integrar SVGWorld con el ciclo de vida de React
+ *
+ * Este hook proporciona una interfaz reactiva al objeto SVGWorld,
+ * que actúa como un objeto intermedio "en memoria" para manejar
+ * todas las transformaciones de coordenadas y manipulación de elementos SVG.
+ *
+ * @param {Object} options - Opciones de configuración
+ * @param {React.RefObject} options.svgRef - Ref al elemento SVG
+ * @param {React.RefObject} options.containerRef - Ref al contenedor (opcional)
+ * @param {Object} options.viewport - Estado del viewport { scale, x, y }
+ * @returns {Object} API de SVGWorld
+ */
+export function useSVGWorld({ svgRef, containerRef = null, viewport = null } = {}) {
+  const worldRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
+
+  // Inicializar SVGWorld
+  useEffect(() => {
+    if (!worldRef.current) {
+      worldRef.current = createSVGWorld();
+      console.log('🪝 useSVGWorld: Instancia creada');
+    }
+
+    return () => {
+      if (worldRef.current) {
+        worldRef.current.destroy();
+        worldRef.current = null;
+      }
+    };
+  }, []);
+
+  // Inicializar con el elemento SVG cuando esté disponible
+  useEffect(() => {
+    if (worldRef.current &amp;&amp; svgRef?.current) {
+      const svgElement = svgRef.current.querySelector('svg');
+      const container = containerRef?.current;
+
+      if (svgElement) {
+        worldRef.current.initialize(svgElement, container);
+        setIsReady(true);
+        console.log('🪝 useSVGWorld: Inicializado con elemento SVG');
+      }
+    }
+  }, [svgRef, containerRef]);
+
+  // Actualizar viewport cuando cambia
+  useEffect(() => {
+    if (worldRef.current &amp;&amp; viewport) {
+      worldRef.current.updateViewport(viewport);
+    }
+  }, [viewport?.scale, viewport?.x, viewport?.y]);
+
+  /**
+   * Convierte coordenadas de pantalla a coordenadas SVG
+   */
+  const screenToSVG = useCallback((screenX, screenY) => {
+    if (!worldRef.current) {
+      return { x: screenX, y: screenY };
+    }
+    return worldRef.current.screenToSVG(screenX, screenY);
+  }, []);
+
+  /**
+   * Convierte coordenadas SVG a coordenadas de pantalla
+   */
+  const svgToScreen = useCallback((svgX, svgY) => {
+    if (!worldRef.current) {
+      return { x: svgX, y: svgY };
+    }
+    return worldRef.current.svgToScreen(svgX, svgY);
+  }, []);
+
+  /**
+   * Convierte un delta de pantalla a delta SVG
+   */
+  const screenDeltaToSVGDelta = useCallback((deltaX, deltaY) => {
+    if (!worldRef.current) {
+      return { dx: deltaX, dy: deltaY };
+    }
+    return worldRef.current.screenDeltaToSVGDelta(deltaX, deltaY);
+  }, []);
+
+  /**
+   * Encuentra un elemento por ID
+   */
+  const findElementById = useCallback((id) => {
+    if (!worldRef.current) return null;
+    return worldRef.current.findElementById(id);
+  }, []);
+
+  /**
+   * Obtiene el elemento DOM por ID
+   */
+  const getElementByIdDOM = useCallback((id) => {
+    if (!worldRef.current) return null;
+    return worldRef.current.getElementByIdDOM(id);
+  }, []);
+
+  /**
+   * Obtiene el bounding box de un elemento
+   */
+  const getElementBBox = useCallback((element) => {
+    if (!worldRef.current) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+    return worldRef.current.getElementBBox(element);
+  }, []);
+
+  /**
+   * Aplica una transformación a un elemento
+   */
+  const applyTransform = useCallback((element, transform) => {
+    if (!worldRef.current) return;
+    worldRef.current.applyTransform(element, transform);
+  }, []);
+
+  /**
+   * Mueve un elemento por un delta
+   */
+  const moveElement = useCallback((element, deltaX, deltaY) => {
+    if (!worldRef.current) return;
+    worldRef.current.moveElement(element, deltaX, deltaY);
+  }, []);
+
+  return {
+    // Estado
+    isReady,
+    world: worldRef.current,
+
+    // Métodos de conversión de coordenadas
+    screenToSVG,
+    svgToScreen,
+    screenDeltaToSVGDelta,
+
+    // Métodos de manipulación
+    findElementById,
+    getElementByIdDOM,
+    getElementBBox,
+    applyTransform,
+    moveElement,
+  };
+}
+
+export default useSVGWorld;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CoordinateTransformer.html">CoordinateTransformer</a></li><li><a href="PathDataProcessor.html">PathDataProcessor</a></li><li><a href="SVGOptimizer.html">SVGOptimizer</a></li><li><a href="SVGWorld.html">SVGWorld</a></li></ul><h3>Global</h3><ul><li><a href="global.html#AdvancedTools">AdvancedTools</a></li><li><a href="global.html#BezierHandleEditor">BezierHandleEditor</a></li><li><a href="global.html#CodeView">CodeView</a></li><li><a href="global.html#Container">Container</a></li><li><a href="global.html#DEFAULT_CONFIG">DEFAULT_CONFIG</a></li><li><a href="global.html#FileLoadDemo">FileLoadDemo</a></li><li><a href="global.html#LanguageSelector">LanguageSelector</a></li><li><a href="global.html#MousePointerIcon">MousePointerIcon</a></li><li><a href="global.html#MoveableWrapper">MoveableWrapper</a></li><li><a href="global.html#NodeEditor">NodeEditor</a></li><li><a href="global.html#PathDebugger">PathDebugger</a></li><li><a href="global.html#PerformanceMetrics">PerformanceMetrics</a></li><li><a href="global.html#SVGHierarchy">SVGHierarchy</a></li><li><a href="global.html#SVGHistory">SVGHistory</a></li><li><a href="global.html#SVGMetadataEditor">SVGMetadataEditor</a></li><li><a href="global.html#SVGViewer">SVGViewer</a></li><li><a href="global.html#SettingsModal">SettingsModal</a></li><li><a href="global.html#SettingsView">SettingsView</a></li><li><a href="global.html#StylePanel">StylePanel</a></li><li><a href="global.html#TextInput">TextInput</a></li><li><a href="global.html#absoluteToRelative">absoluteToRelative</a></li><li><a href="global.html#addNodeToPath">addNodeToPath</a></li><li><a href="global.html#applyTransform">applyTransform</a></li><li><a href="global.html#buildPathFromNodes">buildPathFromNodes</a></li><li><a href="global.html#buildPathString">buildPathString</a></li><li><a href="global.html#checkLocalStorageAvailable">checkLocalStorageAvailable</a></li><li><a href="global.html#checkSessionStorageAvailable">checkSessionStorageAvailable</a></li><li><a href="global.html#circleToPath">circleToPath</a></li><li><a href="global.html#clearLocalStorage">clearLocalStorage</a></li><li><a href="global.html#clearSessionStorage">clearSessionStorage</a></li><li><a href="global.html#closePath">closePath</a></li><li><a href="global.html#countElements">countElements</a></li><li><a href="global.html#createCoordinateTransformer">createCoordinateTransformer</a></li><li><a href="global.html#createPathDataProcessor">createPathDataProcessor</a></li><li><a href="global.html#createSVGOptimizer">createSVGOptimizer</a></li><li><a href="global.html#createSVGWorld">createSVGWorld</a></li><li><a href="global.html#ellipseToPath">ellipseToPath</a></li><li><a href="global.html#formatNumber">formatNumber</a></li><li><a href="global.html#getElementBBox">getElementBBox</a></li><li><a href="global.html#getLocalStorageSize">getLocalStorageSize</a></li><li><a href="global.html#getSessionStorageSize">getSessionStorageSize</a></li><li><a href="global.html#getTransformedBBox">getTransformedBBox</a></li><li><a href="global.html#moveElement">moveElement</a></li><li><a href="global.html#optimizeSVG">optimizeSVG</a></li><li><a href="global.html#parsePathCommand">parsePathCommand</a></li><li><a href="global.html#parsePathNodes">parsePathNodes</a></li><li><a href="global.html#parseTransform">parseTransform</a></li><li><a href="global.html#pointToHorizontalLine">pointToHorizontalLine</a></li><li><a href="global.html#pointToLineTo">pointToLineTo</a></li><li><a href="global.html#pointToMoveTo">pointToMoveTo</a></li><li><a href="global.html#pointToSmoothQuadraticBezier">pointToSmoothQuadraticBezier</a></li><li><a href="global.html#pointToVerticalLine">pointToVerticalLine</a></li><li><a href="global.html#pointsToArc">pointsToArc</a></li><li><a href="global.html#pointsToCubicBezier">pointsToCubicBezier</a></li><li><a href="global.html#pointsToPath">pointsToPath</a></li><li><a href="global.html#pointsToQuadraticBezier">pointsToQuadraticBezier</a></li><li><a href="global.html#pointsToSmoothCubicBezier">pointsToSmoothCubicBezier</a></li><li><a href="global.html#rectToPath">rectToPath</a></li><li><a href="global.html#relativeToAbsolute">relativeToAbsolute</a></li><li><a href="global.html#removeNodeFromPath">removeNodeFromPath</a></li><li><a href="global.html#rotateElement">rotateElement</a></li><li><a href="global.html#scaleElement">scaleElement</a></li><li><a href="global.html#serializeTransform">serializeTransform</a></li><li><a href="global.html#simplifyPath">simplifyPath</a></li><li><a href="global.html#svgToScreenCoords">svgToScreenCoords</a></li><li><a href="global.html#updateNodeInPath">updateNodeInPath</a></li><li><a href="global.html#useCoordinateTransformer">useCoordinateTransformer</a></li><li><a href="global.html#useHistory">useHistory</a></li><li><a href="global.html#useLocalStorage">useLocalStorage</a></li><li><a href="global.html#useMoveable">useMoveable</a></li><li><a href="global.html#usePanzoom">usePanzoom</a></li><li><a href="global.html#usePathDataProcessor">usePathDataProcessor</a></li><li><a href="global.html#usePerformance">usePerformance</a></li><li><a href="global.html#useSVGParser">useSVGParser</a></li><li><a href="global.html#useSVGStorage">useSVGStorage</a></li><li><a href="global.html#useSVGWorld">useSVGWorld</a></li><li><a href="global.html#useSessionStorage">useSessionStorage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Mon Nov 17 2025 13:59:29 GMT+1300 (New Zealand Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

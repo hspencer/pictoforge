@@ -1,0 +1,13 @@
+{
+  "source": {
+    "include": ["src"],
+    "includePattern": ".+\\.jsx?$",
+    "excludePattern": "(node_modules|docs)"
+  },
+  "plugins": ["node_modules/jsdoc-babel"],
+  "opts": {
+    "destination": "docs/generated/",
+    "recurse": true,
+    "readme": "README.md"
+  }
+}
