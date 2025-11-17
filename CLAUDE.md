@@ -8,6 +8,31 @@ PictoForge is a semantic SVG editor designed as a companion tool for generative 
 
 **Core Philosophy**: Mathematical correctness in coordinate transformations and direct visual manipulation with stable mappings between hierarchy, attributes, and visual feedback.
 
+### Current State vs Full Vision
+
+**Current Implementation (v0.0.1)**: PictoForge currently functions as a **visual SVG editor** with:
+- ✅ Coordinate transformation system (SVGWorld)
+- ✅ Basic editing tools (Select tool working, Node/Pen tools incomplete)
+- ✅ SVG hierarchy visualization
+- ✅ Pan/zoom functionality
+- ✅ File I/O (load/save SVG)
+- ✅ Undo/redo history
+- ✅ Style panel
+
+**Full Vision**: The complete system (documented in `docs/plan.md`) will be a **semantic round-trip editor** with:
+- ❌ NLU Schema layer (semantic representation)
+- ❌ Bidirectional sync (visual ↔ semantic)
+- ❌ PictoNet model integration (generative AI)
+- ❌ Local database + tesauro (knowledge management)
+- ❌ Partial regeneration of pictogram components
+- ❌ Federated identity and knowledge sharing
+- ❌ Multimodal input (text, SVG, images)
+- ❌ Drawing mode with Apple Pencil support
+
+**Implementation Roadmap**: See `docs/ROADMAP.md` for the complete 6-phase implementation plan (17-21 months estimated).
+
+**When Contributing**: Focus on the current visual editor layer unless specifically implementing semantic layer features. The semantic layer (Phase 2 in roadmap) is the next major architectural addition.
+
 ## Development Commands
 
 ### Basic Commands

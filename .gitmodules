@@ -1,0 +1,3 @@
+[submodule "schemas/nlu-schema"]
+	path = schemas/nlu-schema
+	url = https://github.com/mediafranca/nlu-schema.git
