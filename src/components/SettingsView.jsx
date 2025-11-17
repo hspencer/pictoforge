@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare, Globe, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare, Globe, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useI18n } from '@/hooks/useI18n';
+import DraggableModal from './DraggableModal';
 
 /**
  * Vista de pantalla completa para configuración de opciones locales
@@ -221,27 +222,17 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b bg-muted/20">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold tracking-tight">
-            Opciones Locales de PictoForge
-          </h1>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          title="Cerrar"
-        >
-          <X size={20} />
-        </Button>
-      </header>
-
+    <DraggableModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Opciones Locales de PictoForge"
+      width={900}
+      maxHeight={800}
+      storageKey="settings-view"
+      zIndex={50}
+    >
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="p-6 overflow-auto" style={{ maxHeight: '700px' }}>
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Información de Instancia */}
           <section className="space-y-4">
@@ -507,24 +498,24 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
               </p>
             </div>
           </section>
+
+          {/* Footer con botones */}
+          <footer className="pt-6 border-t flex justify-end gap-2 sticky bottom-0 bg-popover">
+            <Button
+              variant="outline"
+              onClick={onClose}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+            >
+              Guardar Configuración
+            </Button>
+          </footer>
         </div>
       </div>
-
-      {/* Footer con botones */}
-      <footer className="p-4 border-t bg-muted/20 flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={onClose}
-        >
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleSave}
-        >
-          Guardar Configuración
-        </Button>
-      </footer>
-    </div>
+    </DraggableModal>
   );
 };
 

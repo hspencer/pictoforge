@@ -1,290 +1,151 @@
-# Coordinate System in PictoForge
+# PictoForge Coordinate System
 
-## The Problem
+## 1. The Core Problem
 
-When working with SVG in a browser, there are multiple coordinate systems that must work together:
+A fundamental challenge in any web-based vector editor is managing the multiple coordinate systems that must work together. An action performed by a user in their browser window (like a click) must be accurately translated into the SVG's internal coordinate space, accounting for any transformations like panning and zooming.
+
+PictoForge handles three primary coordinate systems:
+
+1.  **Screen Coordinates**: The pixel-based system of the browser window. The origin `(0,0)` is the top-left corner of the visible window. Mouse events like `e.clientX` and `e.clientY` provide values in this system.
+
+2.  **Viewport Coordinates**: This is the transformed space of the container that holds the SVG. It is affected by user-initiated panning (translation) and zooming (scaling). For example, a 150% zoom and a 20px pan means this coordinate system is scaled by 1.5 and shifted.
+
+3.  **SVG User Coordinates**: This is the SVG's internal coordinate system, defined by its `viewBox` attribute (e.g., `viewBox="0 0 800 600"`). All the actual vector data (`<path d="...">`, `<circle cx="...">`, etc.) is stored in these units. This system is independent of the SVG's rendered size on the screen.
 
 ```
-User clicks → [Screen Coordinates]
+User clicks → [1. Screen Coordinates]
                             ↓
          Apply viewport transformation (pan/zoom)
                             ↓
-              [Container Coordinates]
+              [2. Viewport Coordinates]
                             ↓
         Apply SVG viewBox transformation
                             ↓
-               [Internal SVG Coordinates]
-                            ↓
-         This is where SVG data lives
+               [3. SVG User Coordinates]  ← This is where all data is stored and modified.
 ```
 
-## Coordinate Systems
+## 2. The Solution: `SVGWorld`
 
-### 1. Screen Coordinates
+To manage these transformations, PictoForge uses a centralized service called `SVGWorld`. This service acts as the single source of truth for all coordinate conversions.
 
-**Origin**: Top-left corner of the browser window
-**Units**: CSS pixels
-**Source**: `MouseEvent.clientX`, `MouseEvent.clientY`
+-   **Service**: `src/services/SVGWorld.js`
+-   **Hook**: `src/hooks/useSVGWorld.js`
+
+### Key Transformation Methods
+
+The `useSVGWorld` hook provides three critical functions for converting between coordinate systems.
+
+#### `screenToSVG(screenX, screenY)`
+
+This is the most common transformation. It takes a point from a mouse event (in screen coordinates) and returns the corresponding point in the SVG's internal user coordinates.
+
+**Use Case**: Determining where a user has clicked inside the SVG canvas.
 
 ```javascript
-document.addEventListener('click', (e) => {
-  console.log(e.clientX, e.clientY); // Screen coordinates
-});
-```
+import { useSVGWorld } from '@/hooks/useSVGWorld';
 
-### 2. Viewport Coordinates
+const MyComponent = () => {
+  const { screenToSVG } = useSVGWorld({ svgRef, viewport });
 
-**Origin**: Depends on applied pan
-**Units**: Scaled CSS pixels
-**Transformation**: `transform: translate(x, y) scale(s)`
+  const handleCanvasClick = (event) => {
+    const svgCoords = screenToSVG(event.clientX, event.clientY);
+    console.log(`User clicked at SVG coordinates: (${svgCoords.x}, ${svgCoords.y})`);
+    // Now you can use svgCoords to select an element or draw a new shape.
+  };
 
-Example with `@panzoom/panzoom`:
-```javascript
-const { scale, x, y } = panzoomState;
-// scale: zoom factor (1 = 100%, 2 = 200%, etc.)
-// x, y: displacement in pixels
-```
-
-### 3. SVG Coordinates (User Space)
-
-**Origin**: Defined by the `viewBox` attribute
-**Units**: SVG units (arbitrary)
-**Example**: `viewBox="0 0 800 600"` → (0,0) to (800,600)
-
-```svg
-<svg viewBox="0 0 100 100" width="500" height="500">
-  <!-- This circle is at (50, 50) in SVG coordinates -->
-  <!-- But renders at (250, 250) on screen -->
-  <circle cx="50" cy="50" r="10" />
-</svg>
-```
-
-## Conversion with SVGWorld
-
-### Screen → SVG
-
-```javascript
-// User clicks on screen
-const handleClick = (e) => {
-  const { x, y } = screenToSVG(e.clientX, e.clientY);
-
-  // Now (x, y) is in SVG coordinates
-  // Ready to create elements or select
-};
-```
-
-**How does it work internally?**
-
-```javascript
-screenToSVG(screenX, screenY) {
-  // 1. Create SVG point
-  const svgPoint = svg.createSVGPoint();
-  svgPoint.x = screenX;
-  svgPoint.y = screenY;
-
-  // 2. Get complete transformation matrix (Screen → SVG)
-  const ctm = svg.getScreenCTM();
-
-  // 3. Apply inverse transformation
-  const transformed = svgPoint.matrixTransform(ctm.inverse());
-
-  return { x: transformed.x, y: transformed.y };
+  return <div onClick={handleCanvasClick}>...</div>;
 }
 ```
 
-The CTM (Current Transformation Matrix) includes:
-- viewBox transformation
-- Viewport transformation (pan/zoom)
-- Any applied CSS transform
+#### `svgToScreen(svgX, svgY)`
 
-### SVG → Screen
+This performs the inverse transformation, converting a point from the SVG's internal coordinate system to its position on the screen.
 
-```javascript
-// Convert SVG element position to screen
-const element = svg.getElementById('my-circle');
-const bbox = element.getBBox(); // { x, y, width, height } in SVG
-
-const screenPos = svgToScreen(bbox.x, bbox.y);
-console.log(`Element appears at (${screenPos.x}, ${screenPos.y}) on screen`);
-```
-
-### Screen Delta → SVG Delta
-
-For drag and drop, we need to convert **differences**:
+**Use Case**: Positioning an HTML overlay (like a tooltip or a custom handle) over a specific point on the SVG canvas.
 
 ```javascript
-const handleDrag = (e) => {
-  // Delta in screen pixels
-  const deltaScreenX = e.clientX - startX;
-  const deltaScreenY = e.clientY - startY;
+import { useSVGWorld } from '@/hooks/useSVGWorld';
 
-  // Convert to SVG delta
-  const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY);
-
-  // Apply movement in SVG coordinates
-  element.setAttribute('x', originalX + dx);
-  element.setAttribute('y', originalY + dy);
-};
-```
-
-**Why not simply divide by scale?**
-
-```javascript
-// ❌ Incorrect (doesn't consider rotation, skew, etc.)
-const dx = deltaScreenX / scale;
-
-// ✅ Correct (considers entire transformation)
-const { dx } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY);
-```
-
-## Common Use Cases
-
-### Clicking on an element
-
-```javascript
-const SVGViewer = () => {
-  const { screenToSVG } = useSVGWorld({ ... });
-
-  const handleElementClick = (e) => {
-    // 1. Get screen coordinates
-    const screenCoords = { x: e.clientX, y: e.clientY };
-
-    // 2. Convert to SVG
-    const svgCoords = screenToSVG(screenCoords.x, screenCoords.y);
-
-    // 3. Find element at those coordinates
-    const element = document.elementFromPoint(e.clientX, e.clientY);
-
-    // 4. Use svgCoords for operations in SVG space
-    console.log('Clicked element at SVG position:', svgCoords);
-  };
-
-  return <div onClick={handleElementClick}>...</div>;
-};
-```
-
-### Element Drag and Drop
-
-```javascript
-const handleDragStart = (e, element) => {
-  const startScreenX = e.clientX;
-  const startScreenY = e.clientY;
-
-  // Initial position in SVG
-  const startSVGPos = screenToSVG(startScreenX, startScreenY);
-
-  const handleMouseMove = (e) => {
-    // Delta on screen
-    const deltaScreen = {
-      x: e.clientX - startScreenX,
-      y: e.clientY - startScreenY
-    };
-
-    // Convert to SVG delta
-    const { dx, dy } = screenDeltaToSVGDelta(deltaScreen.x, deltaScreen.y);
-
-    // Move element
-    moveElement(element, dx, dy);
-  };
-
-  document.addEventListener('mousemove', handleMouseMove);
-};
-```
-
-### Drawing overlay at element position
-
-```javascript
-const NodeEditor = ({ element }) => {
-  const { svgToScreen } = useSVGWorld({ ... });
-
-  // Get element position in SVG
-  const bbox = element.getBBox();
-
-  // Convert to screen to display UI
-  const screenPos = svgToScreen(bbox.x, bbox.y);
+const Tooltip = ({ svgPoint }) => {
+  const { svgToScreen } = useSVGWorld({ svgRef, viewport });
+  const screenPos = svgToScreen(svgPoint.x, svgPoint.y);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: screenPos.x,
-        top: screenPos.y
-      }}
-    >
-      {/* Editing UI */}
+    <div style={{ position: 'absolute', left: screenPos.x, top: screenPos.y }}>
+      Tooltip for point ({svgPoint.x}, {svgPoint.y})
     </div>
   );
 };
 ```
 
-## Debugging
+#### `screenDeltaToSVGDelta(deltaX, deltaY)`
 
-For debugging transformations:
+This function is crucial for drag-and-drop functionality. It converts a *change* in screen position (a delta) into the corresponding *change* in SVG user coordinates. Simply dividing the screen delta by the zoom factor is incorrect because it doesn't account for the full transformation matrix (including `viewBox` scaling, non-uniform scaling, or rotation).
+
+**Use Case**: Dragging an SVG element accurately, regardless of the current zoom level.
 
 ```javascript
-const debugCoordinates = (e) => {
-  const screen = { x: e.clientX, y: e.clientY };
-  const svg = screenToSVG(screen.x, screen.y);
-  const backToScreen = svgToScreen(svg.x, svg.y);
+import { useSVGWorld } from '@/hooks/useSVGWorld';
 
-  console.log({
-    screen,
-    svg,
-    backToScreen,
-    // Should be equal (with small rounding error)
-    roundTrip: {
-      deltaX: Math.abs(screen.x - backToScreen.x),
-      deltaY: Math.abs(screen.y - backToScreen.y)
-    }
-  });
+const DraggableElement = ({ element }) => {
+  const { screenDeltaToSVGDelta } = useSVGWorld({ svgRef, viewport });
+  let startDragPos = { x: 0, y: 0 };
+
+  const onDragStart = (e) => {
+    startDragPos = { x: e.clientX, y: e.clientY };
+  };
+
+  const onDrag = (e) => {
+    const deltaScreenX = e.clientX - startDragPos.x;
+    const deltaScreenY = e.clientY - startDragPos.y;
+
+    // Convert the screen movement into an SVG movement
+    const { dx, dy } = screenDeltaToSVGDelta(deltaScreenX, deltaScreenY);
+
+    // Apply the movement to the element's transform
+    // (This is a simplified example)
+    element.transform({ translateX: dx, translateY: dy });
+
+    // Update start position for the next move event
+    startDragPos = { x: e.clientX, y: e.clientY };
+  };
+
+  // ... attach event handlers
 };
 ```
 
-## Common Errors
+### How It Works: The Current Transformation Matrix (CTM)
 
-### ❌ Using getBoundingClientRect() directly
+The `SVGWorld` service relies on the native browser API `getScreenCTM()` on the SVG element. This method returns a single `SVGMatrix` that represents the complete, accumulated transformation required to map a point from the SVG's user space to the screen space.
 
-```javascript
-// Incorrect - doesn't consider internal SVG transformations
-const rect = element.getBoundingClientRect();
-const x = rect.left; // This is in screen space, not SVG
-```
+-   **SVG to Screen**: `transformedPoint = originalPoint.matrixTransform(ctm)`
+-   **Screen to SVG**: `transformedPoint = originalPoint.matrixTransform(ctm.inverse())`
 
-```javascript
-// Correct
-const bbox = element.getBBox(); // SVG coordinates
-const { x, y } = bbox;
-```
+By using the CTM, our system automatically accounts for all transformations in the chain: the SVG's `viewBox`, its `width` and `height`, any `<g transform="...">` groups, and the pan/zoom state of the viewport. This makes the calculations robust and precise.
 
-### ❌ Assuming zoom = scale
+## 3. Common Pitfalls and Best Practices
 
-```javascript
-// Incorrect - assumes only uniform zoom
-const svgX = screenX / zoom;
-```
+### DO: Use the `SVGWorld` hooks.
 
-```javascript
-// Correct - uses complete matrix
-const { x } = screenToSVG(screenX, screenY);
-```
+Always use `screenToSVG`, `svgToScreen`, and `screenDeltaToSVGDelta` for any coordinate calculations. Do not attempt to perform manual calculations.
 
-### ❌ Not considering the container
+### DON'T: Use `getBoundingClientRect()` for SVG positions.
 
-```javascript
-// Incorrect - e.clientX is relative to window
-const localX = e.clientX;
-```
+`element.getBoundingClientRect()` returns the position and size of an element in *screen coordinates*. It is useful for positioning HTML overlays, but its values are not in the SVG's internal coordinate system and should not be used for modifying SVG attributes like `x`, `y`, or path data.
 
-```javascript
-// Correct - subtract container offset if necessary
-const container = containerRef.current;
-const rect = container.getBoundingClientRect();
-const localX = e.clientX - rect.left;
-```
+-   **Incorrect**: `const svgX = element.getBoundingClientRect().left;`
+-   **Correct**: `const svgX = element.getBBox().x;` (for position within the SVG)
 
-## Resources
+### DON'T: Manually calculate deltas.
 
-- [SVG Coordinate Systems Tutorial](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Positions)
-- [getScreenCTM() API](https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getScreenCTM)
-- [SVGPoint API](https://developer.mozilla.org/en-US/docs/Web/API/SVGPoint)
-- [Understanding SVG Coordinate Systems](https://www.sarasoueidan.com/blog/svg-coordinate-systems/)
+-   **Incorrect**: `const svgDeltaX = screenDeltaX / viewport.zoom;`
+-   **Correct**: `const { dx } = screenDeltaToSVGDelta(screenDeltaX, 0);`
+
+## 4. Related Utilities
+
+The coordinate system is the foundation for higher-level utilities:
+
+-   **`pathEncoding.js`**: Contains functions to convert arrays of SVG coordinate points into SVG path data strings (e.g., `M 10 10 L 100 100...`).
+-   **`visualManipulation.js`**: Provides high-level functions like `handleElementDrag` and `findClosestNode` that use the coordinate transformation functions internally to provide easy-to-use manipulation logic.
+
+By centralizing the core transformation logic in `SVGWorld`, all other parts of the application can operate reliably in the correct coordinate space.

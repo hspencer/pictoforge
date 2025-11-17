@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSVGParser } from './hooks/useSVGParser';
 import { useSVGStorage } from './hooks/useSVGStorage';
@@ -16,8 +16,6 @@ import './App.css';
 
 // Importar el SVG de ejemplo
 import pictogramSVG from './assets/pictogram.svg?url';
-// Importar el ícono de settings
-import settingsIcon from './assets/settings.svg?url';
 
 // Componente principal de la aplicación con internacionalización
 function AppContent() {
@@ -310,7 +308,7 @@ function AppContent() {
             onClick={() => setShowSettings(true)}
             title="Opciones"
           >
-            <img src={settingsIcon} alt="Settings" className="w-4 h-4" />
+            <Settings size={16} />
           </Button>
         </div>
       </header>

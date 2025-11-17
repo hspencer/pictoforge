@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -40,6 +40,7 @@ export const SVGViewer = ({
   const [tool, setToolInternal] = useState(initialTool);
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [zoomInputValue, setZoomInputValue] = useState('100%');
 
   // Wrapper para setTool que también llama al callback
   const setTool = (newTool) => {
@@ -52,18 +53,14 @@ export const SVGViewer = ({
     setToolInternal(initialTool);
   }, [initialTool]);
 
-  // Sincronizar selectedSVGElement cuando cambia selectedElement desde fuera (jerarquía)
-  useEffect(() => {
-    if (selectedElement && svgRef.current) {
-      const domElement = svgRef.current.querySelector(`#${selectedElement.id}`);
-      if (domElement) {
-        setSelectedSVGElement(domElement);
-        console.log('🔄 Sincronizando selección desde jerarquía:', selectedElement.id);
-      }
-    } else if (!selectedElement) {
-      setSelectedSVGElement(null);
-    }
-  }, [selectedElement]);
+  // Opciones para Panzoom, memoizadas para evitar recreación
+  const panzoomOptions = useMemo(() => ({
+    maxScale: 10,
+    minScale: 0.1,
+    step: 0.3,
+    startScale: 1,
+    canvas: true,
+  }), []);
 
   // Sistema de zoom y pan con @panzoom/panzoom
   const {
@@ -71,18 +68,18 @@ export const SVGViewer = ({
     isReady: isPanzoomReady,
     zoomIn: panzoomZoomIn,
     zoomOut: panzoomZoomOut,
+    zoom,
     reset: panzoomReset,
     center: panzoomCenter,
   } = usePanzoom({
     elementRef: svgContainerRef,
-    panzoomOptions: {
-      maxScale: 10,
-      minScale: 0.1,
-      step: 0.3,
-      startScale: 1,
-      canvas: true,
-    },
+    panzoomOptions,
   });
+
+  // Sincronizar el valor del input de zoom con el estado de panzoom
+  useEffect(() => {
+    setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
+  }, [panzoomState.scale]);
 
   // Sistema unificado de coordenadas y manipulación con SVGWorld
   const {
@@ -318,6 +315,28 @@ export const SVGViewer = ({
     }
   };
 
+  const handleZoomInputChange = (e) => {
+    setZoomInputValue(e.target.value);
+  };
+
+  const handleZoomInputCommit = () => {
+    const value = parseFloat(zoomInputValue.replace('%', ''));
+    if (!isNaN(value)) {
+      const newScale = value / 100;
+      zoom(newScale, { animate: true });
+    } else {
+      // Si el valor no es válido, volver al valor actual
+      setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
+    }
+  };
+
+  const handleZoomInputKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleZoomInputCommit();
+      e.target.blur(); // Quitar foco del input
+    }
+  };
+
   /**
    * Resetea la vista del SVG
    */
@@ -443,9 +462,15 @@ export const SVGViewer = ({
           >
             <ZoomOut size={16} />
           </Button>
-          <span className="text-sm text-muted-foreground min-w-[4rem] text-center">
-            {Math.round(panzoomState.scale * 100)}%
-          </span>
+          <input
+            type="text"
+            value={zoomInputValue}
+            onChange={handleZoomInputChange}
+            onBlur={handleZoomInputCommit}
+            onKeyDown={handleZoomInputKeyDown}
+            className="w-16 text-sm text-center bg-transparent border border-border rounded-sm focus:ring-1 focus:ring-ring focus:outline-none"
+            title="Establecer porcentaje de zoom"
+          />
           <Button
             variant="ghost"
             size="sm"

@@ -1,708 +1,181 @@
 # PictoForge API Reference
 
-## Overview
+## 1. Overview
 
-This document provides comprehensive API documentation for PictoForge components, hooks, services, and utilities.
-
-## Table of Contents
-
-- [Core Services](#core-services)
-  - [SVGWorld](#svgworld)
-- [React Hooks](#react-hooks)
-  - [useSVGWorld](#usesvgworld)
-  - [useSVGParser](#usesvgparser)
-  - [useHistory](#usehistory)
-  - [usePerformance](#useperformance)
-  - [useI18n](#usei18n)
-- [Components](#components)
-  - [SVGViewer](#svgviewer)
-  - [SVGHierarchy](#svghierarchy)
-  - [BoundingBox](#boundingbox)
-  - [NodeEditor](#nodeeditor)
-  - [StylePanel](#stylepanel)
-  - [CodeView](#codeview)
-- [Utilities](#utilities)
-  - [svgManipulation](#svgmanipulation)
+This document provides a comprehensive API reference for PictoForge's core services, React hooks, and UI components.
 
 ---
 
-## Core Services
+## 2. Core Services
 
-### SVGWorld
+Services encapsulate low-level business logic and are framework-agnostic.
 
-Location: [`src/services/SVGWorld.js`](../src/services/SVGWorld.js)
+### `CoordinateTransformer`
 
-The centralised coordinate transformation service that handles conversions between screen, viewport, and SVG coordinate systems.
+-   **Location:** `src/services/CoordinateTransformer.js`
+-   **Description:** A centralized service for coordinate conversion between screen, client, and SVG user spaces.
+-   **Key Methods:**
+    -   `setSvgElement(svgElement)`: Updates the reference SVG element.
+    -   `updatePanzoomState(state)`: Updates the current pan and zoom state.
+    -   `screenToSvg(screenX, screenY)`: Converts screen coordinates to SVG coordinates.
+    -   `svgToScreen(svgX, svgY)`: Converts SVG coordinates to screen coordinates.
+    -   `screenDeltaToSvgDelta(deltaX, deltaY)`: Converts a screen-space delta to an SVG-space delta.
 
-#### Constructor
+### `PathDataProcessor`
 
-```javascript
-const svgWorld = new SVGWorld(svgElement, containerElement, viewport)
-```
+-   **Location:** `src/services/PathDataProcessor.js`
+-   **Description:** A service for parsing and manipulating SVG path data (`d` attribute) using `svg-pathdata`. It allows for precise editing of curves by providing access to anchor and control points.
+-   **Key Methods:**
+    -   `parse(pathString)`: Parses a path `d` string into an AST.
+    -   `normalize()`: Converts all path commands to absolute coordinates.
+    -   `getSegments()`: Returns an array of path segments with detailed information.
+    -   `getAnchorPoints()` / `getControlPoints()`: Returns arrays of all anchor or control points.
+    -   `updateAnchorPoint(index, position)`: Modifies an anchor point.
+    -   `updateControlPoint(index, type, position)`: Modifies a Bézier control point.
+    -   `toString()`: Regenerates the path `d` string from the current AST.
 
-**Parameters:**
-- `svgElement` (SVGSVGElement) - The root SVG element
-- `containerElement` (HTMLElement) - The container element that holds the SVG
-- `viewport` (Object) - Viewport state with `{ scale, x, y }`
+### `SVGOptimizer`
 
-#### Methods
+-   **Location:** `src/services/SVGOptimizer.js`
+-   **Description:** A service to optimize SVG content using **SVGO** before export, reducing file size and improving performance.
+-   **Key Methods:**
+    -   `optimize(svgString, options)`: Optimizes an SVG string with given options.
+    -   `addAccessibilityMetadata(svgString, metadata)`: Adds or updates accessibility metadata (`<title>`, `<desc>`).
+    -   `processForExport(svgString, metadata, options)`: A complete pipeline that adds metadata and then optimizes the SVG for export.
 
-##### `screenToSVG(screenX, screenY)`
+### `SVGWorld`
 
-Converts screen coordinates to SVG coordinates.
-
-**Parameters:**
-- `screenX` (Number) - X coordinate in screen space (pixels)
-- `screenY` (Number) - Y coordinate in screen space (pixels)
-
-**Returns:**
-- `Object` - `{ x, y }` in SVG coordinate space
-
-**Example:**
-```javascript
-const { x, y } = svgWorld.screenToSVG(e.clientX, e.clientY);
-console.log(`SVG coordinates: ${x}, ${y}`);
-```
-
-##### `svgToScreen(svgX, svgY)`
-
-Converts SVG coordinates to screen coordinates.
-
-**Parameters:**
-- `svgX` (Number) - X coordinate in SVG space
-- `svgY` (Number) - Y coordinate in SVG space
-
-**Returns:**
-- `Object` - `{ x, y }` in screen coordinate space (pixels)
-
-**Example:**
-```javascript
-const bbox = element.getBBox();
-const screenPos = svgWorld.svgToScreen(bbox.x, bbox.y);
-```
-
-##### `screenDeltaToSVGDelta(dx, dy)`
-
-Converts a delta (difference) in screen space to SVG space. Useful for drag and drop operations.
-
-**Parameters:**
-- `dx` (Number) - Change in X in screen space
-- `dy` (Number) - Change in Y in screen space
-
-**Returns:**
-- `Object` - `{ dx, dy }` in SVG coordinate space
-
-**Example:**
-```javascript
-const deltaScreen = { x: e.clientX - startX, y: e.clientY - startY };
-const { dx, dy } = svgWorld.screenDeltaToSVGDelta(deltaScreen.x, deltaScreen.y);
-```
-
-##### `getElementBBox(element)`
-
-Gets the bounding box of an element in SVG coordinates.
-
-**Parameters:**
-- `element` (SVGElement) - The SVG element
-
-**Returns:**
-- `Object` - `{ x, y, width, height }` in SVG coordinates
-
-##### `moveElement(element, dx, dy)`
-
-Moves an element by a delta in SVG coordinates.
-
-**Parameters:**
-- `element` (SVGElement) - The element to move
-- `dx` (Number) - Change in X
-- `dy` (Number) - Change in Y
-
-##### `applyTransform(element, transform)`
-
-Applies a transformation matrix to an element.
-
-**Parameters:**
-- `element` (SVGElement) - The element to transform
-- `transform` (String | Object) - Transform specification
+-   **Location:** `src/services/SVGWorld.js`
+-   **Description:** The primary "world" object for SVG handling. It manages transformations between all coordinate systems (`viewBox`, viewport, screen) and serves as an in-memory object for element manipulation.
+-   **Key Methods:**
+    -   `initialize(svgElement, containerElement)`: Initializes the world with a DOM element.
+    -   `updateViewport(viewport)`: Updates the current pan and zoom state.
+    -   `screenToSVG(screenX, screenY)`: Converts screen coordinates to SVG coordinates.
+    -   `svgToScreen(svgX, svgY)`: Converts SVG coordinates to screen coordinates.
+    -   `screenDeltaToSVGDelta(deltaX, deltaY)`: Converts a screen-space delta to an SVG-space delta.
+    -   `getElementBBox(element)`: Gets the bounding box of an element in SVG coordinates.
+    -   `moveElement(element, dx, dy)`: Moves an element by a specified delta.
 
 ---
 
-## React Hooks
+## 3. React Hooks
 
-### useSVGWorld
+Hooks provide a reactive interface to the core services and manage component state.
 
-Location: [`src/hooks/useSVGWorld.js`](../src/hooks/useSVGWorld.js)
+### `useCoordinateTransformer`
 
-React hook that provides access to the SVGWorld service with automatic updates on viewport changes.
+-   **Location:** `src/hooks/useCoordinateTransformer.js`
+-   **Description:** Integrates the `CoordinateTransformer` service into the React lifecycle, providing reactive access to coordinate transformations.
+-   **Usage:** `const { screenToSvg, svgToScreen } = useCoordinateTransformer({ svgRef, panzoomState });`
 
-#### Usage
+### `useHistory`
 
-```javascript
-const {
-  screenToSVG,
-  svgToScreen,
-  screenDeltaToSVGDelta,
-  getElementBBox,
-  moveElement,
-  applyTransform
-} = useSVGWorld({
-  svgRef,
-  containerRef,
-  viewport
-});
-```
+-   **Location:** `src/hooks/useHistory.js`
+-   **Description:** A generic hook to manage state history and provide undo/redo functionality.
+-   **Usage:** `const { currentState, pushState, undo, redo, canUndo, canRedo } = useHistory(initialState);`
 
-**Parameters:**
-- `svgRef` (React.RefObject) - Ref to SVG element
-- `containerRef` (React.RefObject) - Ref to container element
-- `viewport` (Object) - Current viewport state `{ scale, x, y }`
+### `useI18n`
 
-**Returns:**
-- `Object` - All SVGWorld methods bound to current state
+-   **Location:** `src/hooks/useI18n.jsx`
+-   **Description:** Provides internationalization (i18n) context for translating UI text. Must be used within an `I18nProvider`.
+-   **Usage:** `const { t, setLocale } = useI18n();`
 
----
+### `useLocalStorage` & `useSessionStorage`
 
-### useSVGParser
+-   **Location:** `src/hooks/useLocalStorage.js`, `src/hooks/useSessionStorage.js`
+-   **Description:** Hooks to manage data persistence in `localStorage` (persistent) and `sessionStorage` (session-only).
+-   **Usage:** `const [value, setValue, removeValue] = useLocalStorage('myKey', initialValue);`
 
-Location: [`src/hooks/useSVGParser.js`](../src/hooks/useSVGParser.js)
+### `useMoveable`
 
-Hook for parsing and managing SVG content.
+-   **Location:** `src/hooks/useMoveable.js`
+-   **Description:** Integrates the `react-moveable` library with the `CoordinateTransformer` to handle drag, resize, and rotate events correctly within the SVG coordinate space.
+-   **Usage:** Returns a set of handlers (`handleDrag`, `handleResize`, etc.) to be passed to the `MoveableWrapper` component.
 
-#### Usage
+### `usePanzoom`
 
-```javascript
-const {
-  svgData,
-  svgContent,
-  selectedElement,
-  parseSVG,
-  updateSVG,
-  selectElement,
-  findElementById
-} = useSVGParser();
-```
+-   **Location:** `src/hooks/usePanzoom.js`
+-   **Description:** A wrapper for the `@panzoom/panzoom` library that provides reactive state for the viewport's pan and zoom.
+-   **Usage:** `const { panzoomState, zoomIn, zoomOut, reset } = usePanzoom({ elementRef, panzoomOptions });`
 
-#### Return Values
+### `usePathDataProcessor`
 
-**State:**
-- `svgData` (Object | null) - Parsed SVG structure
-  - `root` (Object) - Root SVG element info
-  - `styles` (Array) - CSS style definitions
-  - `elements` (Array) - Flattened element tree
-- `svgContent` (String) - Raw SVG content
-- `selectedElement` (Object | null) - Currently selected element
+-   **Location:** `src/hooks/usePathDataProcessor.js`
+-   **Description:** Integrates the `PathDataProcessor` service, providing reactive access to a path's segments, anchor points, and control points.
+-   **Usage:** `const { segments, updateAnchorPoint } = usePathDataProcessor({ pathString });`
 
-**Methods:**
+### `usePerformance`
 
-##### `parseSVG(content)`
+-   **Location:** `src/hooks/usePerformance.js`
+-   **Description:** A hook for monitoring and optimizing the performance of complex SVGs.
+-   **Usage:** Returns metrics and functions for performance measurement (`debounce`, `throttle`, etc.).
 
-Parses SVG content into structured data.
+### `useSVGParser`
 
-**Parameters:**
-- `content` (String) - SVG markup
+-   **Location:** `src/hooks/useSVGParser.js`
+-   **Description:** Parses an SVG string into a structured data tree, extracting the element hierarchy, styles, and metadata.
+-   **Usage:** `const { svgData, loadSVG, findElementById } = useSVGParser();`
 
-**Returns:**
-- `Object` - Parsed SVG data structure
+### `useSVGStorage`
 
-##### `updateSVG(newContent)`
+-   **Location:** `src/hooks/useSVGStorage.js`
+-   **Description:** A specialized hook for managing the storage of SVGs and user settings in `localStorage`.
+-   **Usage:** `const { saveSVG, loadLastSVG, userConfig } = useSVGStorage();`
 
-Updates the SVG content and re-parses.
+### `useSVGWorld`
 
-**Parameters:**
-- `newContent` (String) - New SVG markup
-
-##### `selectElement(elementId)`
-
-Selects an element by ID.
-
-**Parameters:**
-- `elementId` (String) - Element ID to select
-
-##### `findElementById(id)`
-
-Finds an element in the parsed tree by ID.
-
-**Parameters:**
-- `id` (String) - Element ID
-
-**Returns:**
-- `Object | null` - Element object or null if not found
+-   **Location:** `src/hooks/useSVGWorld.js`
+-   **Description:** Provides a reactive interface to the `SVGWorld` service.
+-   **Usage:** `const { screenToSVG, getElementBBox } = useSVGWorld({ svgRef, containerRef, viewport });`
 
 ---
 
-### useHistory
+## 4. UI Components
 
-Location: [`src/hooks/useHistory.js`](../src/hooks/useHistory.js)
+### `SVGViewer`
 
-Hook for managing undo/redo functionality.
+-   **Location:** `src/components/SVGViewer.jsx`
+-   **Description:** The main component for visualizing and editing the SVG. It integrates pan/zoom, tool selection, and element manipulation.
+-   **Key Props:** `svgContent`, `selectedElement`, `onElementSelect`, `onSVGUpdate`, `tool`.
 
-#### Usage
+### `SVGHierarchy`
 
-```javascript
-const {
-  state,
-  setState,
-  undo,
-  redo,
-  canUndo,
-  canRedo,
-  clearHistory
-} = useHistory(initialState);
-```
+-   **Location:** `src/components/SVGHierarchy.jsx`
+-   **Description:** A tree view component that displays the hierarchy of SVG elements, allowing for selection and inspection.
+-   **Key Props:** `svgData`, `selectedElement`, `onElementSelect`.
 
-**Parameters:**
-- `initialState` (Any) - Initial state value
+### `StylePanel`
 
-#### Return Values
+-   **Location:** `src/components/StylePanel.jsx`
+-   **Description:** A side panel for managing and applying CSS styles to SVG elements.
+-   **Key Props:** `svgData`, `selectedElement`, `onStyleChange`.
 
-- `state` (Any) - Current state
-- `setState` (Function) - Function to update state (adds to history)
-- `undo` (Function) - Undo last change
-- `redo` (Function) - Redo previously undone change
-- `canUndo` (Boolean) - Whether undo is available
-- `canRedo` (Boolean) - Whether redo is available
-- `clearHistory` (Function) - Clear all history
+### `CodeView`
 
-**Example:**
-```javascript
-const { state, setState, undo, redo, canUndo } = useHistory({ zoom: 1 });
+-   **Location:** `src/components/CodeView.jsx`
+-   **Description:** An editable code view with syntax highlighting that displays the raw SVG markup.
+-   **Key Props:** `svgContent`, `onSVGUpdate`.
 
-// Update state (adds to history)
-setState({ zoom: 2 });
+### `MoveableWrapper`
 
-// Undo
-if (canUndo) {
-  undo(); // Returns to { zoom: 1 }
-}
-```
+-   **Location:** `src/components/MoveableWrapper.jsx`
+-   **Description:** A wrapper component that integrates `react-moveable` to provide visual drag, resize, and rotate handles for a target element.
+-   **Key Props:** `target`, `container`, `onDrag`, `onResize`, `onRotate`.
 
----
+### `BezierHandleEditor`
 
-### usePerformance
+-   **Location:** `src/components/BezierHandleEditor.jsx`
+-   **Description:** A visual editor for directly manipulating the Bézier control points and anchor points of an SVG `<path>` element.
+-   **Key Props:** `pathElement`, `coordinateTransformer`, `onPathUpdate`.
 
-Location: [`src/hooks/usePerformance.js`](../src/hooks/usePerformance.js)
+### `SVGMetadataEditor`
 
-Hook for monitoring and optimising performance.
+-   **Location:** `src/components/SVGMetadataEditor.jsx`
+-   **Description:** A form for editing the accessibility metadata of the SVG, such as its `<title>`, `<desc>`, `lang`, and `role`.
+-   **Key Props:** `svgContent`, `onUpdate`.
 
-#### Usage
+### `SVGHistory`
 
-```javascript
-const {
-  metrics,
-  startMeasure,
-  endMeasure,
-  getMetrics
-} = usePerformance();
-```
-
-#### Return Values
-
-- `metrics` (Object) - Current performance metrics
-- `startMeasure` (Function) - Start measuring an operation
-- `endMeasure` (Function) - End measuring an operation
-- `getMetrics` (Function) - Get all recorded metrics
-
-**Example:**
-```javascript
-const { startMeasure, endMeasure, metrics } = usePerformance();
-
-startMeasure('render');
-// ... expensive operation
-endMeasure('render');
-
-console.log(metrics.render); // { duration: 123, count: 1 }
-```
-
----
-
-### useI18n
-
-Location: [`src/hooks/useI18n.jsx`](../src/hooks/useI18n.jsx)
-
-Internationalisation hook for multi-language support.
-
-#### Usage
-
-```javascript
-const { t, locale, setLocale, availableLocales } = useI18n();
-```
-
-#### Return Values
-
-- `t` (Function) - Translation function
-- `locale` (String) - Current locale code
-- `setLocale` (Function) - Change current locale
-- `availableLocales` (Array) - List of available locale codes
-
-**Example:**
-```javascript
-const { t, locale, setLocale } = useI18n();
-
-// Get translation
-const title = t('app.title'); // "PictoForge"
-
-// Change language
-setLocale('es'); // Switch to Spanish
-```
-
----
-
-## Components
-
-### SVGViewer
-
-Location: [`src/components/SVGViewer.jsx`](../src/components/SVGViewer.jsx)
-
-Main SVG viewer component with interactive editing tools.
-
-#### Props
-
-```javascript
-<SVGViewer
-  svgContent={string}
-  selectedElement={object}
-  onElementSelect={function}
-  onSVGUpdate={function}
-  tool={string}
-  onToolChange={function}
-/>
-```
-
-**Props:**
-- `svgContent` (String, required) - SVG markup to display
-- `selectedElement` (Object, optional) - Currently selected element
-- `onElementSelect` (Function, optional) - Callback when element is selected
-  - Signature: `(element: Object) => void`
-- `onSVGUpdate` (Function, optional) - Callback when SVG is modified
-  - Signature: `(newContent: String) => void`
-- `tool` (String, optional) - Active tool: `'select'` | `'node'` | `'pen'`
-- `onToolChange` (Function, optional) - Callback when tool changes
-  - Signature: `(tool: String) => void`
-
-#### Refs
-
-Exposes refs for:
-- `svgRef` - Reference to SVG element
-- `containerRef` - Reference to container element
-- `overlayRef` - Reference to overlay SVG
-
----
-
-### SVGHierarchy
-
-Location: [`src/components/SVGHierarchy.jsx`](../src/components/SVGHierarchy.jsx)
-
-Tree view component for SVG element hierarchy.
-
-#### Props
-
-```javascript
-<SVGHierarchy
-  svgData={object}
-  selectedElement={object}
-  expandedElements={Set}
-  onElementSelect={function}
-  onToggleExpand={function}
-/>
-```
-
-**Props:**
-- `svgData` (Object, required) - Parsed SVG data structure
-- `selectedElement` (Object, optional) - Currently selected element
-- `expandedElements` (Set, optional) - Set of expanded element IDs
-- `onElementSelect` (Function, required) - Element selection callback
-  - Signature: `(element: Object) => void`
-- `onToggleExpand` (Function, optional) - Toggle expansion callback
-  - Signature: `(elementId: String) => void`
-
----
-
-### BoundingBox
-
-Location: [`src/components/BoundingBox.jsx`](../src/components/BoundingBox.jsx)
-
-Interactive bounding box with resize and rotation handles.
-
-#### Props
-
-```javascript
-<BoundingBox
-  element={object}
-  visible={boolean}
-  onResize={function}
-  onMove={function}
-  onRotate={function}
-/>
-```
-
-**Props:**
-- `element` (Object, required) - Element to show bounding box for
-- `visible` (Boolean, optional) - Whether to show the bounding box
-- `onResize` (Function, optional) - Resize callback
-  - Signature: `(width: Number, height: Number) => void`
-- `onMove` (Function, optional) - Move callback
-  - Signature: `(dx: Number, dy: Number) => void`
-- `onRotate` (Function, optional) - Rotation callback
-  - Signature: `(angle: Number) => void`
-
----
-
-### NodeEditor
-
-Location: [`src/components/NodeEditor.jsx`](../src/components/NodeEditor.jsx)
-
-Path node editing component for manipulating Bézier curves.
-
-#### Props
-
-```javascript
-<NodeEditor
-  element={object}
-  visible={boolean}
-  tool={string}
-  onNodeChange={function}
-  onNodeAdd={function}
-  onNodeRemove={function}
-/>
-```
-
-**Props:**
-- `element` (Object, required) - Path element to edit
-- `visible` (Boolean, optional) - Whether to show node editor
-- `tool` (String, optional) - Current tool: `'node'` | `'pen'`
-- `onNodeChange` (Function, optional) - Node modification callback
-  - Signature: `(nodeIndex: Number, x: Number, y: Number) => void`
-- `onNodeAdd` (Function, optional) - Add node callback
-  - Signature: `(x: Number, y: Number) => void`
-- `onNodeRemove` (Function, optional) - Remove node callback
-  - Signature: `(nodeIndex: Number) => void`
-
----
-
-### StylePanel
-
-Location: [`src/components/StylePanel.jsx`](../src/components/StylePanel.jsx)
-
-CSS style management panel.
-
-#### Props
-
-```javascript
-<StylePanel
-  styles={array}
-  selectedElement={object}
-  onStyleChange={function}
-/>
-```
-
-**Props:**
-- `styles` (Array, required) - Available CSS style definitions
-- `selectedElement` (Object, optional) - Currently selected element
-- `onStyleChange` (Function, required) - Style change callback
-  - Signature: `(element: Object, className: String, action: 'add' | 'remove') => void`
-
----
-
-### CodeView
-
-Location: [`src/components/CodeView.jsx`](../src/components/CodeView.jsx)
-
-Editable code view with syntax highlighting.
-
-#### Props
-
-```javascript
-<CodeView
-  svgContent={string}
-  selectedElement={object}
-  onSVGUpdate={function}
-/>
-```
-
-**Props:**
-- `svgContent` (String, required) - SVG markup to display
-- `selectedElement` (Object, optional) - Currently selected element (for highlighting)
-- `onSVGUpdate` (Function, required) - Callback when code is modified
-  - Signature: `(newContent: String) => void`
-
----
-
-## Utilities
-
-### svgManipulation
-
-Location: [`src/utils/svgManipulation.js`](../src/utils/svgManipulation.js)
-
-Utility functions for SVG manipulation.
-
-#### Functions
-
-##### `parseTransform(transformString)`
-
-Parses an SVG transform string into an object.
-
-**Parameters:**
-- `transformString` (String) - Transform attribute value
-
-**Returns:**
-- `Object` - Parsed transform with properties like `translate`, `rotate`, `scale`
-
-**Example:**
-```javascript
-const transform = parseTransform('translate(10, 20) rotate(45)');
-// { translate: [10, 20], rotate: [45] }
-```
-
-##### `applyTransform(element, transform)`
-
-Applies a transform object to an element.
-
-**Parameters:**
-- `element` (SVGElement) - Element to transform
-- `transform` (Object) - Transform specification
-
-##### `getElementPath(element)`
-
-Gets the d attribute of a path element as parsed commands.
-
-**Parameters:**
-- `element` (SVGElement) - Path element
-
-**Returns:**
-- `Array` - Array of path commands
-
-##### `setElementPath(element, commands)`
-
-Sets the d attribute of a path element from commands.
-
-**Parameters:**
-- `element` (SVGElement) - Path element
-- `commands` (Array) - Array of path commands
-
-##### `duplicateElement(element)`
-
-Creates a duplicate of an element.
-
-**Parameters:**
-- `element` (SVGElement) - Element to duplicate
-
-**Returns:**
-- `SVGElement` - Cloned element
-
-##### `removeElement(element)`
-
-Removes an element from the DOM.
-
-**Parameters:**
-- `element` (SVGElement) - Element to remove
-
----
-
-## Type Definitions
-
-### Element Object
-
-```typescript
-interface Element {
-  id: string;
-  tagName: string;
-  attributes: { [key: string]: string };
-  children: Element[];
-  parent: Element | null;
-  domNode: SVGElement;
-}
-```
-
-### SVG Data Structure
-
-```typescript
-interface SVGData {
-  root: {
-    tagName: 'svg';
-    attributes: { [key: string]: string };
-  };
-  styles: Array<{
-    selector: string;
-    properties: { [key: string]: string };
-  }>;
-  elements: Element[];
-}
-```
-
-### Viewport State
-
-```typescript
-interface ViewportState {
-  scale: number;  // Zoom level (1 = 100%)
-  x: number;      // Pan X in pixels
-  y: number;      // Pan Y in pixels
-}
-```
-
----
-
-## Error Handling
-
-All API functions should handle errors gracefully. Common error scenarios:
-
-1. **Invalid SVG Content**: `parseSVG()` returns null for invalid content
-2. **Element Not Found**: `findElementById()` returns null
-3. **Invalid Coordinates**: Coordinate transformation functions return `{ x: 0, y: 0 }` on error
-4. **Missing Refs**: Hooks check for ref validity before operations
-
-**Example Error Handling:**
-
-```javascript
-try {
-  const svgData = parseSVG(content);
-  if (!svgData) {
-    console.error('Failed to parse SVG');
-    return;
-  }
-  // ... proceed with valid data
-} catch (error) {
-  console.error('SVG parsing error:', error);
-}
-```
-
----
-
-## Best Practices
-
-1. **Coordinate Transformations**: Always use SVGWorld for coordinate conversions, never manual calculations
-2. **State Updates**: Use the history hook for all state changes that should be undoable
-3. **Performance**: Use the performance hook to identify bottlenecks in development
-4. **Element Selection**: Always update both the hierarchy and viewer when selection changes
-5. **SVG Modifications**: Always update through the proper callbacks to maintain synchronisation
-
----
-
-## Testing
-
-API functions should be tested with:
-
-```javascript
-import { describe, it, expect } from 'vitest';
-import { useSVGParser } from '../hooks/useSVGParser';
-
-describe('useSVGParser', () => {
-  it('should parse valid SVG content', () => {
-    const { parseSVG } = useSVGParser();
-    const content = '<svg><rect id="test" /></svg>';
-    const result = parseSVG(content);
-
-    expect(result).not.toBeNull();
-    expect(result.root.tagName).toBe('svg');
-  });
-});
-```
-
-See [`src/tests/`](../src/tests/) for more examples.
-
----
-
-## Further Reading
-
-- [System Architecture](architecture.md)
-- [Coordinate System Guide](coordinate-system.md)
-- [ASCII Interface Map](ascii-divmap.md)
+-   **Location:** `src/components/SVGHistory.jsx`
+-   **Description:** A UI component that displays the list of recently saved SVGs from local storage, allowing the user to load, delete, or export them.
+-   **Key Props:** `onLoadSVG`.

@@ -1,166 +1,119 @@
 # PictoForge Architecture
 
-## Overview
+## 1. Overview
 
-PictoForge is an interactive SVG editor built with React that enables direct manipulation of graphical elements with visual and code precision.
+PictoForge is an interactive SVG editor built with React. It enables direct manipulation of graphical elements with both visual and code-based precision. The architecture is designed to be modular, testable, and scalable, separating concerns between UI components, state management hooks, and core logic services.
 
-## Fundamental Problem: Coordinate Transformation
+## 2. Core Problem: Coordinate Transformation
 
-The main challenge in any SVG graphical editor is handling multiple coordinate systems:
+The main challenge in any web-based graphical editor is managing the multiple coordinate systems involved:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  1. Screen Coordinates                                      │
-│     - Browser pixels (clientX, clientY)                    │
-│     - Where the user clicks                                │
-└─────────────────────────────────────────────────────────────┘
-                            ↕
-┌─────────────────────────────────────────────────────────────┐
-│  2. Viewport Coordinates (Pan/Zoom)                         │
-│     - Transformation applied by the user                   │
-│     - scale, translateX, translateY                        │
-└─────────────────────────────────────────────────────────────┘
-                            ↕
-┌─────────────────────────────────────────────────────────────┐
-│  3. SVG Coordinates (viewBox)                               │
-│     - Original SVG coordinate system                       │
-│     - Where element data is stored                         │
-└─────────────────────────────────────────────────────────────┘
-```
+1.  **Screen Coordinates**: The pixel-based coordinate system of the browser window, derived from mouse events (`clientX`, `clientY`).
+2.  **Viewport Coordinates**: The transformed space after applying user-initiated pan and zoom.
+3.  **SVG Coordinates**: The internal coordinate system of the SVG, defined by its `viewBox` attribute. All element data is stored in this space.
 
-## Solution: SVGWorld
+The core of PictoForge's architecture is a system that accurately and efficiently transforms points and deltas between these systems.
 
-`SVGWorld` is a centralised "world" object that acts as an intermediary between all coordinate systems.
+## 3. Core Services
 
-### Location
-- **Class**: `/src/services/SVGWorld.js`
-- **React Hook**: `/src/hooks/useSVGWorld.js`
+The application's logic is built upon a foundation of independent, framework-agnostic services.
 
-### Responsibilities
+### 3.1. `SVGWorld` (The "World" Object)
 
-1. **Coordinate Transformation**
-   - `screenToSVG(x, y)` - Converts screen → SVG
-   - `svgToScreen(x, y)` - Converts SVG → screen
-   - `screenDeltaToSVGDelta(dx, dy)` - Converts deltas for drag and drop
+-   **Location**: `src/services/SVGWorld.js`
+-   **Purpose**: Acts as the central authority for all coordinate transformations and element manipulations. It maintains an in-memory representation of the SVG's state, including its dimensions, `viewBox`, and the current viewport pan/zoom state.
+-   **Key Methods**:
+    -   `screenToSVG(x, y)`: Converts screen coordinates to SVG user-space coordinates.
+    -   `svgToScreen(x, y)`: Converts SVG user-space coordinates back to screen coordinates.
+    -   `screenDeltaToSVGDelta(dx, dy)`: Converts a movement delta (e.g., from a mouse drag) from screen pixels to SVG units, which is crucial for accurate dragging and resizing regardless of zoom level.
+-   **Implementation**: Internally, it uses the browser's native `getScreenCTM()` (Current Transformation Matrix) method, which provides a robust and mathematically precise way to handle all nested SVG and CSS transformations.
 
-2. **Element Manipulation**
-   - `getElementBBox(element)` - Gets bounding box
-   - `moveElement(element, dx, dy)` - Moves elements
-   - `applyTransform(element, transform)` - Applies transformations
+### 3.2. `PathDataProcessor`
 
-3. **World State**
-   - Maintains reference to SVG element
-   - Synchronises with pan/zoom state
-   - Provides unified API
+-   **Location**: `src/services/PathDataProcessor.js`
+-   **Purpose**: A specialized service for parsing and manipulating the `d` attribute of SVG `<path>` elements. It uses the `svg-pathdata` library to convert the path string into an Abstract Syntax Tree (AST).
+-   **Key Features**:
+    -   **Parsing & Normalization**: Converts path commands into a consistent, absolute-coordinate format.
+    -   **Point Access**: Provides direct access to anchor points and Bézier control points (C1, C2, Q1).
+    -   **Manipulation**: Allows for the precise updating of individual points.
+    -   **Regeneration**: Rebuilds the `d` attribute string after modifications.
 
-### Usage
+### 3.3. `SVGOptimizer`
 
-```javascript
-// In a React component
-const {
-  screenToSVG,
-  svgToScreen,
-  moveElement,
-  getElementBBox
-} = useSVGWorld({
-  svgRef: svgContainerRef,
-  containerRef: containerRef,
-  viewport: panzoomState
-});
+-   **Location**: `src/services/SVGOptimizer.js`
+-   **Purpose**: Uses the **SVGO** library to optimize SVG content for export.
+-   **Key Features**:
+    -   Reduces file size by 30-50% on average.
+    -   Configurable `floatPrecision` to reduce decimal places.
+    -   Removes redundant attributes and comments.
+    -   Preserves critical information like IDs, `viewBox`, and accessibility tags (`<title>`, `<desc>`).
+    -   Manages accessibility metadata, ensuring exported SVGs are compliant with WAI-ARIA standards.
 
-// Convert screen click to SVG coordinates
-const handleClick = (e) => {
-  const svgCoords = screenToSVG(e.clientX, e.clientY);
-  console.log('Clicked at SVG coordinates:', svgCoords);
-};
-```
+## 4. React Hooks (State & Logic)
 
-## Technology Stack
+React Hooks adapt the core services for use in the component lifecycle, managing state and providing a clean API to the UI.
 
-### Core
-- **React 19** - UI framework
-- **SVG.js** - SVG manipulation and transformations
-- **@panzoom/panzoom** - Viewport pan and zoom
+-   **`useSVGWorld`**: Provides a reactive interface to the `SVGWorld` service.
+-   **`usePathDataProcessor`**: Manages an instance of `PathDataProcessor` for a given path element, exposing its segments and points as reactive state.
+-   **`usePanzoom`**: A wrapper for the `@panzoom/panzoom` library, handling the state of the viewport (pan and zoom).
+-   **`useMoveable`**: Integrates the `react-moveable` library with `SVGWorld` to handle drag, resize, and rotate events, ensuring transformations are correctly applied in SVG coordinate space.
+-   **`useHistory`**: A generic hook for managing undo/redo state history.
+-   **`useSVGStorage`**: Manages saving and loading SVGs and user configuration to/from `localStorage`.
 
-### Element Manipulation
-- **react-moveable** - Interactive drag, resize, rotate
-- **Custom pathfinding** - Node and Bézier curve editor
+## 5. Component Structure & Data Flow
 
-### UI
-- **Radix UI** - Accessible components
-- **Tailwind CSS** - Styling
-- **Lucide React** - Icons
-
-## Component Structure
+The application follows a clear data flow, from user interaction down to service-level updates.
 
 ```
-App
-├── Container (Main layout)
-│   ├── SVGViewer (Visual editor)
-│   │   ├── usePanzoom (Pan/Zoom)
-│   │   ├── useSVGWorld (Coordinates) ⭐
-│   │   ├── useMoveable (Manipulation)
-│   │   ├── MoveableWrapper (Drag/Resize/Rotate)
-│   │   ├── NodeEditor (Path node editor)
-│   │   └── BoundingBox (Visual bounding box)
-│   │
-│   ├── Hierarchy (Element tree)
-│   └── Properties (Properties panel)
+App.jsx (Top-level state management)
+├── useSVGParser (Loads and parses SVG file)
+├── useSVGStorage (Handles local storage)
 │
-└── TextInput (File upload)
+└─── SVGViewer (Main visual editor)
+     ├── usePanzoom (Manages viewport state)
+     ├── useSVGWorld (Provides coordinate transformation context)
+     │
+     ├─── MoveableWrapper (Handles drag/resize/rotate via react-moveable)
+     │    └── useMoveable (Connects Moveable events to SVGWorld)
+     │
+     └─── BezierHandleEditor (Visual node editor)
+          ├── usePathDataProcessor (Parses and manipulates path data)
+          └── Renders handles using svgToScreen() from useSVGWorld
 ```
 
-## Data Flow
+### Example Flow: Dragging a Node
 
-### 1. SVG Loading
-```
-User → TextInput → useSVGParser → svgData → SVGViewer
-```
+1.  **User Action**: The user clicks and drags a handle in the `BezierHandleEditor`.
+2.  **Event Handler**: A `mousedown` event is captured. On `mousemove`, the new screen coordinates (`clientX`, `clientY`) are read.
+3.  **Coordinate Transformation**: `SVGWorld.screenToSVG()` is called to convert the new screen coordinates into the SVG's internal coordinate space.
+4.  **Path Manipulation**: `PathDataProcessor.updateControlPoint()` is called with the new SVG coordinates. This updates the path's AST in memory.
+5.  **DOM Update**: `PathDataProcessor.toString()` regenerates the `d` attribute string, which is then applied to the `<path>` element in the DOM, causing the visual update.
+6.  **History**: On `mouseup`, the final state of the SVG content is pushed to the `useHistory` stack.
 
-### 2. Element Selection
-```
-Click → SVGViewer → screenToSVG → Identify element → Update state
-```
+## 6. UI Rendering: The Two-Layer System
 
-### 3. Manipulation
-```
-Drag → MoveableWrapper → SVGWorld.screenDeltaToSVGDelta →
-Update transform → Save to history
-```
+To ensure editing controls (like bounding boxes and Bézier handles) remain a constant size regardless of the SVG's zoom level, the UI is rendered in two conceptual layers:
 
-## Internal Coordinate System
+1.  **SVG Content Layer**: This contains the user's SVG content. It is directly transformed by the pan and zoom operations.
+2.  **UI Overlay Layer**: This layer sits on top of the content. Editing controls are rendered here. Their *positions* are calculated by converting SVG coordinates to screen coordinates (`svgToScreen`), but their *size* is defined in fixed CSS pixels (e.g., `width: 8px`). This prevents the handles from shrinking or growing as the user zooms.
 
-`SVGWorld` uses `getScreenCTM()` from the native SVG API to obtain the complete transformation matrix:
+## 7. Accessibility (WAI-ARIA)
 
-```javascript
-// Get the matrix that converts SVG → Screen
-const ctm = svgElement.getScreenCTM();
+Accessibility is a key architectural consideration.
 
-// Convert screen point to SVG
-const svgPoint = svgElement.createSVGPoint();
-svgPoint.x = screenX;
-svgPoint.y = screenY;
-const transformed = svgPoint.matrixTransform(ctm.inverse());
-```
+-   **SVG Export**: The `SVGOptimizer` service ensures that exported SVGs contain proper accessibility metadata, including a `<title>`, `<desc>`, `lang` attribute, and `role="img"`.
+-   **Component Interaction**: Interactive editing components like `BezierHandleEditor` are designed to be fully keyboard-accessible. Handles are treated as buttons (`role="button"`) and are navigable with the `Tab` key and manipulable with arrow keys.
+-   **Screen Reader Support**: `aria-label` attributes and hidden instruction blocks provide context for users of screen readers.
 
-This guarantees mathematical precision even with complex transformations.
+## 8. Technology Stack
 
-## Next Steps
-
-### Pending Refactorings
-1. Migrate `NodeEditor` to use `useSVGWorld` directly
-2. Migrate `BoundingBox` to use `useSVGWorld` directly
-3. Remove duplicate helper functions
-4. Unify `useCoordinateTransformer` with `useSVGWorld`
-
-### New Features
-1. Gradient editor
-2. Mask and clip manipulation
-3. SVG animations
-4. Export to additional formats
-
-## References
-
-- [SVG.js Documentation](https://svgjs.dev/)
-- [SVG Coordinate Systems (MDN)](https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Positions)
-- [getScreenCTM()](https://developer.mozilla.org/en-US/docs/Web/API/SVGGraphicsElement/getScreenCTM)
+-   **UI Framework**: React 19
+-   **Build Tool**: Vite
+-   **Styling**: Tailwind CSS
+-   **Pan & Zoom**: `@panzoom/panzoom`
+-   **Visual Manipulation**: `react-moveable`
+-   **SVG Parsing**: `svg-pathdata`
+-   **SVG Optimization**: `svgo`
+-   **UI Components**: Radix UI
+-   **Icons**: Lucide React
+-   **Testing**: Vitest

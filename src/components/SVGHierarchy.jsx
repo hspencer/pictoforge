@@ -3,13 +3,6 @@ import { ChevronRight, ChevronDown, Circle, Square, Triangle, Plus, Trash2 } fro
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n.jsx';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import DraggableModal from './DraggableModal';
 
 /**
  * Componente para mostrar la jerarquía de elementos SVG
@@ -340,16 +334,23 @@ export const SVGHierarchy = ({
       </div>
 
       {/* Modal de edición de estilos */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{t('editStyle')}</DialogTitle>
-            <DialogDescription>
+      <DraggableModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingStyle(null);
+        }}
+        title={t('editStyle')}
+        width={550}
+        maxHeight={600}
+        storageKey="style-editor"
+        zIndex={60}
+      >
+        {editingStyle && (
+          <div className="p-6">
+            <p className="text-sm text-muted-foreground mb-4">
               {t('editStyleDescription')}
-            </DialogDescription>
-          </DialogHeader>
-
-          {editingStyle && (
+            </p>
             <div className="space-y-4 py-4">
               {/* Nombre del estilo */}
               <div className="space-y-2">
@@ -464,9 +465,9 @@ export const SVGHierarchy = ({
                 </div>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        )}
+      </DraggableModal>
     </div>
   );
 };

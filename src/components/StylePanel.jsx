@@ -1,20 +1,10 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { Palette, Eye, EyeOff, Edit2, Plus, Trash2, GripVertical } from 'lucide-react';
+import { Palette, Eye, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n';
 import PathDebugger from './PathDebugger';
 import SVGMetadataEditor from './SVGMetadataEditor';
-import Draggable from 'react-draggable';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogPortal,
-  DialogOverlay,
-} from '@/components/ui/dialog';
+import DraggableModal from './DraggableModal';
 import {
   Select,
   SelectContent,
@@ -24,13 +14,14 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover } from './ui/popover';
 
 /**
  * Componente para el panel de estilos CSS
  */
 
 export const StylePanel = ({
+  isOpen,
+  onClose,
   svgData,
   selectedElement,
   svgContent,
@@ -174,24 +165,31 @@ export const StylePanel = ({
   const availableStyles = getAvailableStyles();
 
   return (
-    <div className="h-full flex flex-col bg-muted/20">
-      <div className="p-4 border-b bg-background flex items-center justify-between">
-        <h3 className="font-semibold text-sm flex items-center gap-2">
-          <Palette size={16} />
-          {t('styles')}
-        </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCreateNewStyle}
-          className="h-7 w-7 p-0"
-          title={t('createNewStyle')}
-        >
-          <Plus size={14} />
-        </Button>
-      </div>
+    <>
+      <DraggableModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={t('styles')}
+        width={400}
+        maxHeight={700}
+        storageKey="style-panel"
+        zIndex={50}
+      >
+      <div className="flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateNewStyle}
+            className="h-7 px-3"
+            title={t('createNewStyle')}
+          >
+            <Plus size={14} className="mr-1" />
+            {t('createNewStyle')}
+          </Button>
+        </div>
 
-      <div className="flex-1 overflow-auto p-4">
+        <div className="p-4 overflow-auto" style={{ maxHeight: '600px' }}>
         {availableStyles.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             <Palette size={32} className="mx-auto mb-2 opacity-50" />
@@ -294,45 +292,29 @@ export const StylePanel = ({
             </p>
           </div>
         )}
+        </div>
       </div>
+    </DraggableModal>
 
-      {/* Modal de edición de estilos - Draggeable */}
-      {editModalOpen && ReactDOM.createPortal(
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-            onClick={() => setEditModalOpen(false)}
-          />
-
-          {/* Modal Draggeable */}
-          <Draggable
-            handle=".drag-handle"
-            defaultPosition={{
-              x: window.innerWidth / 2 - 250,
-              y: window.innerHeight / 2 - 300
-            }}
-          >
-            <div
-              className="style-panel-modal fixed z-[60] w-[500px] rounded-lg shadow-2xl"
-              style={{
-                left: 0,
-                top: 0,
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: 'var(--popover)',
-              }}
-            >
-              {/* Header con drag handle */}
-              <div className="drag-handle flex items-center gap-2 p-4 border-b cursor-move bg-muted/20">
-                <GripVertical size={16} className="text-muted-foreground" />
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold">{t('editStyle')}</h2>
-                  <p className="text-sm text-muted-foreground">{t('editStyleDescription')}</p>
-                </div>
-              </div>
-
-              {editingStyle && (
-                <div className="space-y-4 p-4 max-h-[600px] overflow-y-auto">
+    {/* Modal de edición de estilos - Draggeable */}
+    <DraggableModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingStyle(null);
+        }}
+        title={t('editStyle')}
+        width={550}
+        maxHeight={650}
+        storageKey="style-panel-editor"
+        zIndex={60}
+      >
+        {editingStyle && (
+          <div className="p-6">
+            <p className="text-sm text-muted-foreground mb-4">
+              {t('editStyleDescription')}
+            </p>
+            <div className="space-y-4">
               {/* Nombre del estilo */}
               <div className="space-y-2">
                 <Label htmlFor="style-name">{t('styleName')}</Label>
@@ -472,15 +454,12 @@ export const StylePanel = ({
                         {t('saveChanges')}
                       </Button>
                     </div>
-                  </div>
                 </div>
-              )}
+              </div>
             </div>
-          </Draggable>
-        </>,
-        document.body
-      )}
-    </div>
+        )}
+    </DraggableModal>
+    </>
   );
 };
 

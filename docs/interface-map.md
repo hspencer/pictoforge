@@ -1,13 +1,13 @@
-## Mapa de la Interfaz (ASCII DivMap)
+## Interface Map (ASCII DivMap)
 
-Esta es la estructura completa de la interfaz de PictoForge con todos los nombres de componentes:
+This is the complete interface structure of PictoForge with all component names:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ HEADER [<header>]                                                               │
 │ ┌─────────────────────────────────────────┬─────────────────────────────────┐   │
 │ │ App Title + Subtitle                    │ Locale + ThemeToggle            │   │
-│ │ "PictoForge" │ "Editor SVG Semántico"   │ [Button:   Sun/Moon]            │   │
+│ │ "PictoForge" │ "Semantic SVG Editor"    │ [Button:   Sun/Moon]            │   │
 │ └─────────────────────────────────────────┴─────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
@@ -54,7 +54,7 @@ Esta es la estructura completa de la interfaz de PictoForge con todos los nombre
 │ │ │ STYLEPANEL                     │ │ │ │ SVG Content [svgRef]           │ ││  │
 │ │ │ [StylePanel Component]         │ │ │ │ • zoom + pan applied           │ ││  │
 │ │ │                                │ │ │ │ • dangerouslySetInnerHTML      │ ││  │
-│ │ │ Header: "Estilos CSS"          │ │ │ │ • onClick: handleElementClick  │ ││  │
+│ │ │ Header: "CSS Styles"           │ │ │ │ • onClick: handleElementClick  │ ││  │
 │ │ │                                │ │ │ │                                │ ││  │
 │ │ │ Styles List:                   │ │ │ │ Overlay [overlayRef, <svg>]    │ ││  │
 │ │ │ • Available CSS classes        │ │ │ │ • pointer-events-none          │ ││  │
@@ -98,14 +98,14 @@ Esta es la estructura completa de la interfaz de PictoForge con todos los nombre
 │                                        │ │ • Editable SVG code            │ ││  │
 │                                        │ │ • onSVGUpdate callback         │ ││  │
 │                                        │ │ • selectedElement highlight    │ ││  │
-│                                        │ └────────────────────────────────┘ ││  │
+│                                        │ │ └────────────────────────────────┘ ││  │
 │                                        └────────────────────────────────────┘┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ FOOTER [<footer>]                                                               │
 │ ┌─────────────────────────────────────────┬─────────────────────────────────┐   │
-│ │ Stats: "N estilos" │ "Elemento: id"     │ "Versión 0.0.1"                 │   │
+│ │ Stats: "N styles" │ "Element: id"     │ "Version 0.0.1"                 │   │
 │ └─────────────────────────────────────────┴─────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
