@@ -57,6 +57,43 @@ function AppContent() {
         if (result && result.success) {
           console.log('✓ SVG de ejemplo cargado al iniciar la app');
           setCurrentText('SVG de ejemplo cargado');
+
+          // DEMO: Cargar un schema de ejemplo después de 1 segundo
+          setTimeout(() => {
+            const exampleSchema = {
+              utterance: "make the bed",
+              lang: "en",
+              metadata: {
+                speech_act: "directive",
+                intent: "request"
+              },
+              frames: [
+                {
+                  id: "f1",
+                  frame_name: "Directed_action",
+                  lexical_unit: "make",
+                  roles: {
+                    Agent: { type: "Addressee", ref: "you", surface: "you" },
+                    Theme: { type: "Object", lemma: "bed", surface: "the bed" }
+                  }
+                }
+              ],
+              logical_form: {
+                event: "make(you, bed)",
+                modality: "want(I, event)"
+              },
+              visual_guidelines: {
+                focus_actor: "you",
+                context: "bedroom",
+                temporal: "immediate"
+              }
+            };
+
+            console.log('📋 Cargando NLU Schema de ejemplo...');
+            setNluSchema(exampleSchema);
+            setSchemaStatus('ready');
+            setCurrentText('✓ Pictogram with NLU Schema loaded');
+          }, 1000);
         } else {
           console.error('✗ Error al cargar SVG de ejemplo:', result?.error);
         }
