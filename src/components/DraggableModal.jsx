@@ -81,7 +81,13 @@ export const DraggableModal = ({
     }
   }, [isOpen, width, maxHeight, storageKey, defaultPosition]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('🚫 DraggableModal: isOpen =', isOpen, '- NOT rendering. Title:', title);
+    return null;
+  }
+
+  console.log('✅ DraggableModal: isOpen =', isOpen, '- RENDERING. Title:', title, 'Position:', position, 'zIndex:', zIndex);
+  console.log('📍 Portal target:', document.body, 'Children count:', document.body?.children.length);
 
   /**
    * Maneja el cambio de posición durante el arrastre
@@ -99,6 +105,9 @@ export const DraggableModal = ({
     }
   };
 
+  console.log('🚪 Creando portal con ReactDOM.createPortal...');
+
+  // TEMPORAL: Usar modal fijo sin draggable para debugging
   return ReactDOM.createPortal(
     <>
       {/* Overlay */}
@@ -110,54 +119,42 @@ export const DraggableModal = ({
         />
       )}
 
-      {/* Modal Draggable */}
-      <Draggable
-        nodeRef={nodeRef}
-        handle=".drag-handle"
-        position={position}
-        onDrag={handleDrag}
-        onStart={() => setIsDragging(true)}
-        onStop={() => setIsDragging(false)}
-        bounds="parent"
+      {/* Modal FIJO (sin draggable temporalmente) */}
+      <div
+        ref={nodeRef}
+        className="fixed bg-popover border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden"
+        style={{
+          width: `${width}px`,
+          maxHeight: `${maxHeight}px`,
+          zIndex: zIndex + 10,
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          ref={nodeRef}
-          className={`
-            fixed bg-popover border border-border rounded-lg shadow-2xl
-            flex flex-col overflow-hidden
-            transition-shadow duration-200
-            ${isDragging ? 'shadow-2xl cursor-grabbing' : 'cursor-default'}
-          `}
-          style={{
-            width: `${width}px`,
-            maxHeight: `${maxHeight}px`,
-            zIndex: zIndex + 10
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header con drag handle */}
-          <div className="drag-handle flex items-center justify-between p-4 border-b bg-muted/20 cursor-grab active:cursor-grabbing">
-            <div className="flex items-center gap-2">
-              <GripVertical size={18} className="text-muted-foreground" />
-              <h2 className="text-lg font-semibold">{title}</h2>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
-              title="Cerrar"
-            >
-              <X size={18} />
-            </Button>
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b bg-muted/20">
+          <div className="flex items-center gap-2">
+            <GripVertical size={18} className="text-muted-foreground" />
+            <h2 className="text-lg font-semibold">{title}</h2>
           </div>
-
-          {/* Contenido */}
-          <div className="flex-1 overflow-auto">
-            {children}
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+            title="Cerrar"
+          >
+            <X size={18} />
+          </Button>
         </div>
-      </Draggable>
+
+        {/* Contenido */}
+        <div className="flex-1 overflow-auto">
+          {children}
+        </div>
+      </div>
     </>,
     document.body
   );

@@ -12,6 +12,7 @@ import SVGViewer from './components/SVGViewer';
 import CodeView from './components/CodeView';
 import FileLoadDemo from './components/FileLoadDemo';
 import SettingsView from './components/SettingsView';
+import EntityEditDialog from './semantic/components/EntityEditDialog';
 import './App.css';
 
 // Importar el SVG de ejemplo
@@ -31,6 +32,7 @@ function AppContent() {
   const [nluSchema, setNluSchema] = useState(null);
   const [schemaStatus, setSchemaStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'editing'
   const [schemaError, setSchemaError] = useState(null);
+  const [entityEditDialog, setEntityEditDialog] = useState({ isOpen: false, entity: null });
 
   const {
     svgData,
@@ -167,6 +169,36 @@ function AppContent() {
       console.error('✗ Error generando pictograma:', error);
       setSchemaError(`Error: ${error.message}`);
     }
+  };
+
+  /**
+   * Abre el dialog de edición para una entidad específica
+   */
+  const handleEntityDoubleClick = (entity) => {
+    console.log('🔍 Abriendo editor de entidad:', entity);
+    setEntityEditDialog({ isOpen: true, entity });
+  };
+
+  /**
+   * Actualiza la entidad (cambio de nombre/ID)
+   */
+  const handleUpdateEntity = (updatedEntity) => {
+    console.log('✏️ Actualizando entidad:', updatedEntity);
+    // TODO: Implementar actualización de entidad en el SVG (Fase 2.4)
+    // Por ahora solo cerramos el dialog
+    setEntityEditDialog({ isOpen: false, entity: null });
+  };
+
+  /**
+   * Regenera una entidad específica usando PictoNet API
+   */
+  const handleRegenerateEntity = async ({ entity, prompt }) => {
+    console.log('🔄 Regenerando entidad:', entity, 'con prompt:', prompt);
+    // TODO: Implementar regeneración con PictoNet API (Fase 2.4)
+    // Placeholder: simular delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('✓ Entidad regenerada (simulado)');
+    return true;
   };
 
   /**
@@ -371,7 +403,10 @@ function AppContent() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowSettings(true)}
+            onClick={() => {
+              console.log('⚙️ Click en Settings. showSettings antes:', showSettings);
+              setShowSettings(true);
+            }}
             title="Opciones"
           >
             <Settings size={16} />
@@ -430,6 +465,7 @@ function AppContent() {
               svgData={svgData}
               selectedElement={selectedElement}
               onElementSelect={handleElementSelect}
+              onEntityDoubleClick={handleEntityDoubleClick}
               expandedElements={expandedElements}
               onToggleExpand={handleToggleExpand}
               onStyleChange={handleStyleChange}
@@ -500,6 +536,15 @@ function AppContent() {
         onClose={() => setShowSettings(false)}
         config={userConfig}
         onSave={handleSaveSettings}
+      />
+
+      {/* Entity Edit Dialog */}
+      <EntityEditDialog
+        isOpen={entityEditDialog.isOpen}
+        onClose={() => setEntityEditDialog({ isOpen: false, entity: null })}
+        entity={entityEditDialog.entity}
+        onUpdateEntity={handleUpdateEntity}
+        onRegenerateEntity={handleRegenerateEntity}
       />
     </Container>
   );

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -56,7 +56,7 @@ export const SVGViewer = ({
   // Opciones para Panzoom, memoizadas para evitar recreación
   const panzoomOptions = useMemo(() => ({
     maxScale: 10,
-    minScale: 0.1,
+    minScale: 0.05, // Permitir zoom out hasta 5% para compensar la escala inicial
     step: 0.3,
     startScale: 1,
     canvas: true,
@@ -76,10 +76,96 @@ export const SVGViewer = ({
     panzoomOptions,
   });
 
-  // Sincronizar el valor del input de zoom con el estado de panzoom
-  useEffect(() => {
-    setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
+  // Función para calcular el zoom real considerando la escala inicial del SVG
+  const calculateRealZoom = useCallback(() => {
+    const svgElement = svgContainerRef.current?.querySelector('svg');
+    if (!svgElement) {
+      setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
+      return;
+    }
+
+    // Obtener el viewBox del SVG (tamaño lógico original)
+    const viewBox = svgElement.viewBox.baseVal;
+    if (!viewBox || viewBox.width === 0) {
+      setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
+      return;
+    }
+
+    // Obtener el tamaño renderizado del SVG
+    const bbox = svgElement.getBoundingClientRect();
+
+    // Calcular la escala inicial (cuánto se amplió el SVG para llenar el contenedor)
+    const initialScale = bbox.width / viewBox.width;
+
+    // El zoom real es: escala de panzoom * escala inicial
+    const realZoom = panzoomState.scale * initialScale;
+
+    setZoomInputValue(`${Math.round(realZoom * 100)}%`);
   }, [panzoomState.scale]);
+
+  // Recalcular zoom cuando cambia la escala de panzoom o el contenido SVG
+  useEffect(() => {
+    calculateRealZoom();
+  }, [calculateRealZoom, svgContent]);
+
+  // Recalcular zoom cuando cambia el tamaño de la ventana
+  useEffect(() => {
+    const handleResize = () => {
+      calculateRealZoom();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [calculateRealZoom]);
+
+  // Establecer tamaño inicial del SVG para que llene el contenedor
+  useEffect(() => {
+    if (!svgContent) return;
+
+    const svgElement = svgContainerRef.current?.querySelector('svg');
+    const container = svgContainerRef.current;
+
+    if (!svgElement || !container) return;
+
+    // Obtener el viewBox del SVG
+    const viewBox = svgElement.viewBox.baseVal;
+    if (!viewBox || viewBox.width === 0 || viewBox.height === 0) return;
+
+    // Obtener dimensiones del contenedor
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+
+    // Calcular el aspecto del viewBox y del contenedor
+    const viewBoxAspect = viewBox.width / viewBox.height;
+    const containerAspect = containerWidth / containerHeight;
+
+    // Calcular el tamaño que hace que el SVG llene el contenedor manteniendo proporción
+    let svgWidth, svgHeight;
+    if (viewBoxAspect > containerAspect) {
+      // SVG es más ancho - ajustar por ancho
+      svgWidth = containerWidth * 0.8; // 80% del contenedor para dejar margen
+      svgHeight = svgWidth / viewBoxAspect;
+    } else {
+      // SVG es más alto - ajustar por alto
+      svgHeight = containerHeight * 0.8; // 80% del contenedor para dejar margen
+      svgWidth = svgHeight * viewBoxAspect;
+    }
+
+    // Establecer tamaño inicial del SVG
+    svgElement.setAttribute('width', svgWidth);
+    svgElement.setAttribute('height', svgHeight);
+
+    console.log('📐 Tamaño inicial del SVG establecido:', {
+      viewBox: `${viewBox.width}x${viewBox.height}`,
+      container: `${containerWidth}x${containerHeight}`,
+      svg: `${svgWidth}x${svgHeight}`,
+      scale: svgWidth / viewBox.width
+    });
+
+    // Recalcular zoom después de establecer el tamaño
+    setTimeout(calculateRealZoom, 0);
+  }, [svgContent, calculateRealZoom]);
 
   // Sistema unificado de coordenadas y manipulación con SVGWorld
   const {

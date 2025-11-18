@@ -34,7 +34,12 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
   const [editingStyleIndex, setEditingStyleIndex] = useState(null);
   const [importError, setImportError] = useState(null);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    console.log('❌ SettingsView: isOpen =', isOpen, '- NOT rendering');
+    return null;
+  }
+
+  console.log('✅ SettingsView: isOpen =', isOpen, '- RENDERING');
 
   /**
    * Actualiza un campo de configuración

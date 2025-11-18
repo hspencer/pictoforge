@@ -25,8 +25,22 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
    * Inicializa panzoom en el elemento
    */
   useEffect(() => {
-    if (!element || panzoomInstanceRef.current) {
+    if (!element) {
       return;
+    }
+
+    // Destruir instancia anterior si existe (para reinicializar con nuevas opciones)
+    if (panzoomInstanceRef.current) {
+      const panzoom = panzoomInstanceRef.current;
+      const parent = element.parentElement;
+
+      if (parent) {
+        parent.removeEventListener('wheel', panzoom.zoomWithWheel);
+      }
+
+      panzoom.destroy();
+      panzoomInstanceRef.current = null;
+      setIsReady(false);
     }
 
     // Configuración por defecto de panzoom
@@ -79,7 +93,11 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
 
       setIsReady(true);
 
-      console.log('✅ Panzoom inicializado correctamente con soporte para wheel, trackpad y touch');
+      console.log('✅ Panzoom inicializado correctamente con soporte para wheel, trackpad y touch', {
+        minScale: defaultOptions.minScale,
+        maxScale: defaultOptions.maxScale,
+        step: defaultOptions.step
+      });
 
       // Cleanup
       return () => {
