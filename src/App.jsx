@@ -483,6 +483,7 @@ function AppContent() {
               svgData={svgData}
               selectedElement={selectedElement}
               onElementSelect={handleElementSelect}
+              onEntityDoubleClick={handleEntityDoubleClick}
               expandedElements={expandedElements}
               onToggleExpand={handleToggleExpand}
               onStyleChange={handleStyleChange}

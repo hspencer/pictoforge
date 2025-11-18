@@ -26,6 +26,7 @@ export const SVGHierarchy = ({
   svgData,
   selectedElement,
   onElementSelect,
+  onEntityDoubleClick,
   expandedElements = new Set(),
   onToggleExpand,
   onStyleChange,
@@ -200,7 +201,7 @@ export const SVGHierarchy = ({
 
     return (
       <div key={element.id} className="select-none">
-        <div 
+        <div
           className={`
             flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200
             hover:bg-accent hover:text-accent-foreground
@@ -208,6 +209,13 @@ export const SVGHierarchy = ({
           `}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={() => onElementSelect(element, true)}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            if (onEntityDoubleClick) {
+              console.log('🖱️ Doble-clic en elemento:', element.id);
+              onEntityDoubleClick(element);
+            }
+          }}
         >
           {/* Botón de expansión */}
           {hasChildren && (

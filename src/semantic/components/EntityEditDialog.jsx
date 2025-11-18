@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Sparkles, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,49 @@ export const EntityEditDialog = ({
   const [localName, setLocalName] = useState('');
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
+
+  /**
+   * Genera el preview SVG del elemento
+   */
+  const svgPreview = useMemo(() => {
+    if (!entity?.element) {
+      console.warn('⚠️ Entity no tiene elemento DOM asociado');
+      return null;
+    }
+
+    try {
+      // Obtener el elemento DOM real
+      const domElement = entity.element;
+
+      // Obtener el bounding box del elemento
+      const bbox = domElement.getBBox();
+
+      // Agregar padding al viewBox (10% en cada lado)
+      const padding = Math.max(bbox.width, bbox.height) * 0.1;
+      const viewBoxX = bbox.x - padding;
+      const viewBoxY = bbox.y - padding;
+      const viewBoxWidth = bbox.width + padding * 2;
+      const viewBoxHeight = bbox.height + padding * 2;
+
+      // Clonar el elemento para no modificar el original
+      const clonedElement = domElement.cloneNode(true);
+
+      // Obtener el HTML del elemento
+      const elementHTML = clonedElement.outerHTML;
+
+      console.log('📐 BBox calculado:', bbox, 'ViewBox:', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+
+      return {
+        viewBox: `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`,
+        innerHTML: elementHTML,
+        width: viewBoxWidth,
+        height: viewBoxHeight
+      };
+    } catch (error) {
+      console.error('❌ Error generando preview SVG:', error);
+      return null;
+    }
+  }, [entity]);
 
   // Sincronizar nombre cuando cambia la entidad
   useEffect(() => {
@@ -75,16 +118,34 @@ export const EntityEditDialog = ({
             Entity Preview
           </h3>
           <div className="bg-background border rounded p-4 flex items-center justify-center min-h-[120px]">
-            {/* TODO: Renderizar preview del elemento SVG aislado */}
-            <div className="text-muted-foreground text-sm">
-              <code className="text-xs">
-                &lt;{entity.tagName} id="{entity.id}" /&gt;
-              </code>
-            </div>
+            {svgPreview ? (
+              <svg
+                viewBox={svgPreview.viewBox}
+                className="max-w-full max-h-[200px] w-auto h-auto"
+                style={{
+                  aspectRatio: `${svgPreview.width} / ${svgPreview.height}`
+                }}
+                dangerouslySetInnerHTML={{ __html: svgPreview.innerHTML }}
+              />
+            ) : (
+              <div className="text-muted-foreground text-sm text-center">
+                <code className="text-xs block mb-1">
+                  &lt;{entity.tagName} id="{entity.id}" /&gt;
+                </code>
+                <p className="text-xs">
+                  {entity.element ? 'Error al generar preview' : 'No hay elemento DOM disponible'}
+                </p>
+              </div>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Tag: <strong>{entity.tagName}</strong> |
             Children: <strong>{entity.children?.length || 0}</strong>
+            {svgPreview && (
+              <>
+                {' | '}Size: <strong>{Math.round(svgPreview.width)}×{Math.round(svgPreview.height)}</strong>
+              </>
+            )}
           </p>
         </section>
 
