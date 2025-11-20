@@ -2,10 +2,14 @@ import { useCallback, useRef, useState } from 'react';
 
 /**
  * Hook para integrar Moveable con transformaciones SVG
- * Maneja los eventos de drag, resize y rotate usando el CoordinateTransformer
+ * Maneja los eventos de drag, resize y rotate usando SVGWorld
+ *
+ * NOTA: Este hook actualmente no se usa en la interfaz principal.
+ * Las transformaciones se manejan inline en SVGViewer para mayor simplicidad.
+ * Se mantiene como utilidad para futuros usos.
  *
  * @param {Object} options - Opciones de configuración
- * @param {Object} options.coordinateTransformer - Instancia del CoordinateTransformer
+ * @param {Object} options.coordinateTransformer - Instancia de SVGWorld (del hook useSVGWorld)
  * @param {Function} options.onTransformStart - Callback al iniciar transformación
  * @param {Function} options.onTransform - Callback durante transformación
  * @param {Function} options.onTransformEnd - Callback al finalizar transformación
@@ -112,7 +116,12 @@ export function useMoveable({
     let deltaY = e.beforeTranslate[1];
 
     // Si tenemos coordinateTransformer, convertir delta
-    if (coordinateTransformer?.screenDeltaToSvgDelta) {
+    if (coordinateTransformer?.screenDeltaToSVGDelta) {
+      const svgDelta = coordinateTransformer.screenDeltaToSVGDelta(deltaX, deltaY);
+      deltaX = svgDelta.dx;
+      deltaY = svgDelta.dy;
+    } else if (coordinateTransformer?.screenDeltaToSvgDelta) {
+      // Fallback para compatibilidad temporal (aunque vamos a borrar el otro servicio)
       const svgDelta = coordinateTransformer.screenDeltaToSvgDelta(deltaX, deltaY);
       deltaX = svgDelta.dx;
       deltaY = svgDelta.dy;

@@ -1,16 +1,17 @@
 /**
  * Utilidades para manipulación de elementos SVG
+ *
+ * NOTA IMPORTANTE:
+ * Para transformaciones de coordenadas (screenToSVG, svgToScreen, etc.) y manipulación
+ * de transformaciones (move, rotate, scale), usar SVGWorld en lugar de estas funciones.
+ *
+ * Este archivo mantiene solo utilidades específicas para:
+ * - Parsing de paths (parsePathNodes, buildPathFromNodes)
+ * - Manipulación de paths (updateNodeInPath, addNodeToPath, removeNodeFromPath)
+ * - Parsing de transforms (parseTransform, serializeTransform)
+ *
+ * Ver: src/services/SVGWorld.js y src/hooks/useSVGWorld.js
  */
-
-// Re-exportar funciones de transformación de coordenadas para conveniencia
-// NOTA: coordinateTransform.js no existe actualmente, comentado temporalmente
-// export {
-//   screenToSVGCoordinates,
-//   svgToScreenCoordinates,
-//   screenDeltaToSVGDelta,
-//   getClosestPointOnPath,
-//   useCoordinateTransform
-// } from './coordinateTransform';
 
 // Re-exportar funciones de codificación de paths para conveniencia
 export {
@@ -28,31 +29,6 @@ export {
   buildPathString,
   formatNumber
 } from './pathEncoding';
-
-/**
- * Obtiene el bounding box de un elemento SVG en coordenadas SVG locales
- */
-export const getElementBBox = (element) => {
-  if (!element) return null;
-
-  try {
-    if (element.getBBox) {
-      return element.getBBox();
-    }
-
-    // Fallback para elementos que no tienen getBBox
-    const rect = element.getBoundingClientRect();
-    return {
-      x: rect.left,
-      y: rect.top,
-      width: rect.width,
-      height: rect.height
-    };
-  } catch (error) {
-    console.warn('Error getting bounding box:', error);
-    return { x: 0, y: 0, width: 100, height: 100 };
-  }
-};
 
 /**
  * Parsea el atributo transform de un elemento SVG y devuelve un objeto con las transformaciones
@@ -83,96 +59,38 @@ export const serializeTransform = (transforms) => {
     .join(' ');
 };
 
-/**
- * Aplica una transformación a un elemento SVG
- */
-export const applyTransform = (element, transform) => {
-  if (!element) return;
-
-  element.setAttribute('transform', transform);
-};
-
-/**
- * Mueve un elemento SVG
- */
-export const moveElement = (element, deltaX, deltaY) => {
-  if (!element) return;
-
-  const currentTransform = element.getAttribute('transform') || '';
-  const transforms = parseTransform(currentTransform);
-
-  // Actualizar o agregar translate
-  if (transforms.translate) {
-    transforms.translate[0] += deltaX;
-    transforms.translate[1] += deltaY;
-  } else {
-    transforms.translate = [deltaX, deltaY];
-  }
-
-  applyTransform(element, serializeTransform(transforms));
-};
-
-/**
- * Escala un elemento SVG
- */
-export const scaleElement = (element, scaleX, scaleY, originX = 0, originY = 0) => {
-  if (!element) return;
-
-  const currentTransform = element.getAttribute('transform') || '';
-  const transforms = parseTransform(currentTransform);
-
-  // Actualizar o agregar scale
-  if (transforms.scale) {
-    transforms.scale[0] *= scaleX;
-    transforms.scale[1] *= scaleY;
-  } else {
-    transforms.scale = [scaleX, scaleY];
-  }
-
-  applyTransform(element, serializeTransform(transforms));
-};
-
-/**
- * Rota un elemento SVG
- */
-export const rotateElement = (element, angle, originX = 0, originY = 0) => {
-  if (!element) return;
-
-  const currentTransform = element.getAttribute('transform') || '';
-  const transforms = parseTransform(currentTransform);
-
-  // Actualizar o agregar rotate
-  if (transforms.rotate) {
-    transforms.rotate[0] += angle;
-    // Mantener el origen de rotación
-    if (transforms.rotate.length === 3) {
-      transforms.rotate[1] = originX;
-      transforms.rotate[2] = originY;
-    } else {
-      transforms.rotate = [transforms.rotate[0], originX, originY];
-    }
-  } else {
-    transforms.rotate = [angle, originX, originY];
-  }
-
-  applyTransform(element, serializeTransform(transforms));
-};
+// ============================================================================
+// FUNCIONES DE MANIPULACIÓN DE PATHS
+// Para manipulación de transformaciones, usar SVGWorld en su lugar
+// ============================================================================
 
 /**
  * Parsea un path SVG y extrae los nodos
  */
 export const parsePathNodes = (pathData) => {
   if (!pathData) return [];
-  
+
   const nodes = [];
   const commands = pathData.match(/[MmLlHhVvCcSsQqTtAaZz][^MmLlHhVvCcSsQqTtAaZz]*/g) || [];
-  
+
+  // Logging diagnóstico para debug
+  console.log('🔍 parsePathNodes: Iniciando parseo', {
+    pathData,
+    totalCommands: commands.length,
+    commands: commands
+  });
+
   let currentX = 0, currentY = 0;
   let startX = 0, startY = 0;
-  
+
   commands.forEach((command, index) => {
     const type = command[0];
-    const coords = command.slice(1).trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n));
+    // Usar regex más robusto que maneja números negativos consecutivos
+    const coordString = command.slice(1).trim();
+    const coords = (coordString.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !isNaN(n));
+
+    console.log(`  📌 Comando ${index}: "${command}" → type="${type}", coords=[${coords.join(', ')}]`);
+    console.log(`     Estado actual: currentX=${currentX.toFixed(2)}, currentY=${currentY.toFixed(2)}`);
     
     switch (type.toLowerCase()) {
       case 'm': // moveto
@@ -193,44 +111,48 @@ export const parsePathNodes = (pathData) => {
         }
         break;
         
-      case 'l': // lineto
-        if (coords.length >= 2) {
-          currentX = type === type.toLowerCase() ? currentX + coords[0] : coords[0];
-          currentY = type === type.toLowerCase() ? currentY + coords[1] : coords[1];
-          nodes.push({
-            id: `node-${index}`,
-            x: currentX,
-            y: currentY,
-            type: 'line',
-            command: type,
-            coords: coords,
-            index
-          });
+      case 'l': // lineto - puede tener múltiples pares de coordenadas
+        for (let i = 0; i < coords.length; i += 2) {
+          if (i + 1 < coords.length) {
+            currentX = type === type.toLowerCase() ? currentX + coords[i] : coords[i];
+            currentY = type === type.toLowerCase() ? currentY + coords[i + 1] : coords[i + 1];
+            nodes.push({
+              id: `node-${index}-${i/2}`,
+              x: currentX,
+              y: currentY,
+              type: 'line',
+              command: type,
+              coords: [coords[i], coords[i + 1]],
+              index: index + i/2
+            });
+          }
         }
         break;
         
-      case 'c': // curveto
-        if (coords.length >= 6) {
-          const cp1X = type === type.toLowerCase() ? currentX + coords[0] : coords[0];
-          const cp1Y = type === type.toLowerCase() ? currentY + coords[1] : coords[1];
-          const cp2X = type === type.toLowerCase() ? currentX + coords[2] : coords[2];
-          const cp2Y = type === type.toLowerCase() ? currentY + coords[3] : coords[3];
-          const endX = type === type.toLowerCase() ? currentX + coords[4] : coords[4];
-          const endY = type === type.toLowerCase() ? currentY + coords[5] : coords[5];
-          
-          nodes.push({
-            id: `node-${index}`,
-            x: endX,
-            y: endY,
-            type: 'curve',
-            command: type,
-            coords: coords,
-            cp1: { x: cp1X, y: cp1Y },
-            cp2: { x: cp2X, y: cp2Y },
-            index
-          });
-          currentX = endX;
-          currentY = endY;
+      case 'c': // curveto - puede tener múltiples curvas (6 coords cada una)
+        for (let i = 0; i < coords.length; i += 6) {
+          if (i + 5 < coords.length) {
+            const cp1X = type === type.toLowerCase() ? currentX + coords[i] : coords[i];
+            const cp1Y = type === type.toLowerCase() ? currentY + coords[i + 1] : coords[i + 1];
+            const cp2X = type === type.toLowerCase() ? currentX + coords[i + 2] : coords[i + 2];
+            const cp2Y = type === type.toLowerCase() ? currentY + coords[i + 3] : coords[i + 3];
+            const endX = type === type.toLowerCase() ? currentX + coords[i + 4] : coords[i + 4];
+            const endY = type === type.toLowerCase() ? currentY + coords[i + 5] : coords[i + 5];
+
+            nodes.push({
+              id: `node-${index}-${i/6}`,
+              x: endX,
+              y: endY,
+              type: 'curve',
+              command: type,
+              coords: coords.slice(i, i + 6),
+              cp1: { x: cp1X, y: cp1Y },
+              cp2: { x: cp2X, y: cp2Y },
+              index: index + i/6
+            });
+            currentX = endX;
+            currentY = endY;
+          }
         }
         break;
         
@@ -256,6 +178,78 @@ export const parsePathNodes = (pathData) => {
         }
         break;
         
+      case 's': // smooth cubic curveto (shorthand)
+        // 's' usa el reflejo del cp2 anterior como cp1, y toma 4 valores: x2,y2,x,y
+        for (let i = 0; i < coords.length; i += 4) {
+          if (i + 3 < coords.length) {
+            // El cp1 se calcula reflejando el cp2 del comando anterior
+            // Si no hay comando anterior o no es una curva, cp1 = punto actual
+            const lastNode = nodes[nodes.length - 1];
+            let cp1X = currentX;
+            let cp1Y = currentY;
+            if (lastNode && lastNode.type === 'curve' && lastNode.cp2) {
+              cp1X = currentX + (currentX - lastNode.cp2.x);
+              cp1Y = currentY + (currentY - lastNode.cp2.y);
+            }
+
+            const cp2X = type === type.toLowerCase() ? currentX + coords[i] : coords[i];
+            const cp2Y = type === type.toLowerCase() ? currentY + coords[i + 1] : coords[i + 1];
+            const endX = type === type.toLowerCase() ? currentX + coords[i + 2] : coords[i + 2];
+            const endY = type === type.toLowerCase() ? currentY + coords[i + 3] : coords[i + 3];
+
+            nodes.push({
+              id: `node-${index}-${i/4}`,
+              x: endX,
+              y: endY,
+              type: 'curve',
+              command: type,
+              coords: coords.slice(i, i + 4),
+              cp1: { x: cp1X, y: cp1Y },
+              cp2: { x: cp2X, y: cp2Y },
+              index: index + i/4
+            });
+            currentX = endX;
+            currentY = endY;
+          }
+        }
+        break;
+
+      case 'h': // horizontal lineto
+        for (let i = 0; i < coords.length; i++) {
+          currentX = type === type.toLowerCase() ? currentX + coords[i] : coords[i];
+          // Solo crear nodo si hay movimiento real
+          if (coords[i] !== 0) {
+            nodes.push({
+              id: `node-${index}-${i}`,
+              x: currentX,
+              y: currentY,
+              type: 'line',
+              command: type,
+              coords: [coords[i]],
+              index: index + i
+            });
+          }
+        }
+        break;
+
+      case 'v': // vertical lineto
+        for (let i = 0; i < coords.length; i++) {
+          currentY = type === type.toLowerCase() ? currentY + coords[i] : coords[i];
+          // Solo crear nodo si hay movimiento real
+          if (coords[i] !== 0) {
+            nodes.push({
+              id: `node-${index}-${i}`,
+              x: currentX,
+              y: currentY,
+              type: 'line',
+              command: type,
+              coords: [coords[i]],
+              index: index + i
+            });
+          }
+        }
+        break;
+
       case 'z': // closepath
         nodes.push({
           id: `node-${index}`,
@@ -268,6 +262,10 @@ export const parsePathNodes = (pathData) => {
         });
         currentX = startX;
         currentY = startY;
+        break;
+
+      default:
+        console.warn(`⚠️ Comando SVG no soportado: "${type}" en comando "${command}"`);
         break;
     }
   });

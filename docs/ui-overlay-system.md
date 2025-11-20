@@ -1,5 +1,7 @@
 # Sistema de Overlay de UI
 
+> **Nota (2025-01)**: Los componentes `BoundingBox.jsx`, `BezierHandleEditor.jsx` y `MoveableWrapper.jsx` mencionados en este documento fueron consolidados como implementaciones inline en `SVGViewer.jsx` para mantener consistencia en el uso de `SVGWorld`. Las funcionalidades descritas aquí siguen siendo válidas pero ahora se encuentran integradas directamente en el visor.
+
 ## Concepto: Dos Capas de Renderizado
 
 PictoForge utiliza un sistema de **dos capas** para separar el contenido SVG del usuario de los controles de la interfaz:

@@ -60,13 +60,13 @@ This is the complete interface structure of PictoForge with all component names:
 │ │ │ • Available CSS classes        │ │ │ │ • pointer-events-none          │ ││  │
 │ │ │ • Preview properties           │ │ │ │                                │ ││  │
 │ │ │ • Apply/Remove buttons         │ │ │ │ ┌────────────────────────────┐ │ ││  │
-│ │ │ • onStyleChange callback       │ │ │ │ │ BOUNDINGBOX                │ │ ││  │
-│ │ │                                │ │ │ │ │ [BoundingBox Component]    │ │ ││  │
+│ │ │ • onStyleChange callback       │ │ │ │ │ BOUNDINGBOX (Inline)       │ │ ││  │
+│ │ │                                │ │ │ │ │ [SVGViewer.jsx:L708-846]   │ │ ││  │
 │ │ │ For selectedElement:           │ │ │ │ │                            │ │ ││  │
-│ │ │ • fill, stroke properties      │ │ │ │ │ • 8 resize handles         │ │ ││  │
+│ │ │ • fill, stroke properties      │ │ │ │ │ • 4 resize handles         │ │ ││  │
 │ │ │ • stroke-width, stroke-join    │ │ │ │ │ • rotation handle          │ │ ││  │
 │ │ └────────────────────────────────┘ │ │ │ │ • visible: tool=='select'  │ │ ││  │
-│ │                                    │ │ │ │ • onResize, onMove, onRot  │ │ ││  │
+│ │                                    │ │ │ │ • Inline implementation    │ │ ││  │
 │ └────────────────────────────────────┘ │ │ └────────────────────────────┘ │ ││  │
 │                                        │ │                                │ ││  │
 │                                        │ │ ┌────────────────────────────┐ │ ││  │
@@ -98,8 +98,8 @@ This is the complete interface structure of PictoForge with all component names:
 │                                        │ │ • Editable SVG code            │ ││  │
 │                                        │ │ • onSVGUpdate callback         │ ││  │
 │                                        │ │ • selectedElement highlight    │ ││  │
-│                                        │ │ └────────────────────────────────┘ ││  │
-│                                        └────────────────────────────────────┘┘  │
+│                                        │ └────────────────────────────────┘ ││  │
+│                                        └───────────────────────────-────────┘┘  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐

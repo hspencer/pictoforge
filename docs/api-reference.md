@@ -89,8 +89,8 @@ Hooks provide a reactive interface to the core services and manage component sta
 ### `useMoveable`
 
 -   **Location:** `src/hooks/useMoveable.js`
--   **Description:** Integrates the `react-moveable` library with the `CoordinateTransformer` to handle drag, resize, and rotate events correctly within the SVG coordinate space.
--   **Usage:** Returns a set of handlers (`handleDrag`, `handleResize`, etc.) to be passed to the `MoveableWrapper` component.
+-   **Description:** Provides transformation handlers (drag, resize, rotate) that integrate with SVGWorld's coordinate transformation system.
+-   **Usage:** Returns handlers and state for managing element transformations in SVG coordinate space. Currently not used in the main interface (inline implementations preferred for simplicity).
 
 ### `usePanzoom`
 
@@ -156,17 +156,12 @@ Hooks provide a reactive interface to the core services and manage component sta
 -   **Description:** An editable code view with syntax highlighting that displays the raw SVG markup.
 -   **Key Props:** `svgContent`, `onSVGUpdate`.
 
-### `MoveableWrapper`
+### `NodeEditor`
 
--   **Location:** `src/components/MoveableWrapper.jsx`
--   **Description:** A wrapper component that integrates `react-moveable` to provide visual drag, resize, and rotate handles for a target element.
--   **Key Props:** `target`, `container`, `onDrag`, `onResize`, `onRotate`.
-
-### `BezierHandleEditor`
-
--   **Location:** `src/components/BezierHandleEditor.jsx`
--   **Description:** A visual editor for directly manipulating the Bézier control points and anchor points of an SVG `<path>` element.
--   **Key Props:** `pathElement`, `coordinateTransformer`, `onPathUpdate`.
+-   **Location:** `src/components/NodeEditor.jsx`
+-   **Description:** A visual editor for directly manipulating path nodes and Bézier control points. Rendered inline within `SVGViewer` for Node and Pen tools.
+-   **Key Props:** `element`, `tool`, `screenToSVG`, `svgToScreen`, `screenDeltaToSVGDelta`, `onNodeChange`, `onNodeDragEnd`.
+-   **Note:** Bounding box controls for Select tool are implemented inline in SVGViewer.jsx (lines 708-846).
 
 ### `SVGMetadataEditor`
 

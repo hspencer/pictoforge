@@ -134,12 +134,52 @@ Always use `screenToSVG`, `svgToScreen`, and `screenDeltaToSVGDelta` for any coo
 `element.getBoundingClientRect()` returns the position and size of an element in *screen coordinates*. It is useful for positioning HTML overlays, but its values are not in the SVG's internal coordinate system and should not be used for modifying SVG attributes like `x`, `y`, or path data.
 
 -   **Incorrect**: `const svgX = element.getBoundingClientRect().left;`
--   **Correct**: `const svgX = element.getBBox().x;` (for position within the SVG)
+-   **Correct (without transforms)**: `const svgX = element.getBBox().x;` (for position within the SVG)
+-   **Best (with transforms)**: `const bbox = SVG(element).rbox(svgElement);` (accounts for all transforms)
 
 ### DON'T: Manually calculate deltas.
 
 -   **Incorrect**: `const svgDeltaX = screenDeltaX / viewport.zoom;`
 -   **Correct**: `const { dx } = screenDeltaToSVGDelta(screenDeltaX, 0);`
+
+### CRITICAL: Use `rbox()` instead of `getBBox()` for transformed elements
+
+**The Problem**: `element.getBBox()` returns the *untransformed* bounding box, ignoring all `transform` attributes. If an element has been translated, rotated, or scaled, `getBBox()` will show its position *before* those transformations were applied.
+
+**The Solution**: Use `SVG(element).rbox(containerElement)` from `@svgdotjs/svg.js` which returns the *transformed* bounding box in the specified coordinate system.
+
+```javascript
+import { SVG } from '@svgdotjs/svg.js';
+
+// ❌ WRONG - Ignores transforms
+const bbox = element.getBBox();
+console.log(bbox.x, bbox.y); // Original position, not rendered position
+
+// ✅ CORRECT - Considers transforms
+const svgElement = SVG(element);
+const mainSvg = document.querySelector('svg');
+const bbox = svgElement.rbox(mainSvg);
+console.log(bbox.x, bbox.y); // Actual rendered position
+```
+
+**When to use each**:
+- `getBBox()`: When you need the *original* untransformed coordinates (rare)
+- `rbox()`: When you need the *rendered* position with all transforms applied (most cases)
+
+**Path nodes**: Similarly, path data (`d` attribute) contains untransformed coordinates. To get the actual rendered position of path nodes, you must apply the element's CTM (Current Transformation Matrix) to each node:
+
+```javascript
+// Get transform matrix
+const ctm = element.getCTM();
+
+// Transform each node
+const transformedNode = {
+  x: node.x * ctm.a + node.y * ctm.c + ctm.e,
+  y: node.x * ctm.b + node.y * ctm.d + ctm.f
+};
+```
+
+See `NodeEditor.jsx` for a complete implementation.
 
 ## 4. Related Utilities
 

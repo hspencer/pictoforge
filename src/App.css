@@ -252,102 +252,24 @@
 }
 
 /* ======================================== */
-/* Bounding Box */
+/* SVG Editing Controls */
 /* ======================================== */
-.svg-bounding-box,
-.svg-bounding-box-simple {
-  fill: none;
-  stroke: var(--col-select);
-  stroke-width: 1;
-  stroke-dasharray: none;
-  z-index: 10000;
-}
+/* NOTA: La mayoría de estilos de bounding box y nodos se aplican inline
+   en SVGViewer.jsx y NodeEditor.jsx con valores dinámicos calculados
+   basados en el viewBox para mantener tamaño visual constante. */
 
+/* Usado en SVGViewer.jsx - Bounding box outline */
 .svg-bounding-box-simple {
-  stroke: #00aaff;
-  stroke-width: 0.5;
-  stroke-dasharray: 2,2;
+  /* Los estilos fill, stroke, strokeWidth se aplican inline dinámicamente */
   cursor: move;
 }
 
-.svg-resize-handle,
-.svg-resize-handle-simple {
-  fill: var(--col-select);
-  stroke: #ffffff;
-  stroke-width: 1;
-  cursor: pointer;
-  z-index: 11000;
-}
-
-.svg-resize-handle:hover {
-  fill: #0099dd;
-}
-
-.svg-resize-handle-simple {
-  fill: #00aaff;
-  stroke-width: 0.3;
-}
-
-.svg-rotation-line {
-  stroke: #00aaff;
-  stroke-width: 0.3;
-}
-
-.svg-rotation-handle {
-  fill: #00aaff;
-  stroke: #fff;
-  stroke-width: 0.3;
-  cursor: grab;
-}
-
-/* ======================================== */
-/* Node Editor */
-/* ======================================== */
-.svg-node {
-  fill: var(--col-select);
-  stroke: #ffffff;
-  stroke-width: 2;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.svg-node:hover {
-  fill: #0099dd;
-}
-
-.svg-node.selected {
-  fill: #ff6b35;
-}
-
-.svg-node-curve { fill: #ff6b35; }
-.svg-node-smooth { fill: #4ade80; }
-.svg-node-default { fill: #00b9ff; }
-
-.svg-control-point {
-  fill: #00b9ff;
-  stroke: #ffffff;
-  stroke-width: 1;
-  cursor: move;
-}
-
-.svg-control-line {
-  stroke: #00b9ff;
-  stroke-width: 1;
-  stroke-dasharray: 3,3;
-  opacity: 0.6;
-}
-
+/* Usado en NodeEditor.jsx - Overlay invisible para detectar clicks en paths */
 .svg-path-overlay {
   fill: none;
   stroke: transparent;
-  stroke-width: 10;
+  /* stroke-width se aplica inline dinámicamente */
   cursor: crosshair;
-}
-
-.svg-tooltip {
-  font-size: 10px;
-  fill: #374151;
-  pointer-events: none;
 }
 
 /* ======================================== */
@@ -370,11 +292,11 @@
 .dark .svg-container {
   background: #1f2937;
   border-color: #374151;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); */
 }
 
 .dark .svg-container:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); */
 }
 
 .dark .svg-viewer-grid {
@@ -550,4 +472,13 @@
 
 .animate-pulse-progress {
   animation: pulse-progress 2s ease-in-out infinite;
+}
+
+/* Mierdillas de prueba */
+
+label{
+  margin: 0 0 1ex 001ex;
+  text-transform: uppercase;
+  letter-spacing: .182ex;
+  font-size: 69%;
 }

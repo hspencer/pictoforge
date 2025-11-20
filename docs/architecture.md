@@ -73,21 +73,21 @@ App.jsx (Top-level state management)
      ├── usePanzoom (Manages viewport state)
      ├── useSVGWorld (Provides coordinate transformation context)
      │
-     ├─── MoveableWrapper (Handles drag/resize/rotate via react-moveable)
-     │    └── useMoveable (Connects Moveable events to SVGWorld)
+     ├─── Inline BoundingBox (Select tool - drag/resize/rotate controls)
+     │    └── Uses svgToScreen() and screenDeltaToSVGDelta() from useSVGWorld
      │
-     └─── BezierHandleEditor (Visual node editor)
-          ├── usePathDataProcessor (Parses and manipulates path data)
-          └── Renders handles using svgToScreen() from useSVGWorld
+     └─── NodeEditor Component (Node/Pen tools - path manipulation)
+          ├── parsePathNodes() from svgManipulation utils
+          └── Renders node handles using svgToScreen() from useSVGWorld
 ```
 
 ### Example Flow: Dragging a Node
 
-1.  **User Action**: The user clicks and drags a handle in the `BezierHandleEditor`.
+1.  **User Action**: The user clicks and drags a node handle in the `NodeEditor` component.
 2.  **Event Handler**: A `mousedown` event is captured. On `mousemove`, the new screen coordinates (`clientX`, `clientY`) are read.
 3.  **Coordinate Transformation**: `SVGWorld.screenToSVG()` is called to convert the new screen coordinates into the SVG's internal coordinate space.
-4.  **Path Manipulation**: `PathDataProcessor.updateControlPoint()` is called with the new SVG coordinates. This updates the path's AST in memory.
-5.  **DOM Update**: `PathDataProcessor.toString()` regenerates the `d` attribute string, which is then applied to the `<path>` element in the DOM, causing the visual update.
+4.  **Path Manipulation**: The node's position is updated in the parsed path data structure using `updateNodeInPath()` from svgManipulation utils.
+5.  **DOM Update**: The updated path data is rebuilt into a `d` attribute string using `buildPathFromNodes()` and applied to the `<path>` element, causing the visual update.
 6.  **History**: On `mouseup`, the final state of the SVG content is pushed to the `useHistory` stack.
 
 ## 6. UI Rendering: The Two-Layer System
@@ -102,7 +102,7 @@ To ensure editing controls (like bounding boxes and Bézier handles) remain a co
 Accessibility is a key architectural consideration.
 
 -   **SVG Export**: The `SVGOptimizer` service ensures that exported SVGs contain proper accessibility metadata, including a `<title>`, `<desc>`, `lang` attribute, and `role="img"`.
--   **Component Interaction**: Interactive editing components like `BezierHandleEditor` are designed to be fully keyboard-accessible. Handles are treated as buttons (`role="button"`) and are navigable with the `Tab` key and manipulable with arrow keys.
+-   **Component Interaction**: Interactive editing components like `NodeEditor` are designed to be fully keyboard-accessible. Handles are treated as interactive elements and are manipulable with mouse drag operations.
 -   **Screen Reader Support**: `aria-label` attributes and hidden instruction blocks provide context for users of screen readers.
 
 ## 8. Semantic Layer (Phase 2 - In Progress)
