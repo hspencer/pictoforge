@@ -46,7 +46,7 @@
             .f,
             .k {
                 stroke-linejoin: round;
-                stroke-width: 1ex;
+                stroke-width: .1ex;
             }
 
             .f {

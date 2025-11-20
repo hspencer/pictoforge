@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare, Globe, Download, Upload, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useI18n } from '@/hooks/useI18n';
 import DraggableModal from './DraggableModal';
+import LocationMapPicker from './LocationMapPicker';
 
 /**
  * Vista de pantalla completa para configuración de opciones locales
@@ -24,7 +25,10 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
   const [localConfig, setLocalConfig] = useState({
     instanceName: config?.instanceName || '',
     author: config?.author || '',
-    location: config?.location || { address: '', coordinates: null },
+    location: config?.location || {
+      address: 'Auckland, New Zealand',
+      coordinates: { lat: -36.8485, lng: 174.7633 }
+    },
     language: config?.language || 'es',
     swapPanels: config?.swapPanels || false,
     graphicStylePrompt: config?.graphicStylePrompt || '',
@@ -34,6 +38,17 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
     pictogramHeight: config?.pictogramHeight || 100,
     pictogramViewBox: config?.pictogramViewBox || '0 0 100 100'
   });
+
+  // Auto-calcular viewBox cuando cambien width o height
+  useEffect(() => {
+    const newViewBox = `0 0 ${localConfig.pictogramWidth} ${localConfig.pictogramHeight}`;
+    if (localConfig.pictogramViewBox !== newViewBox) {
+      setLocalConfig(prev => ({
+        ...prev,
+        pictogramViewBox: newViewBox
+      }));
+    }
+  }, [localConfig.pictogramWidth, localConfig.pictogramHeight]);
 
   const [editingStyleIndex, setEditingStyleIndex] = useState(null);
   const [importError, setImportError] = useState(null);
@@ -251,13 +266,12 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Información de Instancia */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Building2 size={20} />
-              {t('instanceInfo')}
-            </h2>
             <div className="grid gap-4">
               <div>
-                <Label htmlFor="instanceName">{t('instanceName')}</Label>
+                <Label htmlFor="instanceName" className="flex items-center gap-2">
+                  <Building2 size={16} />
+                  {t('instanceName')}
+                </Label>
                 <Input
                   id="instanceName"
                   value={localConfig.instanceName}
@@ -270,12 +284,11 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
           {/* Autor */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <User size={20} />
-              {t('author')}
-            </h2>
             <div>
-              <Label htmlFor="author">{t('authorLabel')}</Label>
+              <Label htmlFor="author" className="flex items-center gap-2">
+                <User size={16} />
+                {t('author')}
+              </Label>
               <Input
                 id="author"
                 value={localConfig.author}
@@ -287,30 +300,23 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
           {/* Ubicación */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <MapPin size={20} />
+            <Label className="flex items-center gap-2">
+              <MapPin size={16} />
               {t('location')}
-            </h2>
-            <div>
-              <Label htmlFor="location">{t('locationLabel')}</Label>
-              <Input
-                id="location"
-                value={localConfig.location.address}
-                onChange={(e) => handleLocationChange(e.target.value)}
-                placeholder={t('locationPlaceholder')}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {t('mapIntegrationHelper')}
-              </p>
-            </div>
+            </Label>
+            <LocationMapPicker
+              location={localConfig.location}
+              onLocationChange={(newLocation) => {
+                setLocalConfig(prev => ({
+                  ...prev,
+                  location: newLocation
+                }));
+              }}
+            />
           </section>
 
           {/* Layout */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Building2 size={20} />
-              {t('layout')}
-            </h2>
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -319,7 +325,8 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                 onChange={(e) => handleFieldChange('swapPanels', e.target.checked)}
                 className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
-              <Label htmlFor="swapPanels" className="cursor-pointer">
+              <Label htmlFor="swapPanels" className="cursor-pointer flex items-center gap-2">
+                <Building2 size={16} />
                 {t('swapPanels')}
               </Label>
             </div>
@@ -330,12 +337,11 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
           {/* Idioma */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Globe size={20} />
-              {t('language')}
-            </h2>
             <div>
-              <Label htmlFor="language">{t('selectLanguage')}</Label>
+              <Label htmlFor="language" className="flex items-center gap-2">
+                <Globe size={16} />
+                {t('selectLanguage')}
+              </Label>
               <Select
                 value={localConfig.language}
                 onValueChange={(value) => handleFieldChange('language', value)}
@@ -356,10 +362,10 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
           {/* Dimensiones del Pictograma (PictoNet Template) */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Sparkles size={20} />
+            <Label className="flex items-center gap-2">
+              <Sparkles size={16} />
               {t('pictogramDimensions')}
-            </h2>
+            </Label>
             <p className="text-sm text-muted-foreground">
               {t('pictogramDimensionsHelper')}
             </p>
@@ -395,15 +401,10 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                 </p>
               </div>
             </div>
-            <div>
-              <Label htmlFor="pictogramViewBox">{t('pictogramViewBoxLabel')}</Label>
-              <Input
-                id="pictogramViewBox"
-                value={localConfig.pictogramViewBox}
-                onChange={(e) => handleFieldChange('pictogramViewBox', e.target.value)}
-                placeholder="0 0 100 100"
-                className="font-mono text-sm"
-              />
+            <div className="bg-muted/20 rounded p-3">
+              <p className="text-xs text-muted-foreground font-mono">
+                ViewBox: {localConfig.pictogramViewBox}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 {t('pictogramViewBoxHelper')}
               </p>
@@ -412,12 +413,11 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
           {/* Prompt de Estilo Gráfico */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <MessageSquare size={20} />
-              {t('graphicStylePrompt')}
-            </h2>
             <div>
-              <Label htmlFor="graphicStylePrompt">{t('styleDescription')}</Label>
+              <Label htmlFor="graphicStylePrompt" className="flex items-center gap-2">
+                <MessageSquare size={16} />
+                {t('graphicStylePrompt')}
+              </Label>
               <Textarea
                 id="graphicStylePrompt"
                 value={localConfig.graphicStylePrompt}
@@ -431,10 +431,10 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           {/* Estilos Personalizados */}
           <section className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Palette size={20} />
+              <Label className="flex items-center gap-2">
+                <Palette size={16} />
                 {t('customStyles')}
-              </h2>
+              </Label>
               <Button
                 variant="outline"
                 size="sm"
@@ -544,9 +544,9 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
           {/* Exportar/Importar Configuración */}
           <section className="space-y-4 pt-4 border-t">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               💾 {t('exportImportConfig')}
-            </h2>
+            </Label>
 
             <div className="bg-muted/30 rounded-lg p-4 space-y-4">
               <p className="text-sm text-muted-foreground">

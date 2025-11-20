@@ -743,10 +743,20 @@ export const SVGViewer = ({
                       const [vbX, vbY, vbWidth, vbHeight] = parsedSVG.viewBox.split(' ').map(Number);
                       const viewBox = { x: vbX, y: vbY, width: vbWidth, height: vbHeight };
 
+                      // Solo renderizar el grupo si la herramienta es select o node
+                      if (tool !== 'select' && tool !== 'node') {
+                        return null;
+                      }
+
                       return (
-                        <g id="editing-controls" style={{ pointerEvents: 'none' }}>
+                        <g
+                          id="editing-controls"
+                          style={{
+                            pointerEvents: 'none'
+                          }}
+                        >
                           {/* BoundingBox - Para herramientas SELECT y NODE (flecha negra y blanca) */}
-                          {(tool === 'select' || tool === 'node') && (() => {
+                          {(() => {
                             // Obtener bbox - Por ahora usamos getBBox() nativo
                             // TODO: Implementar transformación manual para elementos con transforms
                             const bbox = selectedSVGElement.getBBox();
