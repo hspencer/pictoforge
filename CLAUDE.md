@@ -18,6 +18,8 @@ PictoForge is a semantic SVG editor designed as a companion tool for generative 
 - ✅ File I/O (load/save SVG)
 - ✅ Undo/redo history
 - ✅ Style panel
+- ✅ Internacionalización completa (4 idiomas: EN, ES, MI, ARN)
+- ✅ Modales draggables y responsivos
 
 **Full Vision**: The complete system (documented in `docs/plan.md`) will be a **semantic round-trip editor** with:
 - ❌ NLU Schema layer (semantic representation)
@@ -213,9 +215,45 @@ The project recently migrated from SCSS to pure CSS with Tailwind v4. Style cust
 
 **UI Components**: Built with Radix UI primitives in `src/components/ui/` (shadcn/ui style)
 
+## Modal System
+
+**DraggableModal Component** (`src/components/DraggableModal.jsx`):
+- Reusable draggable modal using `react-draggable`
+- Drag from header (`.drag-handle` class) with visual feedback
+- Position persistence per modal via `storageKey` prop in localStorage
+- Responsive design: `width: min(600px, calc(100vw - 2rem))`
+- Z-index hierarchy: overlays (50-60), modals (60-70), selects (100)
+- All modals standardized to 600px width for consistency
+
+**Modal Components**:
+- `SettingsView` - Application configuration
+- `EntityEditDialog` - Semantic entity editor
+- `StylePanel` - Style management (2 modals)
+- `SVGHierarchy` - Style editor
+
+**Props Pattern**:
+```javascript
+<DraggableModal
+  isOpen={isOpen}
+  onClose={onClose}
+  title="Modal Title"
+  width={600}
+  maxHeight={700}
+  storageKey="unique-modal-key"
+  zIndex={50}
+>
+  {/* Modal content */}
+</DraggableModal>
+```
+
 ## Internationalization
 
-Uses custom `useI18n` hook (`src/hooks/useI18n.jsx`) with ES/EN translations. All user-facing strings should use `t('key')` from this hook.
+**Complete i18n System**: Custom `useI18n` hook (`src/hooks/useI18n.jsx`)
+- **4 languages**: English, Español, Māori, Mapuzugun (250+ translations)
+- **Auto-detection**: Browser language with English fallback
+- **Persistence**: Selected language saved in localStorage
+- **Dynamic selector**: Uses `availableLanguages` array from hook
+- All user-facing strings use `t('key')` pattern
 
 ## SVG Loading and Parsing
 
@@ -267,6 +305,7 @@ Spanish legacy docs in `docs/ARQUITECTURA_FASE*.md` and `docs/COORDENADAS.md`.
 **Key Dependencies**:
 - `react-moveable` 0.56.0 (interactive transforms)
 - `@panzoom/panzoom` 4.6.0 (viewport control)
+- `react-draggable` 4.4.6 (draggable modals)
 - Radix UI (accessible components)
 
 ## Git Workflow
@@ -274,4 +313,9 @@ Spanish legacy docs in `docs/ARQUITECTURA_FASE*.md` and `docs/COORDENADAS.md`.
 **Main Branch**: `main`
 **Current Version**: 0.0.1
 
-Recent commits show active development on coordinate system, style migration (SCSS → CSS), and SVG loading improvements.
+Recent commits show active development on:
+- Complete internationalization (4 languages)
+- Draggable and responsive modals
+- Coordinate system refinements
+- Style migration (SCSS → CSS)
+- SVG loading improvements
