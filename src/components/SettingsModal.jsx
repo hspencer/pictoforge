@@ -19,7 +19,7 @@ import Draggable from 'react-draggable';
  * Componente modal para configuración de opciones locales
  */
 export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
-  const { t } = useI18n();
+  const { t, availableLanguages } = useI18n();
   const fileInputRef = useRef(null);
 
   const [localConfig, setLocalConfig] = useState({
@@ -60,7 +60,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
   const handleCreateStyle = () => {
     const newStyle = {
       id: Date.now().toString(),
-      name: `estilo-${localConfig.customStyles.length + 1}`,
+      name: `${t('newStyle').toLowerCase()}-${localConfig.customStyles.length + 1}`,
       properties: {
         fill: '#000000',
         stroke: '#000000',
@@ -98,7 +98,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
    * Elimina un estilo
    */
   const handleDeleteStyle = (index) => {
-    if (confirm('¿Eliminar este estilo?')) {
+    if (confirm(t('deleteStyleConfirm'))) {
       setLocalConfig(prev => ({
         ...prev,
         customStyles: prev.customStyles.filter((_, i) => i !== index)
@@ -133,7 +133,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
       console.log('✓ Configuración exportada exitosamente');
     } catch (error) {
       console.error('✗ Error al exportar configuración:', error);
-      alert('Error al exportar la configuración');
+      alert(t('errorExportingConfig'));
     }
   };
 
@@ -152,7 +152,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
 
         // Validar estructura del archivo
         if (!importedData.config) {
-          throw new Error('Formato de archivo inválido');
+          throw new Error(t('invalidFileFormat'));
         }
 
         // Validar campos requeridos
@@ -170,7 +170,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
         // Validar cada estilo personalizado
         validConfig.customStyles = validConfig.customStyles.map(style => ({
           id: style.id || Date.now().toString(),
-          name: style.name || 'Estilo sin nombre',
+          name: style.name || t('styleWithoutName'),
           properties: {
             fill: style.properties?.fill || '#000000',
             stroke: style.properties?.stroke || '#000000',
@@ -181,18 +181,18 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
         setLocalConfig(validConfig);
         setImportError(null);
         console.log('✓ Configuración importada exitosamente');
-        alert('Configuración importada exitosamente. No olvides guardar los cambios.');
+        alert(t('configImportedSuccess'));
       } catch (error) {
         console.error('✗ Error al importar configuración:', error);
-        setImportError('Error al importar el archivo. Verifica que sea un archivo válido.');
-        alert('Error al importar la configuración. Verifica que el archivo sea válido.');
+        setImportError(t('errorImportingConfig'));
+        alert(t('errorImportingConfig'));
       }
     };
 
     reader.onerror = () => {
       console.error('✗ Error al leer el archivo');
-      setImportError('Error al leer el archivo');
-      alert('Error al leer el archivo');
+      setImportError(t('errorReadingFileShort'));
+      alert(t('errorReadingFileShort'));
     };
 
     reader.readAsText(file);
@@ -253,8 +253,8 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
             <div className="flex items-center gap-2">
               <Settings size={20} />
               <div>
-                <h2 className="text-lg font-semibold">Opciones Locales de PictoForge</h2>
-                <p className="text-xs text-muted-foreground">Configura tu instancia y estilos personalizados</p>
+                <h2 className="text-lg font-semibold">{t('localSettings')}</h2>
+                <p className="text-xs text-muted-foreground">{t('settingsDescription')}</p>
               </div>
             </div>
             <Button
@@ -273,46 +273,46 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
             <section className="space-y-4">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                 <Building2 size={16} />
-                Información de Instancia
+                {t('instanceInfo')}
               </h3>
 
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="instanceName">Nombre de la instancia</Label>
+                  <Label htmlFor="instanceName">{t('instanceName')}</Label>
                   <Input
                     id="instanceName"
                     value={localConfig.instanceName}
                     onChange={(e) => handleFieldChange('instanceName', e.target.value)}
-                    placeholder="Ej: PUCV Design Lab"
+                    placeholder={t('instanceNamePlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="author">Autor (para créditos)</Label>
+                  <Label htmlFor="author">{t('authorLabel')}</Label>
                   <div className="flex gap-2">
                     <User size={16} className="mt-2 text-muted-foreground" />
                     <Input
                       id="author"
                       value={localConfig.author}
                       onChange={(e) => handleFieldChange('author', e.target.value)}
-                      placeholder="Tu nombre"
+                      placeholder={t('authorPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="location">Lugar</Label>
+                  <Label htmlFor="location">{t('locationLabel')}</Label>
                   <div className="flex gap-2">
                     <MapPin size={16} className="mt-2 text-muted-foreground" />
                     <Input
                       id="location"
                       value={localConfig.location.address}
                       onChange={(e) => handleLocationChange(e.target.value)}
-                      placeholder="Dirección o ubicación"
+                      placeholder={t('locationPlaceholder')}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Puedes ingresar una dirección completa
+                    {t('locationHelper')}
                   </p>
                 </div>
               </div>
@@ -321,22 +321,24 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
             {/* Idioma */}
             <section className="space-y-4">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                🌐 Localización
+                🌐 {t('localization')}
               </h3>
 
               <div>
-                <Label htmlFor="language">Idioma</Label>
+                <Label htmlFor="language">{t('language')}</Label>
                 <Select
                   value={localConfig.language}
                   onValueChange={(value) => handleFieldChange('language', value)}
                 >
                   <SelectTrigger id="language">
-                    <SelectValue placeholder="Selecciona idioma" />
+                    <SelectValue placeholder={t('selectLanguagePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="es">Español</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="pt">Português</SelectItem>
+                    {availableLanguages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.nativeName}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -346,21 +348,21 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
             <section className="space-y-4">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                 <MessageSquare size={16} />
-                Estilo Gráfico General
+                {t('graphicStylePrompt')}
               </h3>
 
               <div>
-                <Label htmlFor="graphicPrompt">Prompt de estilo</Label>
+                <Label htmlFor="graphicPrompt">{t('stylePromptLabel')}</Label>
                 <Textarea
                   id="graphicPrompt"
                   value={localConfig.graphicStylePrompt}
                   onChange={(e) => handleFieldChange('graphicStylePrompt', e.target.value)}
-                  placeholder="Describe el estilo visual que deseas aplicar a tus pictogramas (ej: 'Estilo minimalista con líneas limpias y colores pastel')"
+                  placeholder={t('stylePromptPlaceholder')}
                   rows={4}
                   className="resize-none"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Este texto se usará como guía para generar estilos consistentes
+                  {t('stylePromptHelper')}
                 </p>
               </div>
             </section>
@@ -370,7 +372,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                   <Palette size={16} />
-                  Estilos de la Localización
+                  {t('locationStyles')}
                 </h3>
                 <Button
                   variant="outline"
@@ -379,15 +381,15 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                   className="h-7"
                 >
                   <Plus size={14} className="mr-1" />
-                  Nuevo Estilo
+                  {t('newStyle')}
                 </Button>
               </div>
 
               {localConfig.customStyles.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Palette size={32} className="mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No hay estilos personalizados</p>
-                  <p className="text-xs">Crea uno para comenzar</p>
+                  <p className="text-sm">{t('noCustomStyles')}</p>
+                  <p className="text-xs">{t('createOneToStart')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
@@ -413,7 +415,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                       {/* Color Inputs */}
                       <div className="space-y-2">
                         <div className="flex gap-2 items-center">
-                          <Label className="text-xs w-14">Fill:</Label>
+                          <Label className="text-xs w-14">{t('fillLabel')}:</Label>
                           <Input
                             type="color"
                             value={style.properties.fill}
@@ -428,7 +430,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                         </div>
 
                         <div className="flex gap-2 items-center">
-                          <Label className="text-xs w-14">Stroke:</Label>
+                          <Label className="text-xs w-14">{t('strokeLabel')}:</Label>
                           <Input
                             type="color"
                             value={style.properties.stroke}
@@ -443,7 +445,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                         </div>
 
                         <div className="flex gap-2 items-center">
-                          <Label className="text-xs w-14">Width:</Label>
+                          <Label className="text-xs w-14">{t('widthLabel')}:</Label>
                           <Input
                             type="number"
                             value={parseInt(style.properties['stroke-width']) || 2}
@@ -463,7 +465,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                         className="w-full h-7 text-destructive hover:text-destructive"
                       >
                         <Trash2 size={12} className="mr-1" />
-                        Eliminar
+                        {t('deleteLabel')}
                       </Button>
                     </div>
                   ))}
@@ -474,12 +476,12 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
             {/* Exportar/Importar Configuración */}
             <section className="space-y-4 pt-4 border-t">
               <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                💾 Exportar/Importar Configuración
+                💾 {t('exportImportConfig')}
               </h3>
 
               <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                 <p className="text-xs text-muted-foreground">
-                  Guarda tu configuración en un archivo JSON para respaldo o para compartirla con otros.
+                  {t('exportConfigHelper')}
                 </p>
 
                 <div className="flex gap-2">
@@ -490,7 +492,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                     className="flex-1"
                   >
                     <Download size={14} className="mr-2" />
-                    Exportar Configuración
+                    {t('exportConfig')}
                   </Button>
 
                   <Button
@@ -500,7 +502,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                     className="flex-1"
                   >
                     <Upload size={14} className="mr-2" />
-                    Importar Configuración
+                    {t('importConfig')}
                   </Button>
                 </div>
 
@@ -520,7 +522,7 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  ⚠️ Al importar, la configuración actual será reemplazada. Asegúrate de exportar tu configuración actual antes de importar otra.
+                  ⚠️ {t('importWarning')}
                 </p>
               </div>
             </section>
@@ -529,10 +531,10 @@ export const SettingsModal = ({ isOpen, onClose, config, onSave }) => {
           {/* Footer */}
           <div className="flex justify-end gap-2 p-4 border-t bg-muted/10">
             <Button variant="outline" onClick={onClose}>
-              Cancelar
+              {t('cancel')}
             </Button>
             <Button onClick={handleSave}>
-              Guardar Configuración
+              {t('saveConfiguration')}
             </Button>
           </div>
         </div>

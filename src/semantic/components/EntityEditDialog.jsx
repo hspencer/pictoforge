@@ -108,7 +108,9 @@ export const EntityEditDialog = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Edit: ${entity.tagName} (${entity.id})`}
-      maxWidth="600px"
+      width={600}
+      maxHeight={700}
+      storageKey="entity-editor"
     >
       <div className="space-y-6 p-4">
         {/* Preview de la entidad */}

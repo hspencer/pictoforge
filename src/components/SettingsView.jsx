@@ -18,7 +18,7 @@ import DraggableModal from './DraggableModal';
  * Vista de pantalla completa para configuración de opciones locales
  */
 export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
-  const { t } = useI18n();
+  const { t, availableLanguages } = useI18n();
   const fileInputRef = useRef(null);
 
   const [localConfig, setLocalConfig] = useState({
@@ -67,7 +67,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
   const handleCreateStyle = () => {
     const newStyle = {
       id: Date.now().toString(),
-      name: `Estilo ${localConfig.customStyles.length + 1}`,
+      name: `${t('newStyle')} ${localConfig.customStyles.length + 1}`,
       fill: '#000000',
       stroke: '#000000',
       strokeWidth: '1'
@@ -132,7 +132,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
       console.log('✓ Configuración exportada exitosamente');
     } catch (error) {
       console.error('✗ Error al exportar configuración:', error);
-      alert('Error al exportar la configuración');
+      alert(t('errorExportingConfig'));
     }
   };
 
@@ -151,7 +151,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
 
         // Validar estructura del archivo
         if (!importedData.config) {
-          throw new Error('Formato de archivo inválido');
+          throw new Error(t('invalidFileFormat'));
         }
 
         // Validar campos requeridos
@@ -172,7 +172,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           if (style.properties) {
             return {
               id: style.id || Date.now().toString(),
-              name: style.name || 'Estilo sin nombre',
+              name: style.name || t('styleWithoutName'),
               fill: style.properties.fill || '#000000',
               stroke: style.properties.stroke || '#000000',
               strokeWidth: style.properties['stroke-width'] || '1'
@@ -181,7 +181,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           // Si ya tiene la estructura de SettingsView
           return {
             id: style.id || Date.now().toString(),
-            name: style.name || 'Estilo sin nombre',
+            name: style.name || t('styleWithoutName'),
             fill: style.fill || '#000000',
             stroke: style.stroke || '#000000',
             strokeWidth: style.strokeWidth || '1'
@@ -191,18 +191,18 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
         setLocalConfig(validConfig);
         setImportError(null);
         console.log('✓ Configuración importada exitosamente');
-        alert('Configuración importada exitosamente. No olvides guardar los cambios.');
+        alert(t('configImportedSuccess'));
       } catch (error) {
         console.error('✗ Error al importar configuración:', error);
-        setImportError('Error al importar el archivo. Verifica que sea un archivo válido.');
-        alert('Error al importar la configuración. Verifica que el archivo sea válido.');
+        setImportError(t('errorImportingConfig'));
+        alert(t('errorImportingConfig'));
       }
     };
 
     reader.onerror = () => {
       console.error('✗ Error al leer el archivo');
-      setImportError('Error al leer el archivo');
-      alert('Error al leer el archivo');
+      setImportError(t('errorReadingFileShort'));
+      alert(t('errorReadingFileShort'));
     };
 
     reader.readAsText(file);
@@ -231,8 +231,8 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
     <DraggableModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Opciones Locales de PictoForge"
-      width={900}
+      title={t('localSettings')}
+      width={600}
       maxHeight={800}
       storageKey="settings-view"
       zIndex={50}
@@ -244,16 +244,16 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           <section className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 size={20} />
-              Información de Instancia
+              {t('instanceInfo')}
             </h2>
             <div className="grid gap-4">
               <div>
-                <Label htmlFor="instanceName">Nombre de la Instancia</Label>
+                <Label htmlFor="instanceName">{t('instanceName')}</Label>
                 <Input
                   id="instanceName"
                   value={localConfig.instanceName}
                   onChange={(e) => handleFieldChange('instanceName', e.target.value)}
-                  placeholder="Ej: PictoForge Chile"
+                  placeholder={t('instanceNamePlaceholder')}
                 />
               </div>
             </div>
@@ -263,15 +263,15 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           <section className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <User size={20} />
-              Autor
+              {t('author')}
             </h2>
             <div>
-              <Label htmlFor="author">Nombre del Autor (para créditos)</Label>
+              <Label htmlFor="author">{t('authorLabel')}</Label>
               <Input
                 id="author"
                 value={localConfig.author}
                 onChange={(e) => handleFieldChange('author', e.target.value)}
-                placeholder="Ej: Juan Pérez"
+                placeholder={t('authorPlaceholder')}
               />
             </div>
           </section>
@@ -280,18 +280,18 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           <section className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <MapPin size={20} />
-              Ubicación
+              {t('location')}
             </h2>
             <div>
-              <Label htmlFor="location">Dirección</Label>
+              <Label htmlFor="location">{t('locationLabel')}</Label>
               <Input
                 id="location"
                 value={localConfig.location.address}
                 onChange={(e) => handleLocationChange(e.target.value)}
-                placeholder="Ej: Santiago, Chile"
+                placeholder={t('locationPlaceholder')}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Integración con mapa disponible en futuras versiones
+                {t('mapIntegrationHelper')}
               </p>
             </div>
           </section>
@@ -300,7 +300,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           <section className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Building2 size={20} />
-              Layout
+              {t('layout')}
             </h2>
             <div className="flex items-center space-x-2">
               <input
@@ -311,11 +311,11 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                 className="h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
               <Label htmlFor="swapPanels" className="cursor-pointer">
-                Intercambiar paneles (Editor visual ↔ Jerarquía)
+                {t('swapPanels')}
               </Label>
             </div>
             <p className="text-sm text-muted-foreground">
-              Cambia la posición del editor visual y la jerarquía de elementos entre el panel izquierdo y derecho.
+              {t('swapPanelsHelper')}
             </p>
           </section>
 
@@ -323,22 +323,23 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           <section className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Globe size={20} />
-              Idioma
+              {t('language')}
             </h2>
             <div>
-              <Label htmlFor="language">Seleccionar Idioma</Label>
+              <Label htmlFor="language">{t('selectLanguage')}</Label>
               <Select
                 value={localConfig.language}
                 onValueChange={(value) => handleFieldChange('language', value)}
               >
                 <SelectTrigger id="language">
-                  <SelectValue placeholder="Seleccionar idioma" />
+                  <SelectValue placeholder={t('selectLanguagePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="es">Español</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="pt">Português</SelectItem>
-                  <SelectItem value="fr">Français</SelectItem>
+                  {availableLanguages.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.nativeName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -348,15 +349,15 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           <section className="space-y-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <MessageSquare size={20} />
-              Prompt General del Estilo Gráfico
+              {t('graphicStylePrompt')}
             </h2>
             <div>
-              <Label htmlFor="graphicStylePrompt">Descripción del Estilo</Label>
+              <Label htmlFor="graphicStylePrompt">{t('styleDescription')}</Label>
               <Textarea
                 id="graphicStylePrompt"
                 value={localConfig.graphicStylePrompt}
                 onChange={(e) => handleFieldChange('graphicStylePrompt', e.target.value)}
-                placeholder="Describe el estilo gráfico general para esta instancia..."
+                placeholder={t('styleDescriptionPlaceholder')}
                 rows={4}
               />
             </div>
@@ -367,7 +368,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Palette size={20} />
-                Estilos Personalizados
+                {t('customStyles')}
               </h2>
               <Button
                 variant="outline"
@@ -375,15 +376,15 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                 onClick={handleCreateStyle}
               >
                 <Plus size={16} className="mr-1" />
-                Nuevo Estilo
+                {t('newStyle')}
               </Button>
             </div>
 
             {localConfig.customStyles.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground border rounded-lg">
                 <Palette size={32} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay estilos personalizados</p>
-                <p className="text-xs mt-1">Crea uno nuevo para comenzar</p>
+                <p className="text-sm">{t('noCustomStyles')}</p>
+                <p className="text-xs mt-1">{t('createNewToStart')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -425,7 +426,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                     {/* Color Pickers */}
                     <div className="space-y-2">
                       <div>
-                        <Label className="text-xs">Fill</Label>
+                        <Label className="text-xs">{t('fillLabel')}</Label>
                         <div className="flex gap-2">
                           <input
                             type="color"
@@ -442,7 +443,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                       </div>
 
                       <div>
-                        <Label className="text-xs">Stroke</Label>
+                        <Label className="text-xs">{t('strokeLabel')}</Label>
                         <div className="flex gap-2">
                           <input
                             type="color"
@@ -459,7 +460,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                       </div>
 
                       <div>
-                        <Label className="text-xs">Stroke Width</Label>
+                        <Label className="text-xs">{t('strokeWidthLabel')}</Label>
                         <Input
                           type="number"
                           value={style.strokeWidth}
@@ -479,12 +480,12 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           {/* Exportar/Importar Configuración */}
           <section className="space-y-4 pt-4 border-t">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              💾 Exportar/Importar Configuración
+              💾 {t('exportImportConfig')}
             </h2>
 
             <div className="bg-muted/30 rounded-lg p-4 space-y-4">
               <p className="text-sm text-muted-foreground">
-                Guarda tu configuración en un archivo JSON para respaldo o para compartirla con otros.
+                {t('exportConfigHelper')}
               </p>
 
               <div className="flex gap-3">
@@ -494,7 +495,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                   className="flex-1"
                 >
                   <Download size={16} className="mr-2" />
-                  Exportar Configuración
+                  {t('exportConfig')}
                 </Button>
 
                 <Button
@@ -503,7 +504,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                   className="flex-1"
                 >
                   <Upload size={16} className="mr-2" />
-                  Importar Configuración
+                  {t('importConfig')}
                 </Button>
               </div>
 
@@ -523,7 +524,7 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
               )}
 
               <p className="text-sm text-muted-foreground">
-                ⚠️ Al importar, la configuración actual será reemplazada. Asegúrate de exportar tu configuración actual antes de importar otra.
+                ⚠️ {t('importWarning')}
               </p>
             </div>
           </section>
@@ -534,12 +535,12 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
               variant="outline"
               onClick={onClose}
             >
-              Cancelar
+              {t('cancel')}
             </Button>
             <Button
               onClick={handleSave}
             >
-              Guardar Configuración
+              {t('saveConfiguration')}
             </Button>
           </footer>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/useI18n.jsx';
 
@@ -123,9 +123,8 @@ export const SchemaStatusBar = ({
         className="w-full px-3 py-2 flex items-center justify-between text-sm hover:bg-muted/20 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-primary" />
           <span className="font-medium">
-            {isEditing ? 'NLU Schema (modified)' : 'NLU Schema'}
+            {isEditing ? t('nluSchemaModified') : t('schemaStatusBar')}
           </span>
           {nluSchema?.utterance && (
             <span className="text-muted-foreground text-xs">
@@ -144,7 +143,7 @@ export const SchemaStatusBar = ({
               }}
               className="h-7 px-3 text-xs"
             >
-              Generate
+              {t('generate')}
             </Button>
           )}
           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -167,7 +166,7 @@ export const SchemaStatusBar = ({
                 : 'border-border'
               }
             `}
-            placeholder="NLU Schema JSON..."
+            placeholder={t('nluSchemaPlaceholder')}
             spellCheck={false}
           />
 
@@ -175,7 +174,7 @@ export const SchemaStatusBar = ({
             <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
               <span>
-                Schema has been modified. Click "Generate" to update the pictogram.
+                {t('schemaModifiedWarning')}
               </span>
             </div>
           )}
@@ -183,16 +182,16 @@ export const SchemaStatusBar = ({
           {nluSchema && (
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>
-                Lang: <strong>{nluSchema.lang || 'unknown'}</strong>
+                {t('lang')}: <strong>{nluSchema.lang || 'unknown'}</strong>
               </span>
               {nluSchema.frames && (
                 <span>
-                  Frames: <strong>{nluSchema.frames.length}</strong>
+                  {t('frames')}: <strong>{nluSchema.frames.length}</strong>
                 </span>
               )}
               {nluSchema.visual_guidelines && (
                 <span>
-                  Focus: <strong>{nluSchema.visual_guidelines.focus_actor || 'none'}</strong>
+                  {t('focus')}: <strong>{nluSchema.visual_guidelines.focus_actor || 'none'}</strong>
                 </span>
               )}
             </div>

@@ -349,7 +349,7 @@ export const SVGHierarchy = ({
           setEditingStyle(null);
         }}
         title={t('editStyle')}
-        width={550}
+        width={600}
         maxHeight={600}
         storageKey="style-editor"
         zIndex={60}

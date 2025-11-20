@@ -51,9 +51,13 @@ export const DraggableModal = ({
       return defaultPosition;
     }
 
+    // Calcular el ancho y alto real del modal con responsive constraints
+    const modalWidth = Math.min(width, window.innerWidth - 32); // 32px = 2rem
+    const modalHeight = Math.min(maxHeight, window.innerHeight - 32);
+
     return {
-      x: window.innerWidth / 2 - width / 2,
-      y: window.innerHeight / 2 - maxHeight / 2
+      x: Math.max(16, (window.innerWidth - modalWidth) / 2), // mínimo 16px del borde
+      y: Math.max(16, (window.innerHeight - modalHeight) / 2)
     };
   });
 
@@ -74,9 +78,12 @@ export const DraggableModal = ({
   // Resetear posición cuando se abre por primera vez sin posición guardada
   useEffect(() => {
     if (isOpen && !storageKey && !defaultPosition) {
+      const modalWidth = Math.min(width, window.innerWidth - 32);
+      const modalHeight = Math.min(maxHeight, window.innerHeight - 32);
+
       setPosition({
-        x: window.innerWidth / 2 - width / 2,
-        y: window.innerHeight / 2 - maxHeight / 2
+        x: Math.max(16, (window.innerWidth - modalWidth) / 2),
+        y: Math.max(16, (window.innerHeight - modalHeight) / 2)
       });
     }
   }, [isOpen, width, maxHeight, storageKey, defaultPosition]);
@@ -107,7 +114,6 @@ export const DraggableModal = ({
 
   console.log('🚪 Creando portal con ReactDOM.createPortal...');
 
-  // TEMPORAL: Usar modal fijo sin draggable para debugging
   return ReactDOM.createPortal(
     <>
       {/* Overlay */}
@@ -119,42 +125,51 @@ export const DraggableModal = ({
         />
       )}
 
-      {/* Modal FIJO (sin draggable temporalmente) */}
-      <div
-        ref={nodeRef}
-        className="fixed bg-popover border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden"
-        style={{
-          width: `${width}px`,
-          maxHeight: `${maxHeight}px`,
-          zIndex: zIndex + 10,
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)'
-        }}
-        onClick={(e) => e.stopPropagation()}
+      {/* Modal Draggable */}
+      <Draggable
+        nodeRef={nodeRef}
+        handle=".drag-handle"
+        defaultPosition={position}
+        onDrag={handleDrag}
+        onStart={() => setIsDragging(true)}
+        onStop={() => setIsDragging(false)}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-muted/20">
-          <div className="flex items-center gap-2">
-            <GripVertical size={18} className="text-muted-foreground" />
-            <h2 className="text-lg font-semibold">{title}</h2>
+        <div
+          ref={nodeRef}
+          className="fixed bg-popover border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden max-w-[calc(100vw-2rem)]"
+          style={{
+            width: `min(${width}px, calc(100vw - 2rem))`,
+            maxHeight: `min(${maxHeight}px, calc(100vh - 2rem))`,
+            zIndex: zIndex + 10,
+            cursor: isDragging ? 'grabbing' : 'auto',
+            left: 0,
+            top: 0
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header - Drag Handle */}
+          <div className="drag-handle flex items-center justify-between p-4 border-b bg-muted/20 cursor-grab active:cursor-grabbing">
+            <div className="flex items-center gap-2">
+              <GripVertical size={18} className="text-muted-foreground" />
+              <h2 className="text-lg font-semibold">{title}</h2>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+              title="Cerrar"
+            >
+              <X size={18} />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-8 w-8 p-0"
-            title="Cerrar"
-          >
-            <X size={18} />
-          </Button>
-        </div>
 
-        {/* Contenido */}
-        <div className="flex-1 overflow-auto">
-          {children}
+          {/* Contenido */}
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
         </div>
-      </div>
+      </Draggable>
     </>,
     document.body
   );

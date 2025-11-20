@@ -170,7 +170,7 @@ export const StylePanel = ({
         isOpen={isOpen}
         onClose={onClose}
         title={t('styles')}
-        width={400}
+        width={600}
         maxHeight={700}
         storageKey="style-panel"
         zIndex={50}
@@ -304,7 +304,7 @@ export const StylePanel = ({
           setEditingStyle(null);
         }}
         title={t('editStyle')}
-        width={550}
+        width={600}
         maxHeight={650}
         storageKey="style-panel-editor"
         zIndex={60}

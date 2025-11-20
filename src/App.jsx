@@ -20,7 +20,7 @@ import pictogramSVG from './assets/pictogram.svg?url';
 
 // Componente principal de la aplicación con internacionalización
 function AppContent() {
-  const { t } = useI18n();
+  const { t, changeLanguage, currentLanguage } = useI18n();
   const [darkMode, setDarkMode] = useState(false);
   const [currentText, setCurrentText] = useState(t('textInputPlaceholder'));
   const [expandedElements, setExpandedElements] = useState(new Set(['pictogram', 'bed', 'person']));
@@ -44,6 +44,17 @@ function AppContent() {
   } = useSVGParser();
 
   const { userConfig, updateConfig } = useSVGStorage();
+
+  /**
+   * Sincroniza el idioma guardado con el contexto i18n al iniciar
+   */
+  useEffect(() => {
+    if (userConfig?.language && userConfig.language !== currentLanguage) {
+      changeLanguage(userConfig.language);
+      console.log('✓ Idioma sincronizado desde configuración:', userConfig.language);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userConfig?.language]);
 
   /**
    * Carga el SVG de ejemplo al iniciar la aplicación
@@ -373,6 +384,12 @@ function AppContent() {
    * Maneja el guardado de configuración
    */
   const handleSaveSettings = (newConfig) => {
+    // Si el idioma cambió, actualizar el idioma global
+    if (newConfig.language && newConfig.language !== currentLanguage) {
+      changeLanguage(newConfig.language);
+      console.log('✓ Idioma cambiado a:', newConfig.language);
+    }
+
     updateConfig(newConfig);
     setShowSettings(false);
     console.log('✓ Configuración guardada:', newConfig);
