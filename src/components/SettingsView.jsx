@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare, Globe, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Palette, MapPin, User, Building2, MessageSquare, Globe, Download, Upload, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,11 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
     language: config?.language || 'es',
     swapPanels: config?.swapPanels || false,
     graphicStylePrompt: config?.graphicStylePrompt || '',
-    customStyles: config?.customStyles || []
+    customStyles: config?.customStyles || [],
+    // PictoNet Template Settings
+    pictogramWidth: config?.pictogramWidth || 100,
+    pictogramHeight: config?.pictogramHeight || 100,
+    pictogramViewBox: config?.pictogramViewBox || '0 0 100 100'
   });
 
   const [editingStyleIndex, setEditingStyleIndex] = useState(null);
@@ -160,10 +164,15 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
           author: importedData.config.author || '',
           location: importedData.config.location || { address: '', coordinates: null },
           language: importedData.config.language || 'es',
+          swapPanels: importedData.config.swapPanels || false,
           graphicStylePrompt: importedData.config.graphicStylePrompt || '',
           customStyles: Array.isArray(importedData.config.customStyles)
             ? importedData.config.customStyles
-            : []
+            : [],
+          // PictoNet Template Settings
+          pictogramWidth: importedData.config.pictogramWidth || 100,
+          pictogramHeight: importedData.config.pictogramHeight || 100,
+          pictogramViewBox: importedData.config.pictogramViewBox || '0 0 100 100'
         };
 
         // Validar cada estilo personalizado (SettingsView usa estructura diferente)
@@ -342,6 +351,62 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </section>
+
+          {/* Dimensiones del Pictograma (PictoNet Template) */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles size={20} />
+              {t('pictogramDimensions')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t('pictogramDimensionsHelper')}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="pictogramWidth">{t('pictogramWidthLabel')}</Label>
+                <Input
+                  id="pictogramWidth"
+                  type="number"
+                  value={localConfig.pictogramWidth}
+                  onChange={(e) => handleFieldChange('pictogramWidth', parseInt(e.target.value) || 100)}
+                  placeholder="100"
+                  min="50"
+                  max="500"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('pictogramWidthHelper')}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="pictogramHeight">{t('pictogramHeightLabel')}</Label>
+                <Input
+                  id="pictogramHeight"
+                  type="number"
+                  value={localConfig.pictogramHeight}
+                  onChange={(e) => handleFieldChange('pictogramHeight', parseInt(e.target.value) || 100)}
+                  placeholder="100"
+                  min="50"
+                  max="500"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t('pictogramHeightHelper')}
+                </p>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="pictogramViewBox">{t('pictogramViewBoxLabel')}</Label>
+              <Input
+                id="pictogramViewBox"
+                value={localConfig.pictogramViewBox}
+                onChange={(e) => handleFieldChange('pictogramViewBox', e.target.value)}
+                placeholder="0 0 100 100"
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('pictogramViewBoxHelper')}
+              </p>
             </div>
           </section>
 

@@ -187,7 +187,27 @@ function AppContent() {
    */
   const handleEntityDoubleClick = (entity) => {
     console.log('🔍 Abriendo editor de entidad:', entity);
-    setEntityEditDialog({ isOpen: true, entity });
+
+    // Buscar el elemento DOM real del SVG
+    const svgElement = document.querySelector('#pictoforge-main-svg');
+    if (svgElement && entity.id) {
+      const domElement = svgElement.querySelector(`#${CSS.escape(entity.id)}`);
+      if (domElement) {
+        // Agregar referencia al elemento DOM
+        const enrichedEntity = {
+          ...entity,
+          element: domElement
+        };
+        console.log('✓ Elemento DOM encontrado para preview:', entity.id);
+        setEntityEditDialog({ isOpen: true, entity: enrichedEntity });
+      } else {
+        console.warn('⚠️ No se encontró elemento DOM para:', entity.id);
+        setEntityEditDialog({ isOpen: true, entity });
+      }
+    } else {
+      console.warn('⚠️ SVG no encontrado o entity sin ID');
+      setEntityEditDialog({ isOpen: true, entity });
+    }
   };
 
   /**

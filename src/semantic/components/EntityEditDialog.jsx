@@ -27,7 +27,7 @@ export const EntityEditDialog = ({
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   /**
-   * Genera el preview SVG del elemento
+   * Genera el preview SVG del elemento con estilos embebidos
    */
   const svgPreview = useMemo(() => {
     if (!entity?.element) {
@@ -42,8 +42,20 @@ export const EntityEditDialog = ({
       // Obtener el bounding box del elemento
       const bbox = domElement.getBBox();
 
-      // Agregar padding al viewBox (10% en cada lado)
-      const padding = Math.max(bbox.width, bbox.height) * 0.1;
+      // Si el bbox es inválido (width o height = 0), usar valores por defecto
+      if (bbox.width === 0 || bbox.height === 0) {
+        console.warn('⚠️ BBox tiene dimensiones 0, usando viewBox por defecto');
+        return {
+          viewBox: '0 0 100 100',
+          innerHTML: domElement.outerHTML,
+          styles: '',
+          width: 100,
+          height: 100
+        };
+      }
+
+      // Agregar padding al viewBox (20% en cada lado para mejor visualización)
+      const padding = Math.max(bbox.width, bbox.height) * 0.2;
       const viewBoxX = bbox.x - padding;
       const viewBoxY = bbox.y - padding;
       const viewBoxWidth = bbox.width + padding * 2;
@@ -55,11 +67,22 @@ export const EntityEditDialog = ({
       // Obtener el HTML del elemento
       const elementHTML = clonedElement.outerHTML;
 
-      console.log('📐 BBox calculado:', bbox, 'ViewBox:', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+      // Obtener estilos del SVG padre (si existen)
+      const svgRoot = domElement.closest('svg');
+      const styleElement = svgRoot?.querySelector('style');
+      const styles = styleElement ? styleElement.textContent : '';
+
+      console.log('📐 Entity Preview:', {
+        id: entity.id,
+        bbox: `x:${bbox.x.toFixed(1)}, y:${bbox.y.toFixed(1)}, w:${bbox.width.toFixed(1)}, h:${bbox.height.toFixed(1)}`,
+        viewBox: `${viewBoxX.toFixed(1)} ${viewBoxY.toFixed(1)} ${viewBoxWidth.toFixed(1)} ${viewBoxHeight.toFixed(1)}`,
+        hasStyles: !!styles
+      });
 
       return {
         viewBox: `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`,
         innerHTML: elementHTML,
+        styles: styles,
         width: viewBoxWidth,
         height: viewBoxHeight
       };
@@ -109,7 +132,7 @@ export const EntityEditDialog = ({
       onClose={onClose}
       title={`Edit: ${entity.tagName} (${entity.id})`}
       width={600}
-      maxHeight={700}
+      maxHeight={900}
       storageKey="entity-editor"
     >
       <div className="space-y-6 p-4">
@@ -119,15 +142,29 @@ export const EntityEditDialog = ({
             <Type size={16} />
             Entity Preview
           </h3>
-          <div className="bg-background border rounded p-4 flex items-center justify-center min-h-[120px]">
+          <div
+            className="border rounded p-4 flex items-center justify-center min-h-[400px]"
+            style={{
+              backgroundColor: 'var(--canvas-bg)'
+            }}
+          >
             {svgPreview ? (
-              <svg
-                viewBox={svgPreview.viewBox}
-                className="max-w-full max-h-[200px] w-auto h-auto"
-                style={{
-                  aspectRatio: `${svgPreview.width} / ${svgPreview.height}`
+              <div
+                className="flex items-center justify-center"
+                dangerouslySetInnerHTML={{
+                  __html: `
+                    <svg
+                      viewBox="${svgPreview.viewBox}"
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="85%"
+                      height="auto"
+                      style="display: block;"
+                    >
+                      ${svgPreview.styles ? `<defs><style>${svgPreview.styles}</style></defs>` : ''}
+                      ${svgPreview.innerHTML}
+                    </svg>
+                  `
                 }}
-                dangerouslySetInnerHTML={{ __html: svgPreview.innerHTML }}
               />
             ) : (
               <div className="text-muted-foreground text-sm text-center">

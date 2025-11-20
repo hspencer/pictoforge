@@ -693,20 +693,23 @@ export const SVGViewer = ({
                     width="100%"
                     height="100%"
                     preserveAspectRatio={parsedSVG.preserveAspectRatio}
-                    style={{ display: 'block' }}
+                    style={{
+                      display: 'block',
+                      background: 'var(--canvas-bg)'
+                    }}
                     id="pictoforge-main-svg"
                   >
-                    {/* Límites del canvas (artboard) - NO seleccionable */}
+                    {/* Marco del pictograma (viewBox border) - NO seleccionable */}
                     <rect
                       x={parsedSVG.viewBox.split(' ')[0]}
                       y={parsedSVG.viewBox.split(' ')[1]}
                       width={parsedSVG.viewBox.split(' ')[2]}
                       height={parsedSVG.viewBox.split(' ')[3]}
                       fill="none"
-                      stroke="#cccccc"
-                      strokeWidth={realZoom > 0 ? 1.5 / realZoom : 1.5}
+                      stroke="var(--border)"
+                      strokeWidth={realZoom > 0 ? 2 / realZoom : 2}
                       vectorEffect="non-scaling-stroke"
-                      opacity={0.8}
+                      opacity={0.6}
                       pointerEvents="none"
                       id="canvas-border"
                     />

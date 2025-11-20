@@ -124,6 +124,16 @@ const translations = {
     styleDescriptionPlaceholder: 'Describe the general graphic style for this instance...',
     stylePromptLabel: 'Style prompt',
     stylePromptPlaceholder: 'Describe the visual style you want to apply to your pictograms (e.g., \'Minimalist style with clean lines and pastel colors\')',
+
+    // PictoNet Template Settings
+    pictogramDimensions: 'Pictogram Dimensions (PictoNet Template)',
+    pictogramDimensionsHelper: 'These dimensions define the SVG template sent to PictoNet for generating pictograms.',
+    pictogramWidthLabel: 'Width (px)',
+    pictogramWidthHelper: 'SVG canvas width (50-500 px)',
+    pictogramHeightLabel: 'Height (px)',
+    pictogramHeightHelper: 'SVG canvas height (50-500 px)',
+    pictogramViewBoxLabel: 'ViewBox',
+    pictogramViewBoxHelper: 'SVG viewBox coordinates (format: "minX minY width height")',
     stylePromptHelper: 'This text will be used as a guide to generate consistent styles',
     customStyles: 'Custom Styles',
     locationStyles: 'Location Styles',
@@ -246,7 +256,27 @@ const translations = {
     noLanguage: 'No language defined',
     roleValue: 'Role: {role}',
     noRole: 'No role defined',
-    generatedCode: 'Generated Code'
+    generatedCode: 'Generated Code',
+
+    // Storage
+    storage: {
+      title: 'Storage Information',
+      used: 'Used',
+      available: 'Available',
+      percentage: 'Usage',
+      details: 'Details',
+      persistent: 'Persistent storage',
+      yes: 'Yes',
+      no: 'No',
+      request_persistence: 'Request persistent storage',
+      requesting: 'Requesting...',
+      persistence_help: 'Persistent storage prevents the browser from deleting data under storage pressure.',
+      persistence_granted: 'Persistent storage granted. Your data is now protected from automatic deletion.',
+      persistence_denied: 'Persistent storage was denied. Your data may be deleted if the browser runs low on space.',
+      persistence_error: 'Error requesting persistent storage.',
+      loading: 'Loading storage information...',
+      not_supported: 'Storage API not supported in this browser.'
+    }
   },
   
   es: {
@@ -371,6 +401,16 @@ const translations = {
     styleDescriptionPlaceholder: 'Describe el estilo gráfico general para esta instancia...',
     stylePromptLabel: 'Prompt de estilo',
     stylePromptPlaceholder: 'Describe el estilo visual que deseas aplicar a tus pictogramas (ej: \'Estilo minimalista con líneas limpias y colores pastel\')',
+
+    // PictoNet Template Settings
+    pictogramDimensions: 'Dimensiones del Pictograma (Template PictoNet)',
+    pictogramDimensionsHelper: 'Estas dimensiones definen el template SVG enviado a PictoNet para generar pictogramas.',
+    pictogramWidthLabel: 'Ancho (px)',
+    pictogramWidthHelper: 'Ancho del canvas SVG (50-500 px)',
+    pictogramHeightLabel: 'Alto (px)',
+    pictogramHeightHelper: 'Alto del canvas SVG (50-500 px)',
+    pictogramViewBoxLabel: 'ViewBox',
+    pictogramViewBoxHelper: 'Coordenadas del viewBox SVG (formato: "minX minY ancho alto")',
     stylePromptHelper: 'Este texto se usará como guía para generar estilos consistentes',
     customStyles: 'Estilos Personalizados',
     locationStyles: 'Estilos de la Localización',
@@ -493,7 +533,27 @@ const translations = {
     noLanguage: 'Sin idioma definido',
     roleValue: 'Rol: {role}',
     noRole: 'Sin rol definido',
-    generatedCode: 'Código generado'
+    generatedCode: 'Código generado',
+
+    // Storage
+    storage: {
+      title: 'Información de Almacenamiento',
+      used: 'Usado',
+      available: 'Disponible',
+      percentage: 'Uso',
+      details: 'Detalles',
+      persistent: 'Almacenamiento persistente',
+      yes: 'Sí',
+      no: 'No',
+      request_persistence: 'Solicitar almacenamiento persistente',
+      requesting: 'Solicitando...',
+      persistence_help: 'El almacenamiento persistente evita que el navegador elimine datos bajo presión de espacio.',
+      persistence_granted: 'Almacenamiento persistente concedido. Tus datos están protegidos de eliminación automática.',
+      persistence_denied: 'Almacenamiento persistente denegado. Tus datos pueden ser eliminados si el navegador necesita espacio.',
+      persistence_error: 'Error al solicitar almacenamiento persistente.',
+      loading: 'Cargando información de almacenamiento...',
+      not_supported: 'API de almacenamiento no soportada en este navegador.'
+    }
   },
   
   mi: {
@@ -618,6 +678,16 @@ const translations = {
     styleDescriptionPlaceholder: 'Whakamāramahia te kāhua auaha whānui mō tēnei tūemi...',
     stylePromptLabel: 'Prompt kāhua',
     stylePromptPlaceholder: 'Whakamāramahia te kāhua tirohanga e hiahia ana koe ki te tāpae ki ō pictogram',
+
+    // PictoNet Template Settings
+    pictogramDimensions: 'Rahinga Pictogram (PictoNet Template)',
+    pictogramDimensionsHelper: 'Ko ēnei rahinga e tautuhi ana i te template SVG tukuna ki PictoNet hei whakaputa pictogram.',
+    pictogramWidthLabel: 'Whānui (px)',
+    pictogramWidthHelper: 'Whānui papa SVG (50-500 px)',
+    pictogramHeightLabel: 'Teitei (px)',
+    pictogramHeightHelper: 'Teitei papa SVG (50-500 px)',
+    pictogramViewBoxLabel: 'ViewBox',
+    pictogramViewBoxHelper: 'Kōwae ViewBox SVG (hōputu: "minX minY whānui teitei")',
     stylePromptHelper: 'Ka whakamahia tēnei kupu hei ārahi hei whakaputa i ngā kāhua ōrite',
     customStyles: 'Ngā Kāhua ā-Roto',
     locationStyles: 'Ngā Kāhua o te Wāhi',
@@ -740,7 +810,27 @@ const translations = {
     noLanguage: 'Kāore he reo kua tautuhia',
     roleValue: 'Tūnga: {role}',
     noRole: 'Kāore he tūnga kua tautuhia',
-    generatedCode: 'Waehere kua whakaputaina'
+    generatedCode: 'Waehere kua whakaputaina',
+
+    // Storage
+    storage: {
+      title: 'Pārongo Penapena',
+      used: 'Kua whakamahia',
+      available: 'E wātea ana',
+      percentage: 'Whakamahi',
+      details: 'Ngā Taipitopito',
+      persistent: 'Penapena pumau',
+      yes: 'Āe',
+      no: 'Kāo',
+      request_persistence: 'Tono penapena pumau',
+      requesting: 'E tono ana...',
+      persistence_help: 'Ka ārai te penapena pumau i te pūtirotiro kia mukua ngā raraunga i raro i te pēhanga rokiroki.',
+      persistence_granted: 'Kua whakaaetia te penapena pumau. Kei te tiakina ō raraunga mai i te mukurunga aunoa.',
+      persistence_denied: 'Kua whakakahoretia te penapena pumau. Ka taea te muku i ō raraunga mēnā ka hemo te wāhi o te pūtirotiro.',
+      persistence_error: 'Hapa i te tono penapena pumau.',
+      loading: 'E uta ana i ngā pārongo penapena...',
+      not_supported: 'Kāore e tautokona te API Penapena i tēnei pūtirotiro.'
+    }
   },
 
   arn: {
@@ -866,6 +956,16 @@ const translations = {
     styleDescriptionPlaceholder: 'Zuamtual konla azkintun adkintun tüfachi küdaw mew...',
     stylePromptLabel: 'Azkintun adkintun',
     stylePromptPlaceholder: 'Zuamtual adkintun azkintun nien tami pictogram mew',
+
+    // PictoNet Template Settings
+    pictogramDimensions: 'Pictogram Azkintun (PictoNet Template)',
+    pictogramDimensionsHelper: 'Fey azkintun tañi SVG template werkülelün PictoNet mew.',
+    pictogramWidthLabel: 'Laf (px)',
+    pictogramWidthHelper: 'SVG laf (50-500 px)',
+    pictogramHeightLabel: 'Kudü (px)',
+    pictogramHeightHelper: 'SVG kudü (50-500 px)',
+    pictogramViewBoxLabel: 'ViewBox',
+    pictogramViewBoxHelper: 'SVG ViewBox kona (zuam: "minX minY laf kudü")',
     stylePromptHelper: 'Tüfachi dungu küpakülerpuy azkintukunun kimün azkintun',
     customStyles: 'Azkintun Küme',
     locationStyles: 'Mapu Azkintun',
@@ -988,7 +1088,27 @@ const translations = {
     noLanguage: 'Zugun nielay',
     roleValue: 'Küdaw: {role}',
     noRole: 'Küdaw nielay',
-    generatedCode: 'Dungu werkülen'
+    generatedCode: 'Dungu werkülen',
+
+    // Storage
+    storage: {
+      title: 'Kimün Eluwün',
+      used: 'Küpan',
+      available: 'Küpayal',
+      percentage: 'Küpan',
+      details: 'Konla Kimün',
+      persistent: 'Eluwün pumün',
+      yes: 'Mari',
+      no: 'Ke',
+      request_persistence: 'Azperam eluwün pumün',
+      requesting: 'Azperam...',
+      persistence_help: 'Eluwün pumün kümelkawelerpuy lafümün kimün mew weza mapu.',
+      persistence_granted: 'Eluwün pumün küpay. Tami kimün kümelkawüy lafümün weza.',
+      persistence_denied: 'Eluwün pumün ñewenolafün. Tami kimün lafümlerpuy mapu weza mew.',
+      persistence_error: 'Weza azperam eluwün pumün.',
+      loading: 'Üykülün kimün eluwün...',
+      not_supported: 'API Eluwün nielay tüfachi pütütuhelu mew.'
+    }
   }
 };
 
