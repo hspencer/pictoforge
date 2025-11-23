@@ -59,7 +59,7 @@ Each SVG pictogram is **self-contained** with embedded metadata:
 Average pictogram:  ~7.5KB (SVG 5KB + metadata 2.5KB)
 Target vocabulary:  10,000 elements = ~77MB
 Browser capacity:   50MB-10GB (depending on browser)
-Viability:          ✅ Fully viable on all modern browsers
+Viability:          Fully viable on all modern browsers
 ```
 
 ## Database Schema
@@ -258,7 +258,7 @@ console.log(`Persistent: ${quota.persisted}`);
 ```javascript
 const granted = await requestPersistentStorage();
 if (granted) {
-  console.log('✓ Data protected from automatic deletion');
+  console.log('Data protected from automatic deletion');
 }
 ```
 
@@ -287,7 +287,7 @@ const stats = await importWorkspace(data, false);
 
 ## Implementation Status
 
-### ✅ Implemented
+### Implemented
 
 - Core database operations (CRUD)
 - IndexedDB with three stores
@@ -296,14 +296,14 @@ const stats = await importWorkspace(data, false);
 - User settings persistence
 - Error handling
 
-### 🚧 In Progress
+### In Progress
 
 - Vocabulary management UI
 - Bulk operations
 - Advanced search/filtering
 - LRU cache layer
 
-### 📅 Planned
+### Planned
 
 - Cloud sync (federated identity)
 - Automatic backup
@@ -315,7 +315,7 @@ const stats = await importWorkspace(data, false);
 ### Data disappears after closing browser
 
 - Check if persistent storage is granted
-- **Incognito mode** always clears data on close
+- Incognito mode always clears data on close
 - Request persistent storage explicitly
 
 ### Storage quota exceeded
@@ -346,10 +346,10 @@ IndexedDB requires all async operations within a transaction to complete in the 
 ### Query Optimization
 
 ```javascript
-// ✅ Good - Uses index
+// Good - Uses index
 vocabulary.index('type').getAll('object');
 
-// ❌ Bad - No index, scans all records
+// Bad - No index, scans all records
 vocabulary.getAll().then(all => all.filter(v => v.type === 'object'));
 ```
 

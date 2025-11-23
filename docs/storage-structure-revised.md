@@ -1,4 +1,4 @@
-# ⚠️ DEPRECATED - See New Documentation
+# DEPRECATED - See New Documentation
 
 **This file has been replaced by comprehensive English documentation.**
 
@@ -330,8 +330,8 @@ function findBySynonym(word) {
 ## Conclusión
 
 Estructura simplificada:
-- ✅ `pictograms` - Trabajo activo
-- ✅ `vocabulary` - Todo el vocabulario local (unificado)
-- ✅ `settings` - Configuración de la app
+- `pictograms` - Trabajo activo
+- `vocabulary` - Todo el vocabulario local (unificado)
+- `settings` - Configuración de la app
 
 Esto refleja mejor la realidad: todo es **vocabulario** que el usuario va construyendo y auditando, con diferentes tipos y características, pero fundamentalmente lo mismo.

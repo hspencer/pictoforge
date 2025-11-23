@@ -34,7 +34,7 @@ function SVGEditor() {
     });
 
     if (success) {
-      console.log('✓ Saved successfully');
+      console.log('Saved successfully');
     }
   };
 
@@ -87,14 +87,14 @@ function PictogramReview() {
   // 2. Approve pictogram
   const handleApprove = async () => {
     await updatePictogramStatus(current.id, 'approved');
-    console.log('✓ Approved');
+    console.log('Approved');
     loadPending();
   };
 
   // 3. Reject pictogram
   const handleReject = async () => {
     await updatePictogramStatus(current.id, 'rejected');
-    console.log('✓ Rejected');
+    console.log('Rejected');
     loadPending();
   };
 
@@ -121,7 +121,7 @@ function PictogramReview() {
       source: 'extracted'
     });
 
-    console.log('✓ Element saved to vocabulary');
+    console.log('Element saved to vocabulary');
   };
 
   return (
@@ -264,9 +264,9 @@ const importVocabularyBatch = async (entries) => {
     }
   }
 
-  console.log(`✓ Imported ${success} entries`);
+  console.log(`Imported ${success} entries`);
   if (failed > 0) {
-    console.warn(`⚠️ Failed: ${failed} entries`);
+    console.warn(`Failed: ${failed} entries`);
   }
 };
 
@@ -429,7 +429,7 @@ const handleExport = async () => {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  console.log('✓ Exported workspace');
+  console.log('Exported workspace');
 };
 ```
 
@@ -452,16 +452,16 @@ const handleImport = (event) => {
       // Merge with existing data
       const stats = await importWorkspace(data, true);
 
-      console.log(`✓ Import complete:`);
+      console.log(`Import complete:`);
       console.log(`  - ${stats.pictograms} pictograms`);
       console.log(`  - ${stats.vocabulary} vocabulary entries`);
       console.log(`  - ${stats.settings} settings`);
 
       if (stats.errors.length > 0) {
-        console.warn(`⚠️ ${stats.errors.length} errors occurred`);
+        console.warn(`${stats.errors.length} errors occurred`);
       }
     } catch (error) {
-      console.error('✗ Import failed:', error);
+      console.error('Import failed:', error);
       alert('Failed to import workspace. Check file format.');
     }
   };
@@ -541,9 +541,9 @@ const StorageStatus = () => {
       <p>Available: {quota.quotaGB} GB</p>
       <p>
         Percentage: {quota.percentage}%
-        {isHighUsage && <span style={{ color: 'red' }}> ⚠️ High</span>}
+        {isHighUsage && <span style={{ color: 'red' }}> High</span>}
       </p>
-      <p>Persistent: {quota.persisted ? '✓ Yes' : '✗ No'}</p>
+      <p>Persistent: {quota.persisted ? 'Yes' : 'No'}</p>
     </div>
   );
 };
@@ -570,20 +570,20 @@ const RequestPersistence = () => {
   const handleRequest = async () => {
     const granted = await requestPersistentStorage();
     if (granted) {
-      alert('✓ Data is now protected from automatic deletion');
+      alert('Data is now protected from automatic deletion');
       setPersisted(true);
     } else {
-      alert('⚠️ Persistent storage was denied');
+      alert('Persistent storage was denied');
     }
   };
 
   return (
     <div>
       {persisted ? (
-        <p>✓ Storage is persistent</p>
+        <p>Storage is persistent</p>
       ) : (
         <div>
-          <p>⚠️ Storage is not persistent</p>
+          <p>Storage is not persistent</p>
           <p>Your data may be deleted if space is needed.</p>
           <button onClick={handleRequest}>
             Request Persistent Storage
@@ -618,7 +618,7 @@ const cleanupOldRejected = async () => {
     deleted++;
   }
 
-  console.log(`✓ Cleaned up ${deleted} old pictograms`);
+  console.log(`Cleaned up ${deleted} old pictograms`);
   return deleted;
 };
 ```
@@ -638,7 +638,7 @@ const handleSave = async () => {
     console.error('Database error:', error);
     // Fall back to localStorage
     localStorage.setItem('backup_svg', svgContent);
-    alert('⚠️ Database unavailable. Saved to temporary storage.');
+    alert('Database unavailable. Saved to temporary storage.');
     return;
   }
 
@@ -651,12 +651,12 @@ const handleSave = async () => {
   // Save normally
   try {
     await savePictogram(svgContent);
-    console.log('✓ Saved to database');
+    console.log('Saved to database');
   } catch (err) {
     console.error('Save failed:', err);
     // Fall back
     localStorage.setItem('backup_svg', svgContent);
-    alert('⚠️ Save failed. Saved to temporary storage.');
+    alert('Save failed. Saved to temporary storage.');
   }
 };
 ```
@@ -672,7 +672,7 @@ const saveWithRetry = async (data, maxRetries = 3) => {
   while (attempt < maxRetries) {
     try {
       const id = await savePictogram(data);
-      console.log(`✓ Saved on attempt ${attempt + 1}`);
+      console.log(`Saved on attempt ${attempt + 1}`);
       return id;
     } catch (error) {
       attempt++;
@@ -753,7 +753,7 @@ const SVGEditor = () => {
   useEffect(() => {
     if (debouncedContent) {
       savePictogram(debouncedContent, 'pending');
-      console.log('✓ Auto-saved');
+      console.log('Auto-saved');
     }
   }, [debouncedContent]);
 
@@ -788,9 +788,9 @@ const performBatchUpdate = async (pictogramIds, newStatus) => {
     }
   }
 
-  console.log(`✓ Updated ${results.success.length} pictograms`);
+  console.log(`Updated ${results.success.length} pictograms`);
   if (results.failed.length > 0) {
-    console.warn(`⚠️ Failed: ${results.failed.length}`);
+    console.warn(`Failed: ${results.failed.length}`);
   }
 
   return results;

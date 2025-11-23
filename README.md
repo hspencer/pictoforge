@@ -16,28 +16,28 @@ PictoForge is a semantic SVG editor designed as a companion tool for generative 
 
 ## Core Features
 
-### 🎯 Round-Trip Editing
+### Round-Trip Editing
 - **Bidirectional sync** between visual canvas and SVG code
 - **Real-time updates** across hierarchy, canvas, and code views
 - **Undo/redo history** for all modifications
 
-### 🎨 Visual Editing Tools
+### Visual Editing Tools
 - **Select Tool** - Move, scale, rotate with bounding box
 - **Node Tool** - Edit path nodes and Bézier handles
 - **Pen Tool** - Add/remove nodes (in development)
 
-### 🌐 Internationalization
+### Internationalization
 - **4 languages**: English, Español, Māori, Mapuzugun
 - **250+ translations** with auto-detection
 - **Persistent language** preference
 
-### 💾 Local Storage System
+### Local Storage System
 - **IndexedDB-based** persistent storage
 - **Three data stores**: Pictograms, Vocabulary, Settings
 - **Export/Import** workspace functionality
 - **Storage quota** management
 
-### 🎛️ Advanced Features
+### Advanced Features
 - **Coordinate system** reconciliation (screen → viewport → SVG)
 - **Style management** with CSS class editor
 - **Entity editing** with property modification
@@ -106,40 +106,40 @@ pnpm test:coverage        # Generate coverage report
 
 ## Documentation
 
-### 📚 Getting Started
+### Getting Started
 - [Installation Guide](docs/installation.md)
 - [Development Workflow](docs/workflow.md)
 - [Configuration](docs/configuration.md)
 
-### 🏗️ Architecture
+### Architecture
 - [System Overview](docs/architecture.md)
 - [Coordinate System](docs/coordinate-system.md)
 - [Component Structure](docs/components.md)
 - [Hooks Reference](docs/hooks.md)
 - [Services](docs/services.md)
 
-### 💾 Storage System
-- **[Storage Overview](docs/storage/README.md)** ← Start here
+### Storage System
+- **[Storage Overview](docs/storage/README.md)** - Start here
 - [Data Structures](docs/storage/data-structures.md)
 - [API Methods](docs/storage/api-methods.md)
 - [Usage Examples](docs/storage/examples.md)
 
-### 🌐 Semantic Layer
+### Semantic Layer
 - [NLU Schema Integration](src/semantic/README.md)
 - [Entity Editing](docs/semantic-layer.md)
 
-### 🧪 Testing
+### Testing
 - [Testing Guide](docs/testing.md)
 - [Test Coverage](docs/coverage.md)
 
-### 📋 Planning
+### Planning
 - [Project Roadmap](docs/ROADMAP.md)
 - [Development Plan](docs/plan.md)
 - [UI Overlay System](docs/ui-overlay-system.md)
 
 ## Project Status
 
-### ✅ Implemented Features
+### Implemented Features
 
 **Core Functionality**
 - SVG file loading (drag & drop, file button)
@@ -164,7 +164,7 @@ pnpm test:coverage        # Generate coverage report
 - Performance metrics display
 - Storage quota management
 
-### 🚧 In Development
+### In Development
 
 - Node editing (drag nodes, adjust Bézier handles)
 - Pen tool (add/remove nodes)
@@ -172,7 +172,7 @@ pnpm test:coverage        # Generate coverage report
 - Element duplication/deletion
 - Enhanced undo/redo integration
 
-### 📅 Planned Features
+### Planned Features
 
 - PictoNet API integration
 - Vocabulary management UI

@@ -8,8 +8,8 @@ Complete reference for PictoForge storage operations.
 **Planned:** IndexedDB-based (v0.1.0+)
 
 This document covers both implementations:
-- ✅ **Currently Implemented** - Available now
-- 🔜 **Planned** - Documented but not yet implemented
+- **Currently Implemented** - Available now
+- **Planned** - Documented but not yet implemented
 
 ---
 
@@ -293,7 +293,7 @@ const handleImport = (event) => {
   const reader = new FileReader();
   reader.onload = (e) => {
     const success = importHistory(e.target.result);
-    if (success) console.log('✓ Import successful');
+    if (success) console.log('Import successful');
   };
   reader.readAsText(file);
 };
@@ -303,7 +303,7 @@ const handleImport = (event) => {
 
 ## Planned Implementation (IndexedDB)
 
-🔜 **Coming in v0.1.0+**
+**Coming in v0.1.0+**
 
 ### Database Initialization
 
@@ -350,7 +350,7 @@ function App() {
 
 #### `savePictogram(svgContent, auditStatus)`
 
-🔜 Saves pictogram to IndexedDB.
+Saves pictogram to IndexedDB.
 
 **Parameters:**
 - `svgContent` (string) - Complete SVG with metadata
@@ -369,7 +369,7 @@ console.log('Pictogram saved:', id);
 
 #### `getPictogram(id)`
 
-🔜 Gets pictogram by ID.
+Gets pictogram by ID.
 
 **Parameters:**
 - `id` (string) - Pictogram ID
@@ -390,7 +390,7 @@ if (pictogram) {
 
 #### `getAllPictograms()`
 
-🔜 Gets all pictograms.
+Gets all pictograms.
 
 **Returns:** `Promise<array>`
 
@@ -405,7 +405,7 @@ console.log(`Found ${pictograms.length} pictograms`);
 
 #### `getPictogramsByStatus(status)`
 
-🔜 Gets pictograms filtered by audit status.
+Gets pictograms filtered by audit status.
 
 **Parameters:**
 - `status` ('pending' | 'approved' | 'rejected')
@@ -423,7 +423,7 @@ console.log(`${pending.length} pending review`);
 
 #### `updatePictogramStatus(id, newStatus)`
 
-🔜 Updates audit status of pictogram.
+Updates audit status of pictogram.
 
 **Parameters:**
 - `id` (string) - Pictogram ID
@@ -441,7 +441,7 @@ await updatePictogramStatus(id, 'approved');
 
 #### `deletePictogram(id)`
 
-🔜 Deletes pictogram.
+Deletes pictogram.
 
 **Parameters:**
 - `id` (string) - Pictogram ID
@@ -460,7 +460,7 @@ await deletePictogram(id);
 
 #### `saveVocabulary(entry)`
 
-🔜 Saves vocabulary entry.
+Saves vocabulary entry.
 
 **Parameters:**
 - `entry` (object) - Vocabulary entry (see [Data Structures](./data-structures.md))
@@ -494,7 +494,7 @@ await saveVocabulary({
 
 #### `getVocabulary(id)`
 
-🔜 Gets vocabulary entry by ID.
+Gets vocabulary entry by ID.
 
 **Parameters:**
 - `id` (string) - Entry ID
@@ -505,7 +505,7 @@ await saveVocabulary({
 
 #### `getAllVocabulary()`
 
-🔜 Gets all vocabulary entries.
+Gets all vocabulary entries.
 
 **Returns:** `Promise<array>`
 
@@ -513,7 +513,7 @@ await saveVocabulary({
 
 #### `getVocabularyByConcept(concept)`
 
-🔜 Gets vocabulary entries by concept.
+Gets vocabulary entries by concept.
 
 **Parameters:**
 - `concept` (string) - Concept name
@@ -530,7 +530,7 @@ const entries = await getVocabularyByConcept('pillow');
 
 #### `getVocabularyByType(type)`
 
-🔜 Gets vocabulary entries by type.
+Gets vocabulary entries by type.
 
 **Parameters:**
 - `type` ('object' | 'action' | 'modifier' | 'operator')
@@ -547,7 +547,7 @@ const objects = await getVocabularyByType('object');
 
 #### `searchVocabularyByTag(tag)`
 
-🔜 Searches vocabulary by tag.
+Searches vocabulary by tag.
 
 **Parameters:**
 - `tag` (string) - Tag to search
@@ -564,7 +564,7 @@ const bedItems = await searchVocabularyByTag('bedroom');
 
 #### `incrementVocabularyUsage(id)`
 
-🔜 Increments usage count for vocabulary entry.
+Increments usage count for vocabulary entry.
 
 **Parameters:**
 - `id` (string) - Entry ID
@@ -583,7 +583,7 @@ await incrementVocabularyUsage('pillow-01');
 
 #### `saveSetting(key, value)`
 
-🔜 Saves a setting.
+Saves a setting.
 
 **Parameters:**
 - `key` (string) - Setting key
@@ -603,7 +603,7 @@ await saveSetting('auto_export_threshold', 100);
 
 #### `getSetting(key, defaultValue)`
 
-🔜 Gets a setting value.
+Gets a setting value.
 
 **Parameters:**
 - `key` (string) - Setting key
@@ -622,7 +622,7 @@ const threshold = await getSetting('auto_export_threshold', 50);
 
 #### `getAllSettings()`
 
-🔜 Gets all settings.
+Gets all settings.
 
 **Returns:** `Promise<object>` - Key-value pairs
 
@@ -639,7 +639,7 @@ console.log(`Language: ${settings.language}`);
 
 #### `getStorageQuota()`
 
-🔜 Gets storage quota information.
+Gets storage quota information.
 
 **Returns:** `Promise<object>`
 
@@ -670,7 +670,7 @@ console.log(`Persistent: ${quota.persisted}`);
 
 #### `requestPersistentStorage()`
 
-🔜 Requests persistent storage permission.
+Requests persistent storage permission.
 
 **Returns:** `Promise<boolean>` - Whether granted
 
@@ -679,9 +679,9 @@ console.log(`Persistent: ${quota.persisted}`);
 ```javascript
 const granted = await requestPersistentStorage();
 if (granted) {
-  console.log('✓ Data protected from auto-deletion');
+  console.log('Data protected from auto-deletion');
 } else {
-  console.warn('⚠️ User denied persistent storage');
+  console.warn('User denied persistent storage');
 }
 ```
 
@@ -689,7 +689,7 @@ if (granted) {
 
 #### `exportWorkspace()`
 
-🔜 Exports complete workspace.
+Exports complete workspace.
 
 **Returns:** `Promise<object>` - Workspace data
 
@@ -717,7 +717,7 @@ downloadFile(json, 'pictoforge-workspace.json');
 
 #### `importWorkspace(data, merge)`
 
-🔜 Imports workspace data.
+Imports workspace data.
 
 **Parameters:**
 - `data` (object) - Workspace export data
@@ -753,7 +753,7 @@ console.log(`Imported ${stats.vocabulary} vocabulary entries`);
 
 #### `clearAllData()`
 
-🔜 Clears all database data.
+Clears all database data.
 
 **Returns:** `Promise<boolean>`
 
@@ -762,7 +762,7 @@ console.log(`Imported ${stats.vocabulary} vocabulary entries`);
 ```javascript
 if (confirm('Delete all data?')) {
   await clearAllData();
-  console.log('✓ All data cleared');
+  console.log('All data cleared');
 }
 ```
 
@@ -835,22 +835,22 @@ await importWorkspace(localData, false);
 ### Batch Operations
 
 ```javascript
-// ❌ Bad - Multiple transactions
+// Bad - Multiple transactions
 for (const entry of entries) {
   await saveVocabulary(entry);
 }
 
-// ✅ Good - Single transaction (future)
+// Good - Single transaction (future)
 await saveVocabularyBatch(entries);
 ```
 
 ### Query Optimization
 
 ```javascript
-// ✅ Use indices
+// Use indices
 await getVocabularyByType('object');
 
-// ❌ Avoid filtering all records
+// Avoid filtering all records
 const all = await getAllVocabulary();
 const objects = all.filter(v => v.type === 'object');
 ```
@@ -858,11 +858,11 @@ const objects = all.filter(v => v.type === 'object');
 ### Memory Management
 
 ```javascript
-// ✅ Paginate large datasets
+// Paginate large datasets
 const page1 = await getPictogramsPaginated(0, 50);
 const page2 = await getPictogramsPaginated(50, 50);
 
-// ❌ Don't load everything
+// Don't load everything
 const all = await getAllPictograms(); // Could be 1000s
 ```
 

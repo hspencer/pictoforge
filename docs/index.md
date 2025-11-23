@@ -36,7 +36,7 @@ Welcome to the technical documentation for PictoForge. This site provides a comp
 
 *   **[Interface Map](./interface-map.md):** ASCII-based map of the complete user interface and its corresponding React components.
 
-*   **[SCSS Architecture](./scss-architecture.md):** ⚠️ **Deprecated** - Project migrated to Tailwind CSS v4 with pure CSS. Kept for historical reference.
+*   **[SCSS Architecture](./scss-architecture.md):** **Deprecated** - Project migrated to Tailwind CSS v4 with pure CSS. Kept for historical reference.
 
 ## External References
 

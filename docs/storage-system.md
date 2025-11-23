@@ -1,4 +1,4 @@
-# ⚠️ DEPRECATED - See New Documentation
+# DEPRECATED - See New Documentation
 
 **This file has been replaced by comprehensive English documentation.**
 
@@ -48,7 +48,7 @@ Capacidad con 50MB:   ~6,600 pictogramas
 Capacidad con 100MB:  ~13,300 pictogramas
 
 Vocabulario objetivo: 10,000 elementos = ~77MB
-Viabilidad: ✅ Totalmente viable en todos los browsers modernos
+Viabilidad: Totalmente viable en todos los browsers modernos
 ```
 
 ## Estructura de Datos
@@ -329,9 +329,9 @@ const { requestPersistentStorage } = useStorage();
 const handleRequest = async () => {
   const granted = await requestPersistentStorage();
   if (granted) {
-    console.log('✓ Data is now protected from automatic deletion');
+    console.log('Data is now protected from automatic deletion');
   } else {
-    console.warn('⚠️ User denied persistent storage');
+    console.warn('User denied persistent storage');
   }
 };
 ```
