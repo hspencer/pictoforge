@@ -1,4 +1,19 @@
-# PictoForge Storage System
+# ⚠️ DEPRECATED - See New Documentation
+
+**This file has been replaced by comprehensive English documentation.**
+
+**➡️ New Location:** [`docs/storage/README.md`](./storage/README.md)
+
+The new storage documentation provides:
+- Complete English documentation
+- Detailed data structures and schemas
+- Full API reference with examples
+- Current (localStorage) and planned (IndexedDB) implementations
+- Usage patterns and best practices
+
+---
+
+# PictoForge Storage System (Legacy - Spanish)
 
 ## Arquitectura
 

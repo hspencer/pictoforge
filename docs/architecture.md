@@ -105,27 +105,74 @@ Accessibility is a key architectural consideration.
 -   **Component Interaction**: Interactive editing components like `NodeEditor` are designed to be fully keyboard-accessible. Handles are treated as interactive elements and are manipulable with mouse drag operations.
 -   **Screen Reader Support**: `aria-label` attributes and hidden instruction blocks provide context for users of screen readers.
 
-## 8. Semantic Layer (Phase 2 - In Progress)
+## 8. Storage System
+
+**Status**: v0.0.2 - Implemented (localStorage-based)
+
+PictoForge uses a persistent storage system following the **SVG-as-source-of-truth** principle. Each SVG contains complete semantic metadata, and the database stores only indexed fields for fast querying.
+
+### 8.1. Storage Architecture
+
+-   **Database**: Currently localStorage, planned migration to IndexedDB
+-   **Three-Store Design**:
+    -   **`pictograms`**: Active workspace for generated pictograms pending review (~7.5KB each)
+    -   **`vocabulary`**: Verified, reusable elements (simple objects, actions, compounds) (~2KB each)
+    -   **`settings`**: User preferences and configuration (<1KB total)
+
+### 8.2. Core Principles
+
+-   **No Data Duplication**: SVG contains all metadata; storage only indexes for queries
+-   **Self-Contained SVGs**: Each SVG includes `<metadata>`, `<title>`, `<desc>`, semantic `data-*` attributes
+-   **Capacity**: 10,000 vocabulary elements = ~77MB (fully viable on modern browsers)
+-   **Persistence**: Supports browser persistent storage API to protect from auto-deletion
+
+### 8.3. Hook Interface
+
+```javascript
+const {
+  // Current: localStorage operations
+  saveSVG, loadLastSVG, getRecentSVGs,
+  updateConfig, getStorageStats,
+  exportHistory, importHistory,
+
+  // Planned: IndexedDB operations
+  savePictogram, getAllPictograms,
+  saveVocabulary, searchVocabulary,
+  getStorageQuota, requestPersistentStorage
+} = useSVGStorage();
+```
+
+### 8.4. Documentation
+
+**Complete storage documentation**: [docs/storage/README.md](./storage/README.md)
+
+-   [Data Structures](./storage/data-structures.md) - Schema definitions and TypeScript interfaces
+-   [API Methods](./storage/api-methods.md) - Complete method reference with examples
+-   [Usage Examples](./storage/examples.md) - Common patterns and workflows
+
+---
+
+## 9. Semantic Layer (Phase 2 - In Progress)
 
 **Status**: Phase 2.1 Complete (Infrastructure setup)
 
 The Semantic Layer is an **optional, non-invasive addition** that enables round-trip editing between SVG visual representation and NLU (Natural Language Understanding) semantic structure.
 
-### 8.1. Architecture Philosophy
+### 9.1. Architecture Philosophy
 
 -   **Feature-Flagged**: Only active when NLU schema is present
 -   **Non-Breaking**: Visual editor works independently without schema
 -   **Metadata Enrichment**: Adds semantic meaning without modifying rendering
 -   **External Reference**: NLU Schema maintained as git submodule (independently updatable)
 
-### 8.2. NLU Schema Integration
+### 9.2. NLU Schema Integration
 
 -   **Location**: `schemas/nlu-schema/` (git submodule)
 -   **Repository**: https://github.com/mediafranca/nlu-schema
 -   **Version**: 1.0.1 (stable)
 -   **Format**: JSON Schema with frames, visual_guidelines, logical_form, pragmatics
 
-### 8.3. Semantic Layer Structure
+### 9.3. Semantic Layer Structure
 
 ```
 src/semantic/
@@ -143,7 +190,7 @@ src/semantic/
     └── nlu-schema.d.ts         (Phase 2.2)
 ```
 
-### 8.4. SVG ↔ NLU Mapping
+### 9.4. SVG ↔ NLU Mapping
 
 Semantic elements are mapped to SVG via `data-*` attributes:
 

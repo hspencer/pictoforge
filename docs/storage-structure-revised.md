@@ -1,4 +1,19 @@
-# PictoForge Storage Structure (Revised)
+# ⚠️ DEPRECATED - See New Documentation
+
+**This file has been replaced by comprehensive English documentation.**
+
+**➡️ New Location:** [`docs/storage/data-structures.md`](./storage/data-structures.md)
+
+The new documentation includes:
+- Complete schema definitions in English
+- Unified vocabulary structure (canonical + blends)
+- TypeScript interfaces
+- Detailed examples for all entry types
+- Index specifications
+
+---
+
+# PictoForge Storage Structure (Legacy - Spanish)
 
 ## Cambio: Unificar `canonical` + `blends` → `vocabulary`
 

@@ -20,7 +20,15 @@ Welcome to the technical documentation for PictoForge. This site provides a comp
 
 *   **[API Reference](./api-reference.md):** Detailed reference for all custom services, React hooks, and UI components.
 
-*   **[Storage System](./storage.md):** Guide to the local storage system, including the `useLocalStorage` and `useSVGStorage` hooks.
+## Storage System
+
+*   **[Storage Overview](./storage/README.md):** Complete guide to PictoForge's storage system with SVG-as-source-of-truth architecture, three-store design, and capacity planning.
+
+*   **[Data Structures](./storage/data-structures.md):** Detailed schema definitions for pictograms, vocabulary entries, and settings with TypeScript interfaces and examples.
+
+*   **[API Methods](./storage/api-methods.md):** Complete method reference for current (localStorage) and planned (IndexedDB) implementations with usage patterns.
+
+*   **[Usage Examples](./storage/examples.md):** Common patterns, workflows, and best practices for storage operations.
 
 ## UI & Styling
 
