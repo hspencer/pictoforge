@@ -28,7 +28,8 @@ export const SVGViewer = ({
   onElementSelect,
   svgData,
   initialTool = 'select',
-  onToolChange
+  onToolChange,
+  onSaveHistory
 }) => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
@@ -37,6 +38,7 @@ export const SVGViewer = ({
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
   const [zoomInputValue, setZoomInputValue] = useState('100%');
   const [marqueeRect, setMarqueeRect] = useState(null); // Rectángulo de selección marquee
+  const [elementVersion, setElementVersion] = useState(0); // Para forzar re-render cuando cambia el elemento
 
   // Wrapper para setTool que también llama al callback
   const setTool = (newTool) => {
@@ -95,11 +97,11 @@ export const SVGViewer = ({
 
   // Opciones para Panzoom, memoizadas para evitar recreación
   const panzoomOptions = useMemo(() => ({
-    maxScale: 10,
-    minScale: 0.05, // Permitir zoom out hasta 5% para compensar la escala inicial
-    step: 0.3,
+    maxScale: 50,
+    minScale: 0.001, // Permitir zoom out extremo
+    step: 0.015, // Ultra-suave para trackpad (0.05 * 0.3)
     startScale: 1,
-    canvas: true,
+    // Sin restricciones de contain ni canvas
   }), []);
 
   // Sistema de zoom y pan con @panzoom/panzoom
@@ -108,6 +110,7 @@ export const SVGViewer = ({
     zoomIn: panzoomZoomIn,
     zoomOut: panzoomZoomOut,
     zoom,
+    pan: panzoomPan,
     reset: panzoomReset,
   } = usePanzoom({
     elementRef: svgContainerRef,
@@ -217,9 +220,19 @@ export const SVGViewer = ({
       scale: svgWidth / viewBox.width
     });
 
-    // Recalcular zoom después de establecer el tamaño
-    setTimeout(calculateRealZoom, 0);
-  }, [svgContent, calculateRealZoom]);
+    // Centrar el SVG en el viewport
+    setTimeout(() => {
+      const svgRect = svgElement.getBoundingClientRect();
+      const panX = (containerWidth - svgRect.width) / 2;
+      const panY = (containerHeight - svgRect.height) / 2;
+
+      // Usar panzoom para posicionar
+      panzoomPan(panX, panY, { animate: false });
+
+      calculateRealZoom();
+      console.log('🎯 SVG centrado en viewport:', { panX, panY });
+    }, 100);
+  }, [svgContent, calculateRealZoom, panzoomPan]);
 
   // Sistema unificado de coordenadas y manipulación con SVGWorld
   const {
@@ -241,6 +254,13 @@ export const SVGViewer = ({
     canUndo,
     canRedo
   } = useHistory(svgContent);
+
+  // Registrar callback de historial con el padre
+  useEffect(() => {
+    if (onSaveHistory) {
+      onSaveHistory(saveToHistory);
+    }
+  }, [onSaveHistory, saveToHistory]);
 
   // Sistema de rendimiento
   const {
@@ -738,15 +758,13 @@ export const SVGViewer = ({
                       </g>
                     )}
 
-                    {/* Controles de edición - SOLO si hay elemento seleccionado válido */}
+                    {/* Controles de edición - SIEMPRE visible cuando hay elemento seleccionado */}
                     {selectedSVGElement && selectedSVGElement.id && typeof selectedSVGElement.getBBox === 'function' && (() => {
                       const [vbX, vbY, vbWidth, vbHeight] = parsedSVG.viewBox.split(' ').map(Number);
                       const viewBox = { x: vbX, y: vbY, width: vbWidth, height: vbHeight };
 
-                      // Solo renderizar el grupo si la herramienta es select o node
-                      if (tool !== 'select' && tool !== 'node') {
-                        return null;
-                      }
+                      // SIMPLIFICACIÓN: Siempre mostrar controles cuando hay selección
+                      // No requerir cambio de herramienta para ver el elemento seleccionado
 
                       return (
                         <g
@@ -755,7 +773,7 @@ export const SVGViewer = ({
                             pointerEvents: 'none'
                           }}
                         >
-                          {/* BoundingBox - Para herramientas SELECT y NODE (flecha negra y blanca) */}
+                          {/* BoundingBox - SIEMPRE visible para indicar selección */}
                           {(() => {
                             // Obtener bbox - Por ahora usamos getBBox() nativo
                             // TODO: Implementar transformación manual para elementos con transforms
@@ -863,9 +881,6 @@ export const SVGViewer = ({
                                       const newTy = currentTy + svgDelta.dy;
 
                                       elementToTransform.setAttribute('transform', `translate(${newTx}, ${newTy})`);
-
-                                      // Forzar re-render
-                                      setSelectedSVGElement({...elementToTransform});
                                     };
 
                                     const handleMouseUp = () => {
@@ -876,7 +891,9 @@ export const SVGViewer = ({
                                         constrained: shiftPressed
                                       });
                                       if (svgRef.current) {
-                                        saveToHistory(svgRef.current.innerHTML);
+                                        const content = svgRef.current.innerHTML;
+                                        saveToHistory(content);
+                                        onSaveHistory?.(content);
                                       }
                                     };
 
@@ -885,8 +902,8 @@ export const SVGViewer = ({
                                   }}
                                 />
 
-                                {/* Handles en las esquinas - Tamaño constante en píxeles */}
-                                {[
+                                {/* Handles en las esquinas - SOLO con herramienta SELECT */}
+                                {tool === 'select' && [
                                   { x: x, y: y, cursor: 'nw-resize', id: 'nw' },
                                   { x: x + width, y: y, cursor: 'ne-resize', id: 'ne' },
                                   { x: x + width, y: y + height, cursor: 'se-resize', id: 'se' },
@@ -1007,9 +1024,6 @@ export const SVGViewer = ({
                                           'transform',
                                           `translate(${tx}, ${ty}) scale(${finalScaleX}, ${finalScaleY})`
                                         );
-
-                                        // Forzar re-render
-                                        setSelectedSVGElement({...selectedSVGElement});
                                       };
 
                                       const handleMouseUp = () => {
@@ -1031,18 +1045,20 @@ export const SVGViewer = ({
                                   />
                                 ))}
 
-                                {/* Manipulador de rotación */}
-                                <line
-                                  x1={x + width / 2}
-                                  y1={y}
-                                  x2={x + width / 2}
-                                  y2={y - rotateHandleOffset}
-                                  stroke="#3b82f6"
-                                  strokeWidth={strokeWidth}
-                                  vectorEffect="non-scaling-stroke"
-                                  pointerEvents="none"
-                                />
-                                <circle
+                                {/* Manipulador de rotación - SOLO con herramienta SELECT */}
+                                {tool === 'select' && (
+                                  <>
+                                    <line
+                                      x1={x + width / 2}
+                                      y1={y}
+                                      x2={x + width / 2}
+                                      y2={y - rotateHandleOffset}
+                                      stroke="#3b82f6"
+                                      strokeWidth={strokeWidth}
+                                      vectorEffect="non-scaling-stroke"
+                                      pointerEvents="none"
+                                    />
+                                    <circle
                                   cx={x + width / 2}
                                   cy={y - rotateHandleOffset}
                                   r={handleSize / 2}
@@ -1115,9 +1131,6 @@ export const SVGViewer = ({
                                       }
 
                                       selectedSVGElement.setAttribute('transform', transform.trim());
-
-                                      // Forzar re-render
-                                      setSelectedSVGElement({...selectedSVGElement});
                                     };
 
                                     const handleMouseUp = () => {
@@ -1135,6 +1148,8 @@ export const SVGViewer = ({
                                     document.addEventListener('mouseup', handleMouseUp);
                                   }}
                                 />
+                                  </>
+                                )}
                               </>
                             );
                           })()}
@@ -1142,6 +1157,7 @@ export const SVGViewer = ({
                           {/* NodeEditor - Solo para herramientas NODE y PEN */}
                           {(tool === 'node' || tool === 'pen') && (
                             <NodeEditor
+                              key={`node-editor-${selectedSVGElement?.id}-${elementVersion}`}
                               element={selectedSVGElement}
                               tool={tool}
                               visible={true}
@@ -1150,8 +1166,8 @@ export const SVGViewer = ({
                               onNodeChange={(oldNode, newNode) => {
                                 // Actualizar el path en tiempo real
                                 updateNodeInPath(selectedSVGElement, oldNode.index, newNode);
-                                // Forzar re-render para actualizar visualización
-                                setSelectedSVGElement({...selectedSVGElement});
+                                // Incrementar versión para forzar re-render del NodeEditor
+                                setElementVersion(v => v + 1);
                               }}
                               onNodeDragEnd={() => {
                                 console.log('✅ Edición de nodos finalizada, guardando historial');

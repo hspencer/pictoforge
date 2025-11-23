@@ -45,15 +45,14 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
 
     // Configuración por defecto de panzoom
     const defaultOptions = {
-      maxScale: 10,
-      minScale: 0.1,
-      step: 0.1,
+      maxScale: 20,
+      minScale: 0.01,
+      step: 0.015, // Reducido a 0.015 para zoom ultra-suave con trackpad (0.05 * 0.3)
       startScale: 1,
       startX: 0,
       startY: 0,
       cursor: 'grab',
-      canvas: true, // Permite pan fuera de los límites
-      contain: 'outside', // Permite pan sin restricciones
+      // NO usar contain ni canvas - eliminar restricciones completamente
       ...panzoomOptions,
     };
 

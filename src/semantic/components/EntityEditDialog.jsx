@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Sparkles, Type } from 'lucide-react';
+import { X, Sparkles, Type, Image, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import DraggableModal from '@/components/DraggableModal';
 
 /**
@@ -23,8 +31,34 @@ export const EntityEditDialog = ({
   onRegenerateEntity
 }) => {
   const [localName, setLocalName] = useState('');
+  const [localClass, setLocalClass] = useState('');
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
+
+  /**
+   * Extrae las clases CSS disponibles del SVG padre
+   */
+  const availableClasses = useMemo(() => {
+    if (!entity?.element) return [];
+
+    const svgRoot = entity.element.closest('svg');
+    const styleElement = svgRoot?.querySelector('style');
+
+    if (!styleElement) return [];
+
+    const styleContent = styleElement.textContent;
+    // Extraer nombres de clases del CSS (buscar .nombre-clase)
+    const classMatches = styleContent.match(/\.([a-zA-Z0-9_-]+)\s*\{/g);
+
+    if (!classMatches) return [];
+
+    // Limpiar y deduplicar
+    const classes = classMatches
+      .map(match => match.replace(/^\./, '').replace(/\s*\{$/, ''))
+      .filter((value, index, self) => self.indexOf(value) === index);
+
+    return classes;
+  }, [entity]);
 
   /**
    * Genera el preview SVG del elemento con estilos embebidos
@@ -92,10 +126,11 @@ export const EntityEditDialog = ({
     }
   }, [entity]);
 
-  // Sincronizar nombre cuando cambia la entidad
+  // Sincronizar nombre y clase cuando cambia la entidad
   useEffect(() => {
     if (entity) {
       setLocalName(entity.id || entity.tagName || 'unnamed');
+      setLocalClass(entity.element?.getAttribute('class') || 'inherit');
       setRegeneratePrompt('');
     }
   }, [entity]);
@@ -106,6 +141,25 @@ export const EntityEditDialog = ({
     onUpdateEntity?.({
       ...entity,
       id: localName
+    });
+  };
+
+  const handleClassChange = (newClass) => {
+    setLocalClass(newClass);
+
+    // Aplicar clase al elemento DOM inmediatamente
+    if (entity.element) {
+      if (newClass === 'inherit') {
+        entity.element.removeAttribute('class');
+      } else {
+        entity.element.setAttribute('class', newClass);
+      }
+    }
+
+    // Notificar actualización
+    onUpdateEntity?.({
+      ...entity,
+      className: newClass === 'inherit' ? null : newClass
     });
   };
 
@@ -136,18 +190,27 @@ export const EntityEditDialog = ({
       storageKey="entity-editor"
     >
       <div className="space-y-6 p-4">
-        {/* Preview de la entidad */}
+        {/* Preview de la entidad con pestañas */}
         <section className="border rounded-lg p-4 bg-muted/10">
-          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-            <Type size={16} />
-            Entity Preview
-          </h3>
-          <div
-            className="border rounded p-4 flex items-center justify-center min-h-[400px]"
-            style={{
-              backgroundColor: 'var(--canvas-bg)'
-            }}
-          >
+          <Tabs defaultValue="image" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="image" className="flex items-center gap-2">
+                <Image size={16} />
+                Image
+              </TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-2">
+                <Code size={16} />
+                Code
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="image" className="mt-2">
+              <div
+                className="border rounded p-4 flex items-center justify-center min-h-[400px]"
+                style={{
+                  backgroundColor: 'var(--canvas-bg)'
+                }}
+              >
             {svgPreview ? (
               <div
                 className="flex items-center justify-center"
@@ -176,16 +239,50 @@ export const EntityEditDialog = ({
                 </p>
               </div>
             )}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Tag: <strong>{entity.tagName}</strong> |
-            Children: <strong>{entity.children?.length || 0}</strong>
-            {svgPreview && (
-              <>
-                {' | '}Size: <strong>{Math.round(svgPreview.width)}×{Math.round(svgPreview.height)}</strong>
-              </>
-            )}
-          </p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Tag: <strong>{entity.tagName}</strong> |
+                Children: <strong>{entity.children?.length || 0}</strong>
+                {svgPreview && (
+                  <>
+                    {' | '}Size: <strong>{Math.round(svgPreview.width)}×{Math.round(svgPreview.height)}</strong>
+                  </>
+                )}
+              </p>
+            </TabsContent>
+
+            <TabsContent value="code" className="mt-2">
+              <div className="border rounded p-4 bg-muted/5">
+                <pre className="text-xs font-mono overflow-auto max-h-[400px] whitespace-pre-wrap">
+                  {(() => {
+                    if (!entity.element) return '<No element available>';
+
+                    // Obtener solo el elemento específico, formateado
+                    const element = entity.element;
+                    const tagName = element.tagName;
+                    const attributes = Array.from(element.attributes)
+                      .map(attr => `${attr.name}="${attr.value}"`)
+                      .join(' ');
+
+                    // Si el elemento tiene contenido de texto, incluirlo
+                    const hasChildren = element.children.length > 0;
+                    const textContent = !hasChildren && element.textContent ? element.textContent : '';
+
+                    if (hasChildren) {
+                      return `<${tagName} ${attributes}>\n  <!-- ${element.children.length} child elements -->\n</${tagName}>`;
+                    } else if (textContent) {
+                      return `<${tagName} ${attributes}>${textContent}</${tagName}>`;
+                    } else {
+                      return `<${tagName} ${attributes} />`;
+                    }
+                  })()}
+                </pre>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                SVG code for this specific element only
+              </p>
+            </TabsContent>
+          </Tabs>
         </section>
 
         {/* Cambiar nombre/ID */}
@@ -209,6 +306,27 @@ export const EntityEditDialog = ({
           </div>
           <p className="text-xs text-muted-foreground">
             Change the ID of this element in the SVG.
+          </p>
+        </section>
+
+        {/* Selector de clase CSS */}
+        <section className="space-y-2">
+          <Label htmlFor="entityClass">CSS Class</Label>
+          <Select value={localClass} onValueChange={handleClassChange}>
+            <SelectTrigger id="entityClass">
+              <SelectValue placeholder="Select a class..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="inherit">inherit (no class)</SelectItem>
+              {availableClasses.map((className) => (
+                <SelectItem key={className} value={className}>
+                  {className}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Apply a CSS class to this element. Classes are defined in the SVG &lt;style&gt; tag.
           </p>
         </section>
 
