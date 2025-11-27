@@ -569,6 +569,7 @@ function AppContent() {
                 svgData={svgData}
                 initialTool={currentTool}
                 onToolChange={setCurrentTool}
+                onSVGUpdate={handleSVGUpdate}
                 onSaveHistory={(saveCallback) => {
                   svgHistoryCallback.current = saveCallback;
                 }}
@@ -621,6 +622,7 @@ function AppContent() {
                 svgData={svgData}
                 initialTool={currentTool}
                 onToolChange={setCurrentTool}
+                onSVGUpdate={handleSVGUpdate}
                 onSaveHistory={(saveCallback) => {
                   svgHistoryCallback.current = saveCallback;
                 }}

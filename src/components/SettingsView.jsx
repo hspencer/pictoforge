@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { useI18n } from '@/hooks/useI18n';
 import DraggableModal from './DraggableModal';
-import LocationMapPicker from './LocationMapPicker';
+// import LocationMapPicker from './LocationMapPicker'; // Commented out - requires leaflet dependency
 
 /**
  * Vista de pantalla completa para configuración de opciones locales
@@ -304,15 +304,16 @@ export const SettingsView = ({ isOpen, onClose, config, onSave }) => {
               <MapPin size={16} />
               {t('location')}
             </Label>
-            <LocationMapPicker
-              location={localConfig.location}
-              onLocationChange={(newLocation) => {
-                setLocalConfig(prev => ({
-                  ...prev,
-                  location: newLocation
-                }));
-              }}
-            />
+            {/* LocationMapPicker temporarily disabled - requires leaflet dependency */}
+            <div className="p-3 bg-muted/20 rounded-md text-sm text-muted-foreground">
+              {localConfig.location?.address || 'No location set'}
+              <br />
+              <span className="text-xs">
+                {localConfig.location?.coordinates ?
+                  `${localConfig.location.coordinates.lat.toFixed(4)}, ${localConfig.location.coordinates.lng.toFixed(4)}`
+                  : ''}
+              </span>
+            </div>
           </section>
 
           {/* Layout */}

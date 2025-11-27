@@ -29,6 +29,7 @@ export const SVGViewer = ({
   svgData,
   initialTool = 'select',
   onToolChange,
+  onSVGUpdate,
   onSaveHistory
 }) => {
   const svgRef = useRef(null);
@@ -248,6 +249,7 @@ export const SVGViewer = ({
 
   // Sistema de historial
   const {
+    currentState,
     pushState: saveToHistory,
     undo: undoChange,
     redo: redoChange,
@@ -261,6 +263,16 @@ export const SVGViewer = ({
       onSaveHistory(saveToHistory);
     }
   }, [onSaveHistory, saveToHistory]);
+
+  // Restaurar SVG desde el historial cuando se hace undo/redo
+  useEffect(() => {
+    // Solo restaurar si currentState es diferente al svgContent actual
+    // y si no es el estado inicial (para evitar restaurar al cargar)
+    if (currentState && currentState !== svgContent && onSVGUpdate) {
+      console.log('🔄 Restaurando SVG desde historial (undo/redo)');
+      onSVGUpdate(currentState);
+    }
+  }, [currentState]);
 
   // Sistema de rendimiento
   const {
@@ -1172,7 +1184,20 @@ export const SVGViewer = ({
                               onNodeDragEnd={() => {
                                 console.log('✅ Edición de nodos finalizada, guardando historial');
                                 if (svgRef.current) {
-                                  saveToHistory(svgRef.current.innerHTML);
+                                  // Obtener el SVG completo serializado
+                                  const svgElement = svgRef.current.querySelector('svg');
+                                  if (svgElement) {
+                                    const serializedSVG = svgElement.outerHTML;
+                                    console.log('📦 SVG serializado:', serializedSVG.substring(0, 200) + '...');
+
+                                    // Guardar en el historial
+                                    saveToHistory(serializedSVG);
+
+                                    // Actualizar el padre (App.jsx) con el nuevo SVG
+                                    if (onSVGUpdate) {
+                                      onSVGUpdate(serializedSVG);
+                                    }
+                                  }
                                 }
                               }}
                               screenDeltaToSVGDelta={screenDeltaToSVGDelta}
