@@ -341,6 +341,7 @@ export const addNodeToPath = (element, position, nodeType = 'line') => {
   element.setAttribute('d', newPathData);
 };
 
+
 /**
  * Elimina un nodo de un path
  */
@@ -356,3 +357,212 @@ export const removeNodeFromPath = (element, nodeIndex) => {
     element.setAttribute('d', newPathData);
   }
 };
+
+// ============================================================================
+// MATH HELPERS FOR PATH MANIPULATION
+// ============================================================================
+
+const distanceSq = (p1, p2) => (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2;
+const distance = (p1, p2) => Math.sqrt(distanceSq(p1, p2));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/**
+ * Calculates a point on a cubic Bezier curve at parameter t
+ */
+const getPointOnCubicBezier = (p0, cp1, cp2, p3, t) => {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+
+  return {
+    x: mt3 * p0.x + 3 * mt2 * t * cp1.x + 3 * mt * t2 * cp2.x + t3 * p3.x,
+    y: mt3 * p0.y + 3 * mt2 * t * cp1.y + 3 * mt * t2 * cp2.y + t3 * p3.y
+  };
+};
+
+/**
+ * Splits a cubic Bezier curve at parameter t into two curves
+ * Uses De Casteljau's algorithm
+ */
+const splitCubicBezier = (p0, cp1, cp2, p3, t) => {
+  const x01 = lerp(p0.x, cp1.x, t);
+  const y01 = lerp(p0.y, cp1.y, t);
+  const x12 = lerp(cp1.x, cp2.x, t);
+  const y12 = lerp(cp1.y, cp2.y, t);
+  const x23 = lerp(cp2.x, p3.x, t);
+  const y23 = lerp(cp2.y, p3.y, t);
+
+  const x012 = lerp(x01, x12, t);
+  const y012 = lerp(y01, y12, t);
+  const x123 = lerp(x12, x23, t);
+  const y123 = lerp(y12, y23, t);
+
+  const x0123 = lerp(x012, x123, t);
+  const y0123 = lerp(y012, y123, t);
+
+  return [
+    {
+      cp1: { x: x01, y: y01 },
+      cp2: { x: x012, y: y012 },
+      end: { x: x0123, y: y0123 }
+    },
+    {
+      cp1: { x: x123, y: y123 },
+      cp2: { x: x23, y: y23 },
+      end: { x: p3.x, y: p3.y }
+    }
+  ];
+};
+
+/**
+ * Finds the closest point on a path segment to a target point
+ * Returns { t, distance, x, y, segmentIndex }
+ */
+export const findClosestPointOnPath = (pathData, targetPoint) => {
+  const nodes = parsePathNodes(pathData);
+  let closest = { distance: Infinity, t: 0, segmentIndex: -1, x: 0, y: 0 };
+
+  // Iterate through all segments
+  for (let i = 1; i < nodes.length; i++) {
+    const startNode = nodes[i - 1];
+    const endNode = nodes[i];
+    
+    // Skip move commands (they don't draw lines)
+    if (endNode.type === 'move') continue;
+
+    let localClosest = { distance: Infinity, t: 0, x: 0, y: 0 };
+
+    if (endNode.type === 'line' || endNode.type === 'close') {
+      // Line segment projection
+      const dx = endNode.x - startNode.x;
+      const dy = endNode.y - startNode.y;
+      const lengthSq = dx * dx + dy * dy;
+      
+      let t = 0;
+      if (lengthSq > 0) {
+        t = ((targetPoint.x - startNode.x) * dx + (targetPoint.y - startNode.y) * dy) / lengthSq;
+        t = Math.max(0, Math.min(1, t));
+      }
+      
+      const x = startNode.x + t * dx;
+      const y = startNode.y + t * dy;
+      localClosest = { distance: distance({ x, y }, targetPoint), t, x, y };
+
+    } else if (endNode.type === 'curve') {
+      // Cubic Bezier - approximate by sampling
+      // TODO: Implement more precise algorithm?
+      const steps = 20;
+      for (let j = 0; j <= steps; j++) {
+        const t = j / steps;
+        const p = getPointOnCubicBezier(
+          startNode, 
+          endNode.cp1 || startNode, // Fallback for shorthand if needed (though parser should handle it)
+          endNode.cp2, 
+          endNode, 
+          t
+        );
+        const dist = distance(p, targetPoint);
+        if (dist < localClosest.distance) {
+          localClosest = { distance: dist, t, x: p.x, y: p.y };
+        }
+      }
+      
+      // Refine search around closest sample
+      const refineSteps = 10;
+      const range = 1 / steps;
+      const startT = Math.max(0, localClosest.t - range);
+      const endT = Math.min(1, localClosest.t + range);
+      
+      for (let j = 0; j <= refineSteps; j++) {
+        const t = startT + (endT - startT) * (j / refineSteps);
+        const p = getPointOnCubicBezier(
+          startNode, 
+          endNode.cp1 || startNode, 
+          endNode.cp2, 
+          endNode, 
+          t
+        );
+        const dist = distance(p, targetPoint);
+        if (dist < localClosest.distance) {
+          localClosest = { distance: dist, t, x: p.x, y: p.y };
+        }
+      }
+    }
+
+    if (localClosest.distance < closest.distance) {
+      closest = { ...localClosest, segmentIndex: i };
+    }
+  }
+
+  return closest;
+};
+
+/**
+ * Splits the path at the specified segment and parameter t
+ * Inserts a new node at that position
+ */
+export const splitPathAtSegment = (element, segmentIndex, t) => {
+  if (!element || element.tagName !== 'path') return null;
+
+  const pathData = element.getAttribute('d');
+  const nodes = parsePathNodes(pathData);
+  
+  if (segmentIndex < 1 || segmentIndex >= nodes.length) return null;
+
+  const startNode = nodes[segmentIndex - 1];
+  const targetNode = nodes[segmentIndex];
+
+  const newNode = {
+    id: `node-split-${Date.now()}`,
+    type: targetNode.type,
+    command: targetNode.command,
+    index: segmentIndex
+  };
+
+  if (targetNode.type === 'line' || targetNode.type === 'close') {
+    // Split line: straightforward
+    newNode.type = 'line';
+    newNode.command = 'L'; // Ensure it's a line
+    newNode.x = lerp(startNode.x, targetNode.x, t);
+    newNode.y = lerp(startNode.y, targetNode.y, t);
+    
+    // The original node remains as it was (endpoint)
+    // We insert the new node BEFORE it
+    nodes.splice(segmentIndex, 0, newNode);
+
+  } else if (targetNode.type === 'curve') {
+    // Split Bezier
+    const [curve1, curve2] = splitCubicBezier(
+      startNode, 
+      targetNode.cp1, 
+      targetNode.cp2, 
+      targetNode, 
+      t
+    );
+
+    // New node becomes the endpoint of the first split curve
+    newNode.type = 'curve';
+    newNode.command = 'C';
+    newNode.x = curve1.end.x;
+    newNode.y = curve1.end.y;
+    newNode.cp1 = curve1.cp1;
+    newNode.cp2 = curve1.cp2;
+
+    // Modify the original target node to be the endpoint of the second split curve
+    targetNode.cp1 = curve2.cp1;
+    targetNode.cp2 = curve2.cp2;
+    // targetNode ends at same x,y
+
+    nodes.splice(segmentIndex, 0, newNode);
+  } else {
+    // Not supported split
+    return null;
+  }
+
+  const newPathData = buildPathFromNodes(nodes);
+  element.setAttribute('d', newPathData);
+  return newNode;
+};
+

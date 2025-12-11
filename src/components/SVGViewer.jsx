@@ -8,7 +8,7 @@ import {
   Redo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon } from './CustomIcons';
+import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon, HandIcon } from './CustomIcons';
 import NodeEditor from './NodeEditor';
 import useHistory from '../hooks/useHistory';
 import usePerformance from '../hooks/usePerformance';
@@ -36,6 +36,10 @@ export const SVGViewer = ({
   const containerRef = useRef(null);
   const svgContainerRef = useRef(null); // Ref para el contenedor panzoom
   const [tool, setToolInternal] = useState(initialTool);
+  // Estado para saber si estamos en modo panning temporal (espacio presionado)
+  const [isSpacePanning, setIsSpacePanning] = useState(false);
+  const [lastTool, setLastTool] = useState(initialTool);
+
   const [selectedSVGElement, setSelectedSVGElement] = useState(null);
   const [zoomInputValue, setZoomInputValue] = useState('100%');
   const [marqueeRect, setMarqueeRect] = useState(null); // Rectángulo de selección marquee
@@ -51,6 +55,47 @@ export const SVGViewer = ({
   useEffect(() => {
     setToolInternal(initialTool);
   }, [initialTool]);
+
+  // Ref para trackear si el mouse está sobre el canvas sin provocar re-renders
+  const isHoveringRef = useRef(false);
+
+  // Manejo de barra espaciadora para panning temporal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Solo si la barra espaciadora es presionada y no estamos editando texto
+      if (e.code === 'Space' && !e.repeat && document.activeElement.tagName !== 'INPUT') {
+        // Verificar si estamos sobre el canvas o si el contenedor tiene el foco
+        const isFocused = document.activeElement === containerRef.current || containerRef.current?.contains(document.activeElement);
+        const shouldActivate = isHoveringRef.current || isFocused;
+
+        if (shouldActivate) {
+          e.preventDefault(); // Evitar scroll
+          if (tool !== 'hand') {
+            setLastTool(tool);
+            setTool('hand');
+            setIsSpacePanning(true);
+          }
+        }
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.code === 'Space' && isSpacePanning) {
+        e.preventDefault();
+        setTool(lastTool);
+        setIsSpacePanning(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [tool, isSpacePanning, lastTool]);
+
 
   /**
    * Parsear SVG content para extraer viewBox y contenido interno.
@@ -97,13 +142,17 @@ export const SVGViewer = ({
   }, [svgContent]);
 
   // Opciones para Panzoom, memoizadas para evitar recreación
+  // DEPENDEN DEL TOOL: Si no es 'hand', deshabilitar pan
   const panzoomOptions = useMemo(() => ({
     maxScale: 50,
     minScale: 0.001, // Permitir zoom out extremo
     step: 0.015, // Ultra-suave para trackpad (0.05 * 0.3)
     startScale: 1,
+    // Deshabilitar pan si no estamos en herramienta mano
+    disablePan: tool !== 'hand',
+    cursor: tool === 'hand' ? 'grab' : 'default',
     // Sin restricciones de contain ni canvas
-  }), []);
+  }), [tool]);
 
   // Sistema de zoom y pan con @panzoom/panzoom
   const {
@@ -125,7 +174,7 @@ export const SVGViewer = ({
   const calculateRealZoom = useCallback(() => {
     const svgElement = svgContainerRef.current?.querySelector('svg');
     if (!svgElement) {
-      console.log('🔍 calculateRealZoom: No SVG element found, using panzoom scale');
+      // console.log('🔍 calculateRealZoom: No SVG element found, using panzoom scale');
       setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
       setRealZoom(panzoomState.scale);
       return panzoomState.scale;
@@ -133,10 +182,10 @@ export const SVGViewer = ({
 
     // Obtener el viewBox del SVG (tamaño lógico original)
     const viewBox = svgElement.viewBox.baseVal;
-    console.log('🔍 calculateRealZoom: viewBox', viewBox ? `${viewBox.width}x${viewBox.height}` : 'null');
+    // console.log('🔍 calculateRealZoom: viewBox', viewBox ? `${viewBox.width}x${viewBox.height}` : 'null');
 
     if (!viewBox || viewBox.width === 0) {
-      console.log('🔍 calculateRealZoom: Invalid viewBox, using panzoom scale');
+      // console.log('🔍 calculateRealZoom: Invalid viewBox, using panzoom scale');
       setZoomInputValue(`${Math.round(panzoomState.scale * 100)}%`);
       setRealZoom(panzoomState.scale);
       return panzoomState.scale;
@@ -144,17 +193,19 @@ export const SVGViewer = ({
 
     // Obtener el tamaño renderizado del SVG
     const bbox = svgElement.getBoundingClientRect();
-    console.log('🔍 calculateRealZoom: bbox', `${bbox.width}x${bbox.height}`);
+    // console.log('🔍 calculateRealZoom: bbox', `${bbox.width}x${bbox.height}`);
 
     // El zoom real es directamente: tamaño renderizado / tamaño lógico
     // bbox.width YA incluye la escala de panzoom, no multiplicar de nuevo
     const calculatedRealZoom = bbox.width / viewBox.width;
+    /*
     console.log('🔍 calculateRealZoom: calculation', {
       bboxWidth: bbox.width,
       viewBoxWidth: viewBox.width,
       realZoom: calculatedRealZoom,
       panzoomScale: panzoomState.scale
     });
+    */
 
     setZoomInputValue(`${Math.round(calculatedRealZoom * 100)}%`);
     setRealZoom(calculatedRealZoom);
@@ -289,6 +340,9 @@ export const SVGViewer = ({
    * Maneja la selección de elementos en el SVG
    */
   const handleElementClick = (event) => {
+    // Si la herramienta es HAND, no hacemos selección
+    if (tool === 'hand') return;
+
     const target = event.target;
     const elementId = target.id || target.getAttribute('id');
 
@@ -296,6 +350,7 @@ export const SVGViewer = ({
     const screenCoords = { x: event.clientX, y: event.clientY };
     const svgCoords = screenToSVG(screenCoords.x, screenCoords.y);
 
+    /*
     console.log('🖱️ Click en elemento:', {
       elementId,
       tagName: target.tagName,
@@ -305,14 +360,15 @@ export const SVGViewer = ({
       panzoomState,
       svgWorldReady: isSVGWorldReady
     });
+    */
 
     if (tool === 'select') {
       // FLECHA NEGRA: Seleccionar elemento completo para mover/escalar/rotar
 
       // Si se hace click en el SVG raíz o sin elemento, iniciar marquee selection
       if (elementId === 'pictogram' || target.tagName === 'svg' || !elementId ||
-          elementId === 'canvas-border' || elementId === 'pictoforge-main-svg') {
-        console.log('🔲 Click en fondo, iniciando marquee selection');
+        elementId === 'canvas-border' || elementId === 'pictoforge-main-svg') {
+        // console.log('🔲 Click en fondo, iniciando marquee selection');
         event.stopPropagation();
 
         // Deseleccionar si no hay Shift presionado
@@ -406,28 +462,31 @@ export const SVGViewer = ({
       const isInsidePictogram = pictogramGroup && pictogramGroup.contains(target);
 
       if (!isInsidePictogram) {
-        console.log('🚫 Click en elemento fuera de pictogram-content, ignorando');
+        // console.log('🚫 Click en elemento fuera de pictogram-content, ignorando');
         return;
       }
 
       if (elementId && svgData) {
         const element = findElementInData(elementId, svgData.root);
-        console.log('✅ Elemento encontrado en data:', element);
+        // console.log('✅ Elemento encontrado en data:', element);
         if (element) {
           onElementSelect(element);
           setSelectedSVGElement(target);
-          console.log('✅ Elemento seleccionado para edición:', elementId);
+          // console.log('✅ Elemento seleccionado para edición:', elementId);
         }
       } else {
         console.warn('⚠️ No se pudo seleccionar:', { elementId, hasSvgData: !!svgData });
       }
     } else if (tool === 'node') {
       // FLECHA BLANCA: Seleccionar cualquier elemento para editar nodos
-      // Comportamiento similar a Direct Selection Tool de Illustrator
+      // Comportamiento de Selección Directa (Direct Selection) estándar
 
-      // Si se hace click en el fondo, deseleccionar
-      if (elementId === 'pictogram' || target.tagName === 'svg' || !elementId) {
-        console.log('🚫 Click en fondo con flecha blanca, deseleccionando');
+      const isSelectableTag = ['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon'].includes(target.tagName.toLowerCase());
+
+      // Si se hace click en el fondo (no es un tag seleccionable y no tiene ID), deseleccionar
+      if (!isSelectableTag && (elementId === 'pictogram' || target.tagName === 'svg' || !elementId || elementId === 'canvas-border')) {
+        // Solo deseleccionar si realmente clickeamos el fondo
+        // console.log('🚫 Click en fondo con flecha blanca, deseleccionando');
         onElementSelect(null);
         setSelectedSVGElement(null);
         return;
@@ -438,19 +497,25 @@ export const SVGViewer = ({
       const isInsidePictogram = pictogramGroup && pictogramGroup.contains(target);
 
       if (!isInsidePictogram) {
-        console.log('🚫 Click fuera de pictogram-content con flecha blanca');
+        // console.log('🚫 Click fuera de pictogram-content con flecha blanca');
         return;
       }
 
-      // Seleccionar elemento (paths, circles, rects, etc.)
+      // Si es un elemento seleccionable, seleccionarlo!
       if (elementId && svgData) {
         const element = findElementInData(elementId, svgData.root);
-        console.log('✅ Elemento encontrado con flecha blanca:', element);
+        // console.log('✅ Elemento encontrado con flecha blanca:', element);
         if (element) {
           onElementSelect(element);
           setSelectedSVGElement(target);
-          console.log('✅ Elemento seleccionado para edición de nodos:', elementId);
+          // console.log('✅ Elemento seleccionado para edición de nodos:', elementId);
         }
+      } else if (isSelectableTag) {
+        // Caso borde: Elemento seleccionable pero sin ID o no encontrado en data
+        // Intentar seleccionarlo visualmente al menos
+        console.warn('⚠️ Elemento seleccionable sin ID en data, seleccionando visualmente:', target);
+        setSelectedSVGElement(target);
+        onElementSelect({ id: elementId || 'temp-id', type: target.tagName, attributes: {} }); // Mock data
       }
     } else if (tool === 'pen') {
       // HERRAMIENTA PLUMA: Similar a node pero para agregar/eliminar nodos
@@ -460,6 +525,33 @@ export const SVGViewer = ({
           onElementSelect(element);
           setSelectedSVGElement(target);
         }
+      }
+    }
+  };
+
+  const handleDoubleClick = (event) => {
+    const target = event.target;
+    // Lista de tags que se pueden editar
+    // Para path es directo, para otros quizás queramos permitir seleccionar
+    if (['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon'].includes(target.tagName.toLowerCase())) {
+      event.stopPropagation();
+      console.log('⚡ Double Click detected on', target.tagName);
+
+      // 1. Cambiar a herramienta 'node'
+      setTool('node');
+
+      // 2. Seleccionar el elemento
+      const elementId = target.id || target.getAttribute('id');
+      if (elementId && svgData) {
+        const element = findElementInData(elementId, svgData.root);
+        if (element) {
+          onElementSelect(element);
+          setSelectedSVGElement(target);
+        }
+      } else {
+        // Fallback visual select
+        setSelectedSVGElement(target);
+        onElementSelect({ id: elementId || 'temp-doubleclick', type: target.tagName, attributes: {} });
       }
     }
   };
@@ -549,6 +641,13 @@ export const SVGViewer = ({
     URL.revokeObjectURL(url);
   };
 
+  // Auto-focus al cargar contenido para que los atajos funcionen inmediatamente
+  useEffect(() => {
+    if (svgContent && containerRef.current) {
+      containerRef.current.focus();
+    }
+  }, [svgContent]);
+
   // Efecto para resaltar elemento seleccionado y actualizar referencia DOM
   useEffect(() => {
     if (!svgRef.current) return;
@@ -565,7 +664,7 @@ export const SVGViewer = ({
       if (element) {
         element.classList.add('highlighted');
         setSelectedSVGElement(element);
-        console.log('🔄 Sincronización: Elemento DOM seleccionado desde prop:', selectedElement.id);
+        // console.log('🔄 Sincronización: Elemento DOM seleccionado desde prop:', selectedElement.id);
       } else {
         console.warn('⚠️ Sincronización: Elemento no encontrado en DOM:', selectedElement.id);
         setSelectedSVGElement(null);
@@ -588,7 +687,13 @@ export const SVGViewer = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div
+      className="h-full flex flex-col bg-background outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+      tabIndex="0"
+      ref={containerRef}
+      onMouseEnter={() => { isHoveringRef.current = true; }}
+      onMouseLeave={() => { isHoveringRef.current = false; }}
+    >
       {/* Barra de herramientas */}
       <div className="flex items-center justify-between p-2 border-b bg-muted/20">
         <div className="flex items-center gap-1">
@@ -615,6 +720,15 @@ export const SVGViewer = ({
             title="Herramienta pluma - Editar nodos"
           >
             <PenToolIcon size={16} />
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button
+            variant={tool === 'hand' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setTool('hand')}
+            title="Herramienta mano - Mover lienzo (Espacio)"
+          >
+            <HandIcon size={16} />
           </Button>
         </div>
 
@@ -1071,95 +1185,95 @@ export const SVGViewer = ({
                                       pointerEvents="none"
                                     />
                                     <circle
-                                  cx={x + width / 2}
-                                  cy={y - rotateHandleOffset}
-                                  r={handleSize / 2}
-                                  fill="white"
-                                  stroke="#3b82f6"
-                                  strokeWidth={strokeWidth}
-                                  vectorEffect="non-scaling-stroke"
-                                  style={{ cursor: 'grab' }}
-                                  pointerEvents="all"
-                                  onMouseDown={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
+                                      cx={x + width / 2}
+                                      cy={y - rotateHandleOffset}
+                                      r={handleSize / 2}
+                                      fill="white"
+                                      stroke="#3b82f6"
+                                      strokeWidth={strokeWidth}
+                                      vectorEffect="non-scaling-stroke"
+                                      style={{ cursor: 'grab' }}
+                                      pointerEvents="all"
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
 
-                                    const shiftPressed = e.shiftKey;
-                                    console.log('🔄 Inicio de rotación', { shiftPressed });
+                                        const shiftPressed = e.shiftKey;
+                                        console.log('🔄 Inicio de rotación', { shiftPressed });
 
-                                    // Centro de rotación (centro del bounding box)
-                                    const centerX = x + width / 2;
-                                    const centerY = y + height / 2;
+                                        // Centro de rotación (centro del bounding box)
+                                        const centerX = x + width / 2;
+                                        const centerY = y + height / 2;
 
-                                    // Convertir centro a coordenadas de pantalla
-                                    const centerScreen = svgToScreen(centerX, centerY);
+                                        // Convertir centro a coordenadas de pantalla
+                                        const centerScreen = svgToScreen(centerX, centerY);
 
-                                    // Obtener transform actual
-                                    const currentTransform = selectedSVGElement.getAttribute('transform') || '';
-                                    const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-                                    const scaleMatch = currentTransform.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
-                                    const rotateMatch = currentTransform.match(/rotate\(([^,)]+)(?:\s*,\s*([^,)]+)\s*,\s*([^)]+))?\)/);
+                                        // Obtener transform actual
+                                        const currentTransform = selectedSVGElement.getAttribute('transform') || '';
+                                        const translateMatch = currentTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                                        const scaleMatch = currentTransform.match(/scale\(([^,)]+)(?:,\s*([^)]+))?\)/);
+                                        const rotateMatch = currentTransform.match(/rotate\(([^,)]+)(?:\s*,\s*([^,)]+)\s*,\s*([^)]+))?\)/);
 
-                                    let currentTx = translateMatch ? parseFloat(translateMatch[1]) : 0;
-                                    let currentTy = translateMatch ? parseFloat(translateMatch[2]) : 0;
-                                    let currentScaleX = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-                                    let currentScaleY = scaleMatch && scaleMatch[2] ? parseFloat(scaleMatch[2]) : currentScaleX;
-                                    let currentRotation = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
+                                        let currentTx = translateMatch ? parseFloat(translateMatch[1]) : 0;
+                                        let currentTy = translateMatch ? parseFloat(translateMatch[2]) : 0;
+                                        let currentScaleX = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+                                        let currentScaleY = scaleMatch && scaleMatch[2] ? parseFloat(scaleMatch[2]) : currentScaleX;
+                                        let currentRotation = rotateMatch ? parseFloat(rotateMatch[1]) : 0;
 
-                                    // Calcular ángulo inicial
-                                    const startAngle = Math.atan2(
-                                      e.clientY - centerScreen.y,
-                                      e.clientX - centerScreen.x
-                                    ) * 180 / Math.PI;
+                                        // Calcular ángulo inicial
+                                        const startAngle = Math.atan2(
+                                          e.clientY - centerScreen.y,
+                                          e.clientX - centerScreen.x
+                                        ) * 180 / Math.PI;
 
-                                    const handleMouseMove = (e) => {
-                                      // Calcular ángulo actual
-                                      const currentAngle = Math.atan2(
-                                        e.clientY - centerScreen.y,
-                                        e.clientX - centerScreen.x
-                                      ) * 180 / Math.PI;
+                                        const handleMouseMove = (e) => {
+                                          // Calcular ángulo actual
+                                          const currentAngle = Math.atan2(
+                                            e.clientY - centerScreen.y,
+                                            e.clientX - centerScreen.x
+                                          ) * 180 / Math.PI;
 
-                                      // Delta de rotación
-                                      let deltaAngle = currentAngle - startAngle;
+                                          // Delta de rotación
+                                          let deltaAngle = currentAngle - startAngle;
 
-                                      // Si Shift está presionado, snap a múltiplos de 15°
-                                      if (shiftPressed || e.shiftKey) {
-                                        const totalAngle = currentRotation + deltaAngle;
-                                        const snappedAngle = Math.round(totalAngle / 15) * 15;
-                                        deltaAngle = snappedAngle - currentRotation;
-                                      }
+                                          // Si Shift está presionado, snap a múltiplos de 15°
+                                          if (shiftPressed || e.shiftKey) {
+                                            const totalAngle = currentRotation + deltaAngle;
+                                            const snappedAngle = Math.round(totalAngle / 15) * 15;
+                                            deltaAngle = snappedAngle - currentRotation;
+                                          }
 
-                                      const newRotation = currentRotation + deltaAngle;
+                                          const newRotation = currentRotation + deltaAngle;
 
-                                      // Construir transform completo
-                                      // Orden: translate, rotate (alrededor del centro del bbox), scale
-                                      let transform = '';
-                                      if (currentTx !== 0 || currentTy !== 0) {
-                                        transform += `translate(${currentTx}, ${currentTy}) `;
-                                      }
-                                      transform += `rotate(${newRotation}, ${centerX}, ${centerY}) `;
-                                      if (currentScaleX !== 1 || currentScaleY !== 1) {
-                                        transform += `scale(${currentScaleX}, ${currentScaleY})`;
-                                      }
+                                          // Construir transform completo
+                                          // Orden: translate, rotate (alrededor del centro del bbox), scale
+                                          let transform = '';
+                                          if (currentTx !== 0 || currentTy !== 0) {
+                                            transform += `translate(${currentTx}, ${currentTy}) `;
+                                          }
+                                          transform += `rotate(${newRotation}, ${centerX}, ${centerY}) `;
+                                          if (currentScaleX !== 1 || currentScaleY !== 1) {
+                                            transform += `scale(${currentScaleX}, ${currentScaleY})`;
+                                          }
 
-                                      selectedSVGElement.setAttribute('transform', transform.trim());
-                                    };
+                                          selectedSVGElement.setAttribute('transform', transform.trim());
+                                        };
 
-                                    const handleMouseUp = () => {
-                                      document.removeEventListener('mousemove', handleMouseMove);
-                                      document.removeEventListener('mouseup', handleMouseUp);
-                                      console.log('✅ Rotación completada', {
-                                        snapped: shiftPressed
-                                      });
-                                      if (svgRef.current) {
-                                        saveToHistory(svgRef.current.innerHTML);
-                                      }
-                                    };
+                                        const handleMouseUp = () => {
+                                          document.removeEventListener('mousemove', handleMouseMove);
+                                          document.removeEventListener('mouseup', handleMouseUp);
+                                          console.log('✅ Rotación completada', {
+                                            snapped: shiftPressed
+                                          });
+                                          if (svgRef.current) {
+                                            saveToHistory(svgRef.current.innerHTML);
+                                          }
+                                        };
 
-                                    document.addEventListener('mousemove', handleMouseMove);
-                                    document.addEventListener('mouseup', handleMouseUp);
-                                  }}
-                                />
+                                        document.addEventListener('mousemove', handleMouseMove);
+                                        document.addEventListener('mouseup', handleMouseUp);
+                                      }}
+                                    />
                                   </>
                                 )}
                               </>
@@ -1181,6 +1295,21 @@ export const SVGViewer = ({
                                 // Incrementar versión para forzar re-render del NodeEditor
                                 setElementVersion(v => v + 1);
                               }}
+                              onPathChange={() => {
+                                // Llamado cuando cambia la topología del path (add/remove nodes)
+                                setElementVersion(v => v + 1);
+
+                                // Guardar historial immediatamente
+                                if (svgRef.current) {
+                                  const svgElement = svgRef.current.querySelector('svg');
+                                  if (svgElement) {
+                                    saveToHistory(svgElement.outerHTML);
+                                    if (onSVGUpdate) {
+                                      onSVGUpdate(svgElement.outerHTML);
+                                    }
+                                  }
+                                }
+                              }}
                               onNodeDragEnd={() => {
                                 console.log('✅ Edición de nodos finalizada, guardando historial');
                                 if (svgRef.current) {
@@ -1201,6 +1330,7 @@ export const SVGViewer = ({
                                 }
                               }}
                               screenDeltaToSVGDelta={screenDeltaToSVGDelta}
+                              screenToSVG={screenToSVG}
                             />
                           )}
                         </g>

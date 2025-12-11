@@ -30,8 +30,17 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
     }
 
     // Destruir instancia anterior si existe (para reinicializar con nuevas opciones)
+    let savedState = null;
     if (panzoomInstanceRef.current) {
       const panzoom = panzoomInstanceRef.current;
+
+      // Guardar el estado actual para restaurarlo
+      savedState = {
+        scale: panzoom.getScale(),
+        x: panzoom.getPan().x,
+        y: panzoom.getPan().y
+      };
+
       const parent = element.parentElement;
 
       if (parent) {
@@ -47,10 +56,11 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
     const defaultOptions = {
       maxScale: 20,
       minScale: 0.01,
-      step: 0.015, // Reducido a 0.015 para zoom ultra-suave con trackpad (0.05 * 0.3)
-      startScale: 1,
-      startX: 0,
-      startY: 0,
+      step: 0.015,
+      // Usar estado guardado si existe, o valores por defecto
+      startScale: savedState ? savedState.scale : 1,
+      startX: savedState ? savedState.x : 0,
+      startY: savedState ? savedState.y : 0,
       cursor: 'grab',
       // NO usar contain ni canvas - eliminar restricciones completamente
       ...panzoomOptions,
