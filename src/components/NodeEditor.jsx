@@ -131,6 +131,9 @@ export const NodeEditor = ({
     if (tool !== 'node') return;
 
     e.stopPropagation();
+    e.preventDefault();
+
+    console.log('🎯 handleNodeDrag iniciado', { tool, nodeIndex: node.index });
 
     // Capturar el punto de inicio en coordenadas locales
     // Necesitamos convertir el punto de pantalla -> SVG Global -> SVG Local (Elemento)
@@ -219,11 +222,13 @@ export const NodeEditor = ({
       onNodeChange?.(node, newNode);
     };
     const handleMouseUp = () => {
+      console.log('✅ handleNodeDrag finalizado');
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       onNodeDragEnd?.();
     };
 
+    console.log('📝 Registrando listeners de mousemove y mouseup');
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   };
