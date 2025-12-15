@@ -73,25 +73,16 @@ export const parsePathNodes = (pathData) => {
   const nodes = [];
   const commands = pathData.match(/[MmLlHhVvCcSsQqTtAaZz][^MmLlHhVvCcSsQqTtAaZz]*/g) || [];
 
-  // Logging diagnóstico para debug
-  console.log('🔍 parsePathNodes: Iniciando parseo', {
-    pathData,
-    totalCommands: commands.length,
-    commands: commands
-  });
-
   let currentX = 0, currentY = 0;
   let startX = 0, startY = 0;
+  let nodeIndex = 0; // Índice secuencial para todos los nodos
 
-  commands.forEach((command, index) => {
+  commands.forEach((command, cmdIndex) => {
     const type = command[0];
     // Usar regex más robusto que maneja números negativos consecutivos
     const coordString = command.slice(1).trim();
     const coords = (coordString.match(/-?\d*\.?\d+/g) || []).map(Number).filter(n => !isNaN(n));
 
-    console.log(`  📌 Comando ${index}: "${command}" → type="${type}", coords=[${coords.join(', ')}]`);
-    console.log(`     Estado actual: currentX=${currentX.toFixed(2)}, currentY=${currentY.toFixed(2)}`);
-    
     switch (type.toLowerCase()) {
       case 'm': // moveto
         if (coords.length >= 2) {
@@ -100,35 +91,35 @@ export const parsePathNodes = (pathData) => {
           startX = currentX;
           startY = currentY;
           nodes.push({
-            id: `node-${index}`,
+            id: `node-${nodeIndex}`,
             x: currentX,
             y: currentY,
             type: 'move',
             command: type,
             coords: coords,
-            index
+            index: nodeIndex++
           });
         }
         break;
-        
+
       case 'l': // lineto - puede tener múltiples pares de coordenadas
         for (let i = 0; i < coords.length; i += 2) {
           if (i + 1 < coords.length) {
             currentX = type === type.toLowerCase() ? currentX + coords[i] : coords[i];
             currentY = type === type.toLowerCase() ? currentY + coords[i + 1] : coords[i + 1];
             nodes.push({
-              id: `node-${index}-${i/2}`,
+              id: `node-${nodeIndex}`,
               x: currentX,
               y: currentY,
               type: 'line',
               command: type,
               coords: [coords[i], coords[i + 1]],
-              index: index + i/2
+              index: nodeIndex++
             });
           }
         }
         break;
-        
+
       case 'c': // curveto - puede tener múltiples curvas (6 coords cada una)
         for (let i = 0; i < coords.length; i += 6) {
           if (i + 5 < coords.length) {
@@ -140,7 +131,7 @@ export const parsePathNodes = (pathData) => {
             const endY = type === type.toLowerCase() ? currentY + coords[i + 5] : coords[i + 5];
 
             nodes.push({
-              id: `node-${index}-${i/6}`,
+              id: `node-${nodeIndex}`,
               x: endX,
               y: endY,
               type: 'curve',
@@ -148,36 +139,36 @@ export const parsePathNodes = (pathData) => {
               coords: coords.slice(i, i + 6),
               cp1: { x: cp1X, y: cp1Y },
               cp2: { x: cp2X, y: cp2Y },
-              index: index + i/6
+              index: nodeIndex++
             });
             currentX = endX;
             currentY = endY;
           }
         }
         break;
-        
+
       case 'q': // quadratic curveto
         if (coords.length >= 4) {
           const cpX = type === type.toLowerCase() ? currentX + coords[0] : coords[0];
           const cpY = type === type.toLowerCase() ? currentY + coords[1] : coords[1];
           const endX = type === type.toLowerCase() ? currentX + coords[2] : coords[2];
           const endY = type === type.toLowerCase() ? currentY + coords[3] : coords[3];
-          
+
           nodes.push({
-            id: `node-${index}`,
+            id: `node-${nodeIndex}`,
             x: endX,
             y: endY,
             type: 'quadratic',
             command: type,
             coords: coords,
             cp: { x: cpX, y: cpY },
-            index
+            index: nodeIndex++
           });
           currentX = endX;
           currentY = endY;
         }
         break;
-        
+
       case 's': // smooth cubic curveto (shorthand)
         // 's' usa el reflejo del cp2 anterior como cp1, y toma 4 valores: x2,y2,x,y
         for (let i = 0; i < coords.length; i += 4) {
@@ -198,7 +189,7 @@ export const parsePathNodes = (pathData) => {
             const endY = type === type.toLowerCase() ? currentY + coords[i + 3] : coords[i + 3];
 
             nodes.push({
-              id: `node-${index}-${i/4}`,
+              id: `node-${nodeIndex}`,
               x: endX,
               y: endY,
               type: 'curve',
@@ -206,7 +197,7 @@ export const parsePathNodes = (pathData) => {
               coords: coords.slice(i, i + 4),
               cp1: { x: cp1X, y: cp1Y },
               cp2: { x: cp2X, y: cp2Y },
-              index: index + i/4
+              index: nodeIndex++
             });
             currentX = endX;
             currentY = endY;
@@ -220,13 +211,13 @@ export const parsePathNodes = (pathData) => {
           // Solo crear nodo si hay movimiento real
           if (coords[i] !== 0) {
             nodes.push({
-              id: `node-${index}-${i}`,
+              id: `node-${nodeIndex}`,
               x: currentX,
               y: currentY,
               type: 'line',
               command: type,
               coords: [coords[i]],
-              index: index + i
+              index: nodeIndex++
             });
           }
         }
@@ -238,13 +229,13 @@ export const parsePathNodes = (pathData) => {
           // Solo crear nodo si hay movimiento real
           if (coords[i] !== 0) {
             nodes.push({
-              id: `node-${index}-${i}`,
+              id: `node-${nodeIndex}`,
               x: currentX,
               y: currentY,
               type: 'line',
               command: type,
               coords: [coords[i]],
-              index: index + i
+              index: nodeIndex++
             });
           }
         }
@@ -252,13 +243,13 @@ export const parsePathNodes = (pathData) => {
 
       case 'z': // closepath
         nodes.push({
-          id: `node-${index}`,
+          id: `node-${nodeIndex}`,
           x: startX,
           y: startY,
           type: 'close',
           command: type,
           coords: [],
-          index
+          index: nodeIndex++
         });
         currentX = startX;
         currentY = startY;
@@ -269,7 +260,7 @@ export const parsePathNodes = (pathData) => {
         break;
     }
   });
-  
+
   return nodes;
 };
 
@@ -278,7 +269,7 @@ export const parsePathNodes = (pathData) => {
  */
 export const buildPathFromNodes = (nodes) => {
   if (!nodes || nodes.length === 0) return '';
-  
+
   return nodes.map(node => {
     switch (node.type) {
       case 'move':
@@ -302,12 +293,20 @@ export const buildPathFromNodes = (nodes) => {
  */
 export const updateNodeInPath = (element, nodeIndex, newNode) => {
   if (!element || element.tagName !== 'path') return;
-  
+
   const pathData = element.getAttribute('d');
   const nodes = parsePathNodes(pathData);
-  
+
   if (nodeIndex >= 0 && nodeIndex < nodes.length) {
-    nodes[nodeIndex] = { ...nodes[nodeIndex], ...newNode };
+    // Preservar el tipo y comando del nodo original
+    const oldNode = nodes[nodeIndex];
+    nodes[nodeIndex] = {
+      ...oldNode,  // Mantener todas las propiedades del nodo original
+      ...newNode,  // Sobrescribir solo con las propiedades nuevas
+      type: oldNode.type,  // Preservar el tipo
+      command: oldNode.command,  // Preservar el comando
+      index: oldNode.index  // Preservar el índice
+    };
     const newPathData = buildPathFromNodes(nodes);
     element.setAttribute('d', newPathData);
   }
@@ -318,13 +317,13 @@ export const updateNodeInPath = (element, nodeIndex, newNode) => {
  */
 export const addNodeToPath = (element, position, nodeType = 'line') => {
   if (!element || element.tagName !== 'path') return;
-  
+
   const pathData = element.getAttribute('d');
   const nodes = parsePathNodes(pathData);
-  
+
   // Encontrar la posición más cercana para insertar el nodo
   let insertIndex = nodes.length;
-  
+
   const newNode = {
     id: `node-${Date.now()}`,
     x: position.x,
@@ -334,9 +333,9 @@ export const addNodeToPath = (element, position, nodeType = 'line') => {
     coords: [position.x, position.y],
     index: insertIndex
   };
-  
+
   nodes.splice(insertIndex, 0, newNode);
-  
+
   const newPathData = buildPathFromNodes(nodes);
   element.setAttribute('d', newPathData);
 };
@@ -347,10 +346,10 @@ export const addNodeToPath = (element, position, nodeType = 'line') => {
  */
 export const removeNodeFromPath = (element, nodeIndex) => {
   if (!element || element.tagName !== 'path') return;
-  
+
   const pathData = element.getAttribute('d');
   const nodes = parsePathNodes(pathData);
-  
+
   if (nodeIndex >= 0 && nodeIndex < nodes.length && nodes.length > 2) {
     nodes.splice(nodeIndex, 1);
     const newPathData = buildPathFromNodes(nodes);
@@ -428,7 +427,7 @@ export const findClosestPointOnPath = (pathData, targetPoint) => {
   for (let i = 1; i < nodes.length; i++) {
     const startNode = nodes[i - 1];
     const endNode = nodes[i];
-    
+
     // Skip move commands (they don't draw lines)
     if (endNode.type === 'move') continue;
 
@@ -439,13 +438,13 @@ export const findClosestPointOnPath = (pathData, targetPoint) => {
       const dx = endNode.x - startNode.x;
       const dy = endNode.y - startNode.y;
       const lengthSq = dx * dx + dy * dy;
-      
+
       let t = 0;
       if (lengthSq > 0) {
         t = ((targetPoint.x - startNode.x) * dx + (targetPoint.y - startNode.y) * dy) / lengthSq;
         t = Math.max(0, Math.min(1, t));
       }
-      
+
       const x = startNode.x + t * dx;
       const y = startNode.y + t * dy;
       localClosest = { distance: distance({ x, y }, targetPoint), t, x, y };
@@ -457,10 +456,10 @@ export const findClosestPointOnPath = (pathData, targetPoint) => {
       for (let j = 0; j <= steps; j++) {
         const t = j / steps;
         const p = getPointOnCubicBezier(
-          startNode, 
+          startNode,
           endNode.cp1 || startNode, // Fallback for shorthand if needed (though parser should handle it)
-          endNode.cp2, 
-          endNode, 
+          endNode.cp2,
+          endNode,
           t
         );
         const dist = distance(p, targetPoint);
@@ -468,20 +467,20 @@ export const findClosestPointOnPath = (pathData, targetPoint) => {
           localClosest = { distance: dist, t, x: p.x, y: p.y };
         }
       }
-      
+
       // Refine search around closest sample
       const refineSteps = 10;
       const range = 1 / steps;
       const startT = Math.max(0, localClosest.t - range);
       const endT = Math.min(1, localClosest.t + range);
-      
+
       for (let j = 0; j <= refineSteps; j++) {
         const t = startT + (endT - startT) * (j / refineSteps);
         const p = getPointOnCubicBezier(
-          startNode, 
-          endNode.cp1 || startNode, 
-          endNode.cp2, 
-          endNode, 
+          startNode,
+          endNode.cp1 || startNode,
+          endNode.cp2,
+          endNode,
           t
         );
         const dist = distance(p, targetPoint);
@@ -508,7 +507,7 @@ export const splitPathAtSegment = (element, segmentIndex, t) => {
 
   const pathData = element.getAttribute('d');
   const nodes = parsePathNodes(pathData);
-  
+
   if (segmentIndex < 1 || segmentIndex >= nodes.length) return null;
 
   const startNode = nodes[segmentIndex - 1];
@@ -527,7 +526,7 @@ export const splitPathAtSegment = (element, segmentIndex, t) => {
     newNode.command = 'L'; // Ensure it's a line
     newNode.x = lerp(startNode.x, targetNode.x, t);
     newNode.y = lerp(startNode.y, targetNode.y, t);
-    
+
     // The original node remains as it was (endpoint)
     // We insert the new node BEFORE it
     nodes.splice(segmentIndex, 0, newNode);
@@ -535,10 +534,10 @@ export const splitPathAtSegment = (element, segmentIndex, t) => {
   } else if (targetNode.type === 'curve') {
     // Split Bezier
     const [curve1, curve2] = splitCubicBezier(
-      startNode, 
-      targetNode.cp1, 
-      targetNode.cp2, 
-      targetNode, 
+      startNode,
+      targetNode.cp1,
+      targetNode.cp2,
+      targetNode,
       t
     );
 
