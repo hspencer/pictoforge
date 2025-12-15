@@ -1,0 +1,141 @@
+classDiagram
+    %% ============================================
+    %% ESQUEMA DE DATOS ALINEADO CON IMPLEMENTACIÓN
+    %% PictoForge v0.0.2 + NLU Schema v1.0.1
+    %% ============================================
+
+    class Pictogram {
+      +string id
+      +string svg                  // SVG completo self-contained
+      +number timestamp            // Unix timestamp (ms)
+      +string audit_status         // "pending"|"approved"|"rejected"
+
+      // Campos indexados (extraídos del SVG)
+      +string utterance
+      +string domain
+      +string intent
+      +string language
+      +string[] concepts
+    }
+
+    class NLUSchema {
+      +string utterance
+      +string lang                 // BCP-47 (ej. "en-NZ", "es-CL")
+      +Metadata metadata
+      +Frame[] frames              // Array de frames semánticos
+      +LogicalForm logical_form
+      +Pragmatics? pragmatics
+      +VisualGuidelines? visual_guidelines
+    }
+
+    class Metadata {
+      +string speech_act           // "assertive"|"directive"|"commissive"...
+      +string intent               // "request"|"command"|"suggestion"...
+      +string? timestamp
+      +string? speaker_id
+    }
+
+    class Frame {
+      +string id?
+      +string frame_name           // FrameNet-like (ej. "Directed_action")
+      +string lexical_unit         // Lemma que dispara el frame
+      +Map~string,RoleFiller~ roles
+    }
+
+    class RoleFiller {
+      +string type                 // "Agent"|"Theme"|"Patient"...
+      +string? ref
+      +string? surface
+      +string? lemma
+      +string? definiteness
+      +string? ref_frame
+    }
+
+    class LogicalForm {
+      +string event
+      +string? modality
+      +boolean? negation
+      +string? aspect
+      +string? tense
+    }
+
+    class Pragmatics {
+      +string? politeness
+      +string? formality
+      +string? expected_response
+      +string? urgency
+      +string? speaker_stance
+    }
+
+    class VisualGuidelines {
+      +string? focus_actor
+      +string? secondary_actor
+      +string? action_core
+      +string? object_core
+      +string? context
+      +string? temporal
+      +Map~string,number~ salience
+    }
+
+    class CanonicalEntry {
+      +string id
+      +string concept              // Simple o compuesto ("safety+house")
+      +string type                 // "object"|"action"|"modifier"|"operator"
+      +string svg                  // Fragmento SVG
+      +string? formula             // Fórmula si es compuesto
+      +I18nLabels i18n
+      +boolean verified
+      +number usage_count
+      +string[] tags
+      +string? role
+      +number timestamp
+      +string source               // "pictonet"|"arasaac"|"manual"|"extracted"
+    }
+
+    class I18nLabels {
+      +string en
+      +string es
+      +string mi
+      +string arn
+    }
+
+    class Setting {
+      +string key
+      +any value
+    }
+
+    class LocalDB {
+      <<IndexedDB>>
+      +Store pictograms
+      +Store canonical
+      +Store settings
+    }
+
+    %% ============================================
+    %% RELACIONES
+    %% ============================================
+
+    LocalDB "1" *-- "*" Pictogram : persiste
+    LocalDB "1" *-- "*" CanonicalEntry : persiste
+    LocalDB "1" *-- "*" Setting : persiste
+
+    Pictogram "1" *-- "0..1" NLUSchema : embebido en svg
+
+    NLUSchema "1" *-- "1" Metadata : metadata
+    NLUSchema "1" *-- "1..*" Frame : frames
+    NLUSchema "1" *-- "1" LogicalForm : logical_form
+    NLUSchema "1" *-- "0..1" Pragmatics : pragmatics
+    NLUSchema "1" *-- "0..1" VisualGuidelines : visual_guidelines
+
+    Frame "1" *-- "*" RoleFiller : roles
+
+    CanonicalEntry "1" *-- "1" I18nLabels : i18n
+
+    %% ============================================
+    %% NOTAS IMPORTANTES
+    %% ============================================
+
+    note for Pictogram "SVG self-contained:\n- Metadata embebida\n- ~7.5KB por pictograma\n- audit_status workflow"
+    note for NLUSchema "Embebido en <metadata>\ndel SVG, no entidad\nseparada en DB"
+    note for CanonicalEntry "Vocabulario reusable:\n- Elementos simples\n- Blends (compuestos)\n- ~2-3KB c/u"
+    note for LocalDB "IndexedDB v2:\n- Capacidad 50MB-300GB+\n- 10K pictogramas = ~77MB"

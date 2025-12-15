@@ -210,6 +210,27 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
     }
   }, [elementRef]);
 
+  /**
+   * Habilita el pan (arrastre del canvas)
+   */
+  const enablePan = useCallback(() => {
+    if (panzoomInstanceRef.current) {
+      panzoomInstanceRef.current.setOptions({ disablePan: false });
+      console.log('✅ Pan habilitado');
+    }
+  }, []);
+
+  /**
+   * Deshabilita el pan (arrastre del canvas)
+   * El zoom con rueda sigue funcionando
+   */
+  const disablePan = useCallback(() => {
+    if (panzoomInstanceRef.current) {
+      panzoomInstanceRef.current.setOptions({ disablePan: true });
+      console.log('🚫 Pan deshabilitado');
+    }
+  }, []);
+
   return {
     // Estado
     panzoomState,
@@ -225,6 +246,8 @@ export function usePanzoom({ elementRef, panzoomOptions = {} } = {}) {
     center,
     getScale,
     getPan,
+    enablePan,
+    disablePan,
   };
 }
 

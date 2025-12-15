@@ -26,7 +26,7 @@ PictoForge is a semantic SVG editor designed as a companion tool for generative 
 - **Node Tool** - Edit path nodes and Bézier handles
 - **Pen Tool** - Add/remove nodes (in development)
 
-### Internationalization
+### Internationalisation
 - **4 languages**: English, Español, Māori, Mapuzugun
 - **250+ translations** with auto-detection
 - **Persistent language** preference
@@ -106,17 +106,10 @@ pnpm test:coverage        # Generate coverage report
 
 ## Documentation
 
-### Getting Started
-- [Installation Guide](docs/installation.md)
-- [Development Workflow](docs/workflow.md)
-- [Configuration](docs/configuration.md)
-
 ### Architecture
 - [System Overview](docs/architecture.md)
 - [Coordinate System](docs/coordinate-system.md)
-- [Component Structure](docs/components.md)
-- [Hooks Reference](docs/hooks.md)
-- [Services](docs/services.md)
+- [API Reference](docs/api-reference.md)
 
 ### Storage System
 - **[Storage Overview](docs/storage/README.md)** - Start here
@@ -126,11 +119,6 @@ pnpm test:coverage        # Generate coverage report
 
 ### Semantic Layer
 - [NLU Schema Integration](src/semantic/README.md)
-- [Entity Editing](docs/semantic-layer.md)
-
-### Testing
-- [Testing Guide](docs/testing.md)
-- [Test Coverage](docs/coverage.md)
 
 ### Planning
 - [Project Roadmap](docs/ROADMAP.md)
@@ -206,7 +194,7 @@ pnpm test:coverage        # Generate coverage report
 2. **Storage System** - Enhance IndexedDB operations
 3. **Testing** - Improve test coverage
 4. **Documentation** - Expand guides and examples
-5. **Internationalization** - Add more languages
+5. **Internationalisation** - Add more languages
 
 ## Architecture Highlights
 
