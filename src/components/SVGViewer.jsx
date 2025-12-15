@@ -5,8 +5,7 @@ import {
   RotateCcw,
   Maximize2,
   Undo,
-  Redo,
-  Hand
+  Redo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SelectArrowIcon, MousePointerIcon, PenToolIcon, ShareIcon, HandIcon } from './CustomIcons';
@@ -826,14 +825,6 @@ export const SVGViewer = ({
             title="Seleccionar y mover entidades (Flecha negra)"
           >
             <SelectArrowIcon size={16} />
-          </Button>
-          <Button
-            variant={tool === 'hand' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setTool('hand')}
-            title="Mano - Pan del canvas (H)"
-          >
-            <Hand size={16} />
           </Button>
           <Button
             variant={tool === 'node' ? 'default' : 'ghost'}
